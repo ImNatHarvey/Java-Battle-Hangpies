@@ -11,6 +11,8 @@ import static main.Main.announcementManager;
 import static main.Main.purchaseManager;
 import static main.Main.productManager;
 
+import game.GameLauncher; // Import the new Launcher
+
 public class UserMenu
 {
 	public static void showUserDashboard()
@@ -33,32 +35,25 @@ public class UserMenu
 
 		try
 		{
-			// 1. Get the simple list of top 3 IDs
 			List<String> featuredIds = purchaseManager.getTopMostBought();
 
 			if (featuredIds.isEmpty())
 			{
 				System.out.println("No Hangpies have been purchased yet. Be the first!");
 			}
-
 			else
 			{
-				// 2. Display top 3 products
 				int count = 1;
-				
 				for (String productId : featuredIds)
 				{
 					Hangpie products = productManager.getProductById(productId);
-					
 					if (products != null)
 					{
 						System.out.printf("#%d Top Seller: [%s]\n", count++, products.getName());
 					}
 				}
 			}
-
 		}
-
 		catch (Exception e)
 		{
 			System.err.println("Could not load featured items.");
@@ -74,7 +69,7 @@ public class UserMenu
 			System.out.println("5. My Profile");
 			System.out.println("6. Purchase History");
 			System.out.println("7. Activity Log");
-			System.out.println("8. Play Game (Coming Soon)");
+			System.out.println("8. Play Game");
 			System.out.println("9. Log Out");
 			System.out.print("Enter your choice: ");
 
@@ -88,43 +83,36 @@ public class UserMenu
 			{
 				Marketplace.showMarketplace();
 			}
-
 			else if (choice.equals("3"))
 			{
 				Inventory.showInventory();
 			}
-
 			else if (choice.equals("4"))
 			{
 				Wallet.showWalletMenu();
 			}
-
 			else if (choice.equals("5"))
 			{
 				Profile.showProfile();
 			}
-
 			else if (choice.equals("6"))
 			{
 				PurchaseHistory.showPurchaseHistory();
 			}
-
 			else if (choice.equals("7"))
 			{
 				ActivityLog.showActivityLog();
 			} 
-
 			else if (choice.equals("8"))
 			{
-				System.out.println("Play Game coming soon.");
+				// INTEGRATION: Launch the AWT Game Window
+				GameLauncher.launchGame(currentUser);
 			} 
-
 			else if (choice.equals("9"))
 			{
 				System.out.println("Logging out...");
 				break;
 			}
-
 			else
 			{
 				System.out.println("Invalid choice. Please try again.");
