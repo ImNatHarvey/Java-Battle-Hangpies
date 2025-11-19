@@ -23,10 +23,10 @@ public class GameWindow extends Frame implements Runnable {
     private Image titleCoverImage; 
 
     // Dimensions for Layout Adjustments
-    private final int COVER_WIDTH = 700; 
-    private final int COVER_HEIGHT = 250; 
-    private final int TITLE_WIDTH = 500; 
-    private final int TITLE_HEIGHT = 150; 
+    private final int COVER_WIDTH = 980; 
+    private final int COVER_HEIGHT = 140; 
+    private final int TITLE_WIDTH = 900; 
+    private final int TITLE_HEIGHT = 100; 
 
     // Menu State
     private String[] options = {"Play Game", "Inventory"};
@@ -179,7 +179,7 @@ public class GameWindow extends Frame implements Runnable {
         }
 
         // 2. Title Section
-        int bannerY = 50; 
+        int bannerY = 100; 
 
         if (titleCoverImage != null) {
             int coverX = (gameCanvas.getWidth() - COVER_WIDTH) / 2;
@@ -205,7 +205,7 @@ public class GameWindow extends Frame implements Runnable {
         g.setFont(GameConstants.UI_FONT);
         FontMetrics fm = g.getFontMetrics();
 
-        int startY = 550; 
+        int startY = 555; 
         int spacing = 60;
 
         for (int i = 0; i < options.length; i++) {
