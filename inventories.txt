@@ -1,6 +1,2 @@
 // uniqueId|ownerUsername|productId|customName|level
-ad38ea36-3415-45ac-9552-e6d2ec88eea4|player123|HP-003|Huntress|1
-97842b26-cf10-4b63-a6b6-cd159b65cfc0|player123|HP-004|Icy|1
-edb361ae-3a56-4f06-8a58-da813526d205|player123|HP-005|Owl|1
-5578b808-8829-44fb-bcc5-7c73ee385bf2|player123|HP-001|Crystal|1
-57943344-f9d0-4400-9984-08263c7cbcf9|player123|HP-002|Dude|1
+63b084ef-30a8-452f-b865-bbb43a0f1df0|player123|HP-001|Evil Wizard|1

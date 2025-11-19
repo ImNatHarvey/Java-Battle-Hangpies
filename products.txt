@@ -1,6 +1,2 @@
 // FORMAT: hangpieID|name|description|price|maxHealth|level|attackPower|imageName
-HP-002|Dude|Just a dude.|150.0|70|1|15|dude
-HP-001|Crystal|Crystal golem|100.0|80|1|10|crystal
-HP-004|Icy|Ice golem.|350.0|100|1|15|ice
-HP-003|Huntress|Amazonian huntress.|300.0|70|1|13|huntress
-HP-005|Owl|Mysterious.|400.0|90|1|20|owl
+HP-001|Evil Wizard|Reincarnation of Baal.|300.0|50|1|20|wizard

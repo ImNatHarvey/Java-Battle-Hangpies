@@ -115,25 +115,31 @@ public class InventoryView {
         g.setColor(new Color(0, 0, 0, 150));
         g.fillRect(0, height - 100, width, 100);
         
-        String backText = isBackHovered ? "> [ BACK ] <" : "[ BACK ]";
+        // Logic: Plain "Back" vs "> Back <"
+        String backText = isBackHovered ? "> Back <" : "Back";
+        
         g.setFont(GameConstants.BUTTON_FONT);
         fm = g.getFontMetrics();
+        
+        // Calculate a fixed center point based on the unhovered "Back" text width.
+        // This anchors the button so "Back" stays in the same visual position.
+        int baseWidth = fm.stringWidth("Back");
+        int buttonCenterX = (width - 150) - (baseWidth / 2); 
         
         int backW = fm.stringWidth(backText);
         int backH = fm.getHeight();
         
-        // Place button in bottom right
-        int backX = width - 150 - backW;
+        // Calculate X to center the current text (hovered or not) around that fixed point
+        int backX = buttonCenterX - (backW / 2);
         int backY = height - 50;
         
         // Store bounds for click/hover detection
-        // We make the hit box slightly larger than text for easier clicking
         backButtonBounds = new Rectangle(backX - 10, backY - fm.getAscent() - 10, backW + 20, backH + 20);
         
         if (isBackHovered) {
             g.setColor(GameConstants.SELECTION_COLOR); // Yellow
         } else {
-            g.setColor(GameConstants.ACCENT_COLOR); // Red/Accent
+            g.setColor(Color.WHITE); // White
         }
         
         g.drawString(backText, backX, backY);
@@ -159,23 +165,14 @@ public class InventoryView {
     		g.drawRect(x, y, w, h);
     	}
     	
-    	// C. Draw Hangpie Image with Scaling Logic (UNCHANGED)
+    	// C. Draw Hangpie Image with Uniform Scaling (No Type-Based Scaling)
     	String imageName = pet.getImageName();
     	String imgPath;
+    	
+    	// Standard uniform size for all
     	int imgW = 120; 
     	int imgH = 120; 
     	
-    	if (imageName != null) {
-    		String lowerName = imageName.toLowerCase();
-    		if (lowerName.contains("dude") || lowerName.contains("owl")) {
-    			imgW = 90; imgH = 90;
-    		} else if (lowerName.contains("huntress")) {
-    			imgW = 100; imgH = 130;
-    		} else if (lowerName.contains("ice") || lowerName.contains("crystal")) {
-    			imgW = 140; imgH = 140;
-    		}
-    	}
-
     	// Path resolution
     	if (imageName != null && (imageName.contains(".png") || imageName.contains(".gif") || imageName.contains(".jpg"))) {
     		imgPath = GameConstants.HANGPIE_DIR + imageName;
@@ -192,8 +189,13 @@ public class InventoryView {
     	
     	if (petImg != null) {
     		int imgX = x + (w - imgW) / 2;
+    		// Center vertically in the top portion of the card
     		int centerY = y + 100; 
     		int imgY = centerY - (imgH / 2);
+    		
+    		// Ensure it doesn't go too high if the image is very tall
+    		if (imgY < y + 10) imgY = y + 10;
+    		
     		g.drawImage(petImg, imgX, imgY, imgW, imgH, null);
     	}
     	
