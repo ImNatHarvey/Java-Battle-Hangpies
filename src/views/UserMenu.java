@@ -105,7 +105,6 @@ public class UserMenu
 			} 
 			else if (choice.equals("8"))
 			{
-				// INTEGRATION: Launch the AWT Game Window
 				GameLauncher.launchGame(currentUser);
 			} 
 			else if (choice.equals("9"))
