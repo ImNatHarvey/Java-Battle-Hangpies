@@ -3,10 +3,12 @@ package views;
 import static main.Main.productManager;
 import static main.Main.scanner;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import game.GameConstants;
 import models.Hangpie;
 
 public class ProductManagement
@@ -17,7 +19,7 @@ public class ProductManagement
 		{
 			System.out.println("\n--- Product Management ---");
 			System.out.println("Current Products in Marketplace:");
-			System.out.println(" [PODUCT ID]\t[NAME]\t\t\t[STATS]\t\t\t[PRICE]\t\t\t[DESCRIPTION]");
+			System.out.println(" [PODUCT ID]\t[NAME]\t\t\t[STATS]\t\t\t[IMG]\t\t[PRICE]\t\t\t[DESCRIPTION]");
 
 			List<Hangpie> productList = new ArrayList<>(productManager.getAllProducts());
 
@@ -89,8 +91,11 @@ public class ProductManagement
 
 			System.out.print("Enter Attack Power (e.g., 10): ");
 			int attackPower = Integer.parseInt(scanner.nextLine().trim());
+			
+			// New Image Selection
+			String imageName = selectImageFile();
 
-			Hangpie newProduct = new Hangpie(id, name, description, price, maxHealth, level, attackPower);
+			Hangpie newProduct = new Hangpie(id, name, description, price, maxHealth, level, attackPower, imageName);
 
 			if (productManager.addProduct(newProduct))
 			{
@@ -165,6 +170,13 @@ public class ProductManagement
 			{
 				product.setAttackPower(Integer.parseInt(newAtkPower));
 			}
+			
+			System.out.print("Update Image? (yes/no) (current: " + product.getImageName() + "): ");
+			String updateImg = scanner.nextLine().trim();
+			if (updateImg.equalsIgnoreCase("yes")) {
+				String newImage = selectImageFile();
+				product.setImageName(newImage);
+			}
 
 			productManager.updateProduct(product);
 			System.out.println("Product updated successfully!");
@@ -174,8 +186,6 @@ public class ProductManagement
 		{
 			System.err.println("Error: Invalid number. Price, Health, Level, and Attack must be numbers.");
 		}
-
-
 	}
 
 	private static void doDeleteProduct()
@@ -191,6 +201,42 @@ public class ProductManagement
 		else
 		{
 			System.out.println("Error: Product ID '" + id + "' not found.");
+		}
+	}
+	
+	/**
+	 * Scans the images/hangpies folder and asks the user to select one.
+	 * @return The filename of the selected image.
+	 */
+	private static String selectImageFile() {
+		System.out.println("\n--- Select Hangpie Image ---");
+		
+		File folder = new File(GameConstants.HANGPIE_DIR);
+		File[] fileList = folder.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
+		
+		if (fileList == null || fileList.length == 0) {
+			System.out.println("No images found in " + GameConstants.HANGPIE_DIR);
+			return "default.png";
+		}
+		
+		for (int i = 0; i < fileList.length; i++) {
+			System.out.println((i + 1) + ". " + fileList[i].getName());
+		}
+		
+		while (true) {
+			System.out.print("Enter number to select image: ");
+			try {
+				String input = scanner.nextLine().trim();
+				int choice = Integer.parseInt(input);
+				
+				if (choice > 0 && choice <= fileList.length) {
+					return fileList[choice - 1].getName();
+				} else {
+					System.out.println("Invalid number.");
+				}
+			} catch (NumberFormatException e) {
+				System.out.println("Please enter a number.");
+			}
 		}
 	}
 }

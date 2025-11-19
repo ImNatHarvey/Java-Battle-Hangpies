@@ -49,9 +49,15 @@ public class ProductManager
 					double price = Double.parseDouble(parts[3]);
 					int maxHealth = Integer.parseInt(parts[4]);
 					int level = Integer.parseInt(parts[5]);
-					int attackPower = Integer.parseInt(parts[6]);					
+					int attackPower = Integer.parseInt(parts[6]);
+					
+					// Default to dragon.png if the file version is old and doesn't have the image column
+					String imageName = "dragon.png";
+					if (parts.length > 7) {
+						imageName = parts[7];
+					}
 
-					Hangpie product = new Hangpie(id, name, description, price, maxHealth, level, attackPower);
+					Hangpie product = new Hangpie(id, name, description, price, maxHealth, level, attackPower, imageName);
 					productMap.put(id, product);
 
 				}
@@ -71,7 +77,7 @@ public class ProductManager
 	{
 		try (BufferedWriter writer = new BufferedWriter(new FileWriter(databaseFile)))
 		{
-			writer.write("// FORMAT: hangpieID|name|description|price|maxHealth|level|attackPower");
+			writer.write("// FORMAT: hangpieID|name|description|price|maxHealth|level|attackPower|imageName");
 			writer.newLine();
 
 			for (Hangpie product : productMap.values())
@@ -83,7 +89,8 @@ public class ProductManager
 						String.valueOf(product.getPrice()),
 						String.valueOf(product.getMaxHealth()),
 						String.valueOf(product.getLevel()),
-						String.valueOf(product.getAttackPower()));
+						String.valueOf(product.getAttackPower()),
+						product.getImageName());
 				
 				writer.write(line);
 				writer.newLine();

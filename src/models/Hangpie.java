@@ -7,14 +7,16 @@ public class Hangpie extends Character implements Comparable<Hangpie>
 	private String uniqueId;		// UUID used for Marketplace
 	private String productId;		// Product ID used exclusively in Shop
 	private String description;		// Hangpie's description
-	private double price;			// For the marketplace	
+	private double price;			// For the marketplace
+	private String imageName;       // The filename of the image (e.g., dragon.png)
 
-	public Hangpie(String id, String name, String description, double price, int maxHealth, int level, int attackPower)
+	public Hangpie(String id, String name, String description, double price, int maxHealth, int level, int attackPower, String imageName)
 	{
 		super(name, maxHealth, level, attackPower);	// Calls the parent (Character) constructor using "super" keyword
 		this.productId = id;
 		this.description = description;
 		this.price = price;
+		this.imageName = imageName;
 	}
 
 	/* This is a Copy constructor.
@@ -34,14 +36,15 @@ public class Hangpie extends Character implements Comparable<Hangpie>
 		this.productId = localCopy.productId;
 		this.description = localCopy.description;
 		this.price = localCopy.price;
+		this.imageName = localCopy.imageName;
 	}
 	
 	@Override
 	// This method is used to display this object to the marketplace easily
 	public String toString()
 	{
-		return String.format("[%s]\t%s\t\tLvl:%d\t(HP:%d, Atk:%d)\t[Price: %.2fG]\t%s", //NOTE: Need to fix the format
-				productId, name, level, maxHealth, attackPower, price, description); 
+		return String.format("[%s]\t%s\t\tLvl:%d\t(HP:%d, Atk:%d)\t[Img: %s]\t[Price: %.2fG]\t%s", 
+				productId, name, level, maxHealth, attackPower, imageName, price, description); 
 	}
 	
 	@Override
@@ -72,6 +75,11 @@ public class Hangpie extends Character implements Comparable<Hangpie>
 	{
 		return description;
 	}
+	
+	public String getImageName()
+	{
+		return imageName;
+	}
 
 
 	// Setter Method
@@ -88,5 +96,10 @@ public class Hangpie extends Character implements Comparable<Hangpie>
 	public void setDescription(String description)
 	{
 		this.description = description;
+	}
+	
+	public void setImageName(String imageName)
+	{
+		this.imageName = imageName;
 	}
 }
