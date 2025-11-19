@@ -11,7 +11,7 @@ import java.util.Random;
 import java.util.Set;
 
 import game.GameConstants;
-import main.Main; // Needed to access global managers for saving
+import main.Main; // Needed to access global managers for saving import models.Enemy; import models.Hangpie; import models.User; import utils.AssetLoader; import utils.WordBank;
 import models.Enemy;
 import models.Hangpie;
 import models.User;
@@ -19,47 +19,47 @@ import utils.AssetLoader;
 import utils.WordBank;
 
 public class BattleView {
-	
+
 	private User playerUser;
 	private Hangpie playerPet;
 	private Enemy currentEnemy;
-	
-	// Battle State
+
+// Battle State
 	private String secretWord;
 	private String clue;
 	private Set<Character> guessedLetters;
 	private boolean battleOver = false;
 	private boolean playerWon = false;
 	private boolean exitRequested = false; // Signal to GameWindow
-	
-	// Rewards
+
+// Rewards
 	private int goldReward = 0;
 	private boolean rewardsClaimed = false;
-	
+
 	private String message = "";
-	
-	// Animation Timers
+
+// Animation Timers
 	private long actionStartTime = 0;
 	private boolean isAnimatingAction = false;
-	private final int ANIMATION_DURATION = 1000; 
-	
-	// Assets
+	private final int ANIMATION_DURATION = 1000;
+
+// Assets
 	private Image bgImage;
 	private Random random = new Random();
-	
+
 	public BattleView(User user, Hangpie pet) {
 		this.playerUser = user;
 		this.playerPet = pet;
 		this.guessedLetters = new HashSet<>();
-		
+
 		// Ensure full health at start
 		this.playerPet.setCurrentHealth(this.playerPet.getMaxHealth());
 		// Reset animation state
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
-		
+
 		initBattle();
 	}
-	
+
 	private void initBattle() {
 		// Reset Round State
 		this.guessedLetters.clear();
@@ -68,35 +68,39 @@ public class BattleView {
 		this.rewardsClaimed = false;
 		this.message = "";
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
-		
+
 		// 1. Pick Word
 		WordBank.WordData data = WordBank.getRandomWord(playerUser.getWorldLevel());
 		this.secretWord = data.word.toUpperCase();
 		this.clue = data.clue;
-		
+
 		// 2. Pick Random Background
 		int bgNum = random.nextInt(19) + 1;
 		String bgPath = GameConstants.BG_DIR + "battle_bg/bg" + bgNum + ".gif";
 		this.bgImage = AssetLoader.loadImage(bgPath, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
-		
+
 		// 3. Spawn Enemy
 		// Difficulty Scaling: Base + (World Level * Multiplier)
 		int hp = 50 + (playerUser.getWorldLevel() * 15);
 		int atk = 5 + (playerUser.getWorldLevel() * 2);
-		
-		// Currently using Skeleton folder. In future this can be randomized too.
-		this.currentEnemy = new Enemy("Skeleton Warrior", hp, playerUser.getWorldLevel(), atk, "enemies/skeleton");
+
+		// FIX: Updated path to match the file structure (double enemies folder based on
+		// logs)
+		this.currentEnemy = new Enemy("Skeleton Warrior", hp, playerUser.getWorldLevel(), atk,
+				"enemies/enemies/skeleton");
 	}
-	
+
 	public void update() {
 		if (isAnimatingAction) {
 			if (System.currentTimeMillis() - actionStartTime > ANIMATION_DURATION) {
 				isAnimatingAction = false;
-				
+
 				// Reset idle states if still alive
-				if (playerPet.isAlive()) playerPet.setAnimationState(Hangpie.AnimState.IDLE);
-				if (currentEnemy.isAlive()) currentEnemy.setAnimationState(Enemy.AnimState.IDLE);
-				
+				if (playerPet.isAlive())
+					playerPet.setAnimationState(Hangpie.AnimState.IDLE);
+				if (currentEnemy.isAlive())
+					currentEnemy.setAnimationState(Enemy.AnimState.IDLE);
+
 				// Check deaths
 				if (!currentEnemy.isAlive()) {
 					handleWin();
@@ -106,69 +110,72 @@ public class BattleView {
 			}
 		}
 	}
-	
+
 	private void handleWin() {
 		battleOver = true;
 		playerWon = true;
 		currentEnemy.setAnimationState(Enemy.AnimState.DEATH);
-		
+
 		if (!rewardsClaimed) {
 			// Calculate Rewards
 			goldReward = 50 + (playerUser.getWorldLevel() * 10);
-			
+
 			// Apply to User
 			playerUser.addGold(goldReward);
-			
+
 			// Simple progression: Every win increases progress level
 			playerUser.setProgressLevel(playerUser.getProgressLevel() + 1);
-			
+
 			// Optional: Increase World Level every 5 wins
 			if (playerUser.getProgressLevel() % 5 == 0) {
 				playerUser.setWorldLevel(playerUser.getWorldLevel() + 1);
 			}
-			
+
 			// Save Data
 			Main.userManager.updateUser(playerUser);
 			rewardsClaimed = true;
 		}
 	}
-	
+
 	private void handleLoss() {
 		battleOver = true;
 		playerWon = false;
 		playerPet.setAnimationState(Hangpie.AnimState.DEATH);
 		// No rewards on loss
 	}
-	
+
 	public void handleKeyPress(int keyCode, char keyChar) {
 		// 1. Menu Input (If battle is over)
 		if (battleOver) {
 			handleMenuInput(keyCode);
 			return;
 		}
-		
+
 		// 2. Game Input (If fighting)
-		if (isAnimatingAction) return; // Block input during animation
-		
+		if (isAnimatingAction)
+			return; // Block input during animation
+
 		char guess = Character.toUpperCase(keyChar);
-		if (guess < 'A' || guess > 'Z') return;
-		
+		if (guess < 'A' || guess > 'Z')
+			return;
+
 		if (guessedLetters.contains(guess)) {
 			message = "Already guessed " + guess + "!";
 			return;
 		}
-		
+
 		guessedLetters.add(guess);
-		
+
 		boolean isCorrect = false;
 		for (char c : secretWord.toCharArray()) {
-			if (c == guess) isCorrect = true;
+			if (c == guess)
+				isCorrect = true;
 		}
-		
+
 		// Trigger Animation
 		actionStartTime = System.currentTimeMillis();
 		isAnimatingAction = true;
-		
+
 		if (isCorrect) {
 			message = "Correct! Hit!";
 			playerPet.setAnimationState(Hangpie.AnimState.ATTACK);
@@ -180,20 +187,20 @@ public class BattleView {
 			playerPet.setAnimationState(Hangpie.AnimState.DAMAGE);
 			playerPet.takeDamage(currentEnemy.getAttackPower());
 		}
-		
+
 		// Check instant word completion
 		if (checkWinCondition()) {
 			// Wait for update() to process the win logic after animation
 			// But we can flag state here if needed
 		}
 	}
-	
+
 	private void handleMenuInput(int keyCode) {
 		if (playerWon) {
 			// Victory Menu
 			if (keyCode == KeyEvent.VK_ENTER) {
 				// Proceed / Next Battle
-				initBattle(); 
+				initBattle();
 			} else if (keyCode == KeyEvent.VK_ESCAPE) {
 				// Return to Main Menu
 				exitRequested = true;
@@ -205,14 +212,15 @@ public class BattleView {
 			}
 		}
 	}
-	
+
 	private boolean checkWinCondition() {
 		for (char c : secretWord.toCharArray()) {
-			if (!guessedLetters.contains(c)) return false;
+			if (!guessedLetters.contains(c))
+				return false;
 		}
 		return true;
 	}
-	
+
 	public boolean isExitRequested() {
 		return exitRequested;
 	}
@@ -222,132 +230,149 @@ public class BattleView {
 		if (bgImage != null) {
 			g.drawImage(bgImage, 0, 0, width, height, observer);
 		}
-		
+
 		// 2. UI Bars
-		g.setColor(new Color(0,0,0, 150));
-		g.fillRect(0, 0, width, 80); // Top
-		g.fillRect(0, height - 140, width, 140); // Bottom
-		
+		g.setColor(new Color(0, 0, 0, 150));
+
+		// Top Bar (Health Bars & Puzzle Background)
+		// Increased height to accommodate the puzzle being moved up
+		g.fillRect(0, 0, width, 180);
+
+		// Bottom Bar REMOVED as requested
+
 		// 3. HUD Text
 		g.setColor(Color.WHITE);
 		g.setFont(GameConstants.UI_FONT);
-		
+
 		// Player HP
 		g.setColor(Color.GREEN);
-		g.drawString(playerPet.getName() + " HP: " + playerPet.getCurrentHealth() + "/" + playerPet.getMaxHealth(), 50, 50);
-		
+		g.drawString(playerPet.getName() + " HP: " + playerPet.getCurrentHealth() + "/" + playerPet.getMaxHealth(), 50,
+				50);
+
 		// Enemy HP
 		g.setColor(Color.RED);
-		String enemyText = currentEnemy.getName() + " HP: " + currentEnemy.getCurrentHealth() + "/" + currentEnemy.getMaxHealth();
+		String enemyText = currentEnemy.getName() + " HP: " + currentEnemy.getCurrentHealth() + "/"
+				+ currentEnemy.getMaxHealth();
 		int enemyTextW = g.getFontMetrics().stringWidth(enemyText);
 		g.drawString(enemyText, width - enemyTextW - 50, 50);
-		
-		// Message Center
+
+		// Message Center (Moved slightly down to not overlap with puzzle)
 		if (!message.isEmpty()) {
 			g.setColor(Color.YELLOW);
 			int msgW = g.getFontMetrics().stringWidth(message);
-			g.drawString(message, (width - msgW) / 2, 110);
+			g.drawString(message, (width - msgW) / 2, 210);
 		}
-		
+
 		// 4. Draw Characters
+		// Y Position: Kept as height - 380 based on your feedback that the Hangpie
+		// position was good.
+		int charSize = 320;
+		int floorY = height - 380;
+
 		// Enemy (Right)
-		int charSize = 350;
 		int enemyX = width - charSize - 100;
-		int floorY = height - 250; // Approximate floor level
-		
 		Image enemyImg = currentEnemy.getCurrentImage();
 		if (enemyImg != null) {
-			// We scale GIFs in paint for consistency if they are static, but animation requires observer
 			g.drawImage(enemyImg, enemyX, floorY, charSize, charSize, observer);
+		} else {
+			// Debug placeholder if image fails
+			g.setColor(Color.RED);
+			g.fillRect(enemyX, floorY, 100, 100);
+			g.setColor(Color.WHITE);
+			g.drawString("Enemy Missing", enemyX, floorY);
 		}
-		
+
 		// Player (Left)
-		// We now use the actual Hangpie GIF logic
+		int playerX = 100;
 		Image playerImg = playerPet.getCurrentImage();
 		if (playerImg != null) {
-			// Flip image for player (optional, but standard is facing right)
-			// Drawing normally for now
-			g.drawImage(playerImg, 100, floorY, charSize, charSize, observer);
+			g.drawImage(playerImg, playerX, floorY, charSize, charSize, observer);
 		}
-		
-		// 5. Word Puzzle
+
+		// 5. Word Puzzle (Moved to TOP)
 		drawWordPuzzle(g, width, height, observer);
-		
+
 		// 6. End Game Overlay
 		if (battleOver) {
 			drawEndScreen(g, width, height);
 		}
 	}
-	
+
 	private void drawWordPuzzle(Graphics2D g, int width, int height, ImageObserver obs) {
-		int startY = height - 110;
 		int spacing = 60;
-		
+
+		// Move to TOP of screen
+		int clueY = 100;
+		int lettersY = 150;
+
 		// Clue
 		g.setColor(Color.CYAN);
 		g.setFont(GameConstants.SUBTITLE_FONT);
-		g.drawString("CLUE: " + clue, 50, height - 145);
-		
-		// Calculate centered position
+		String clueText = "CLUE: " + clue;
+		// Centering the clue
+		int clueW = g.getFontMetrics().stringWidth(clueText);
+		g.drawString(clueText, (width - clueW) / 2, clueY);
+
+		// Calculate centered position for letters
 		int totalWidth = secretWord.length() * spacing;
 		int startX = (width - totalWidth) / 2;
-		
+
 		int currentX = startX;
-		
+
 		for (char c : secretWord.toCharArray()) {
 			if (guessedLetters.contains(c)) {
 				// Draw Letter Asset
 				String letterPath = "images/utilities/letters/" + c + ".png";
-				Image letterImg = AssetLoader.loadImage(letterPath, 50, 50);
+				Image letterImg = AssetLoader.loadImage(letterPath, 40, 40);
 				if (letterImg != null) {
-					g.drawImage(letterImg, currentX, startY, 50, 50, obs);
+					g.drawImage(letterImg, currentX, lettersY - 30, 40, 40, obs);
 				} else {
 					g.setColor(Color.WHITE);
-					g.drawString(String.valueOf(c), currentX + 15, startY + 35);
+					g.drawString(String.valueOf(c), currentX + 10, lettersY);
 				}
 			} else {
 				// Draw Underscore
 				g.setColor(Color.WHITE);
-				g.fillRect(currentX, startY + 40, 50, 5);
+				g.fillRect(currentX, lettersY + 5, 40, 4);
 			}
 			currentX += spacing;
 		}
 	}
-	
+
 	private void drawEndScreen(Graphics2D g, int width, int height) {
 		// Dim background
 		g.setColor(new Color(0, 0, 0, 200));
 		g.fillRect(0, 0, width, height);
-		
+
 		g.setFont(GameConstants.HEADER_FONT);
 		FontMetrics fm = g.getFontMetrics();
-		
+
 		if (playerWon) {
 			g.setColor(Color.GREEN);
 			String title = "VICTORY!";
-			g.drawString(title, (width - fm.stringWidth(title))/2, height/2 - 50);
-			
+			g.drawString(title, (width - fm.stringWidth(title)) / 2, height / 2 - 50);
+
 			g.setFont(GameConstants.UI_FONT);
 			g.setColor(Color.YELLOW);
 			String rewardMsg = "You earned " + goldReward + " Gold!";
-			g.drawString(rewardMsg, (width - g.getFontMetrics().stringWidth(rewardMsg))/2, height/2);
-			
+			g.drawString(rewardMsg, (width - g.getFontMetrics().stringWidth(rewardMsg)) / 2, height / 2);
+
 			g.setColor(Color.WHITE);
 			g.setFont(GameConstants.BUTTON_FONT);
 			String opt1 = "[ENTER] Next Battle";
 			String opt2 = "[ESC] Main Menu";
-			g.drawString(opt1, (width - g.getFontMetrics().stringWidth(opt1))/2, height/2 + 80);
-			g.drawString(opt2, (width - g.getFontMetrics().stringWidth(opt2))/2, height/2 + 120);
-			
+			g.drawString(opt1, (width - g.getFontMetrics().stringWidth(opt1)) / 2, height / 2 + 80);
+			g.drawString(opt2, (width - g.getFontMetrics().stringWidth(opt2)) / 2, height / 2 + 120);
+
 		} else {
 			g.setColor(Color.RED);
 			String title = "YOU DIED";
-			g.drawString(title, (width - fm.stringWidth(title))/2, height/2 - 50);
-			
+			g.drawString(title, (width - fm.stringWidth(title)) / 2, height / 2 - 50);
+
 			g.setFont(GameConstants.UI_FONT);
 			g.setColor(Color.WHITE);
 			String opt = "Press [ENTER] or [ESC] to Return";
-			g.drawString(opt, (width - g.getFontMetrics().stringWidth(opt))/2, height/2 + 50);
+			g.drawString(opt, (width - g.getFontMetrics().stringWidth(opt)) / 2, height / 2 + 50);
 		}
 	}
 }
