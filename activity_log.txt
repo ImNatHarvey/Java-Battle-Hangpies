@@ -112,3 +112,10 @@
 [2025-11-20 01:09:58] | player123 | Logged in successfully.
 [2025-11-20 01:10:03] | player123 | Bought King from the Shop for 300.0G.
 [2025-11-20 01:20:51] | player123 | Logged in successfully.
+[2025-11-20 01:32:42] | player123 | Logged in successfully.
+[2025-11-20 01:37:06] | player123 | Logged in successfully.
+[2025-11-20 01:42:37] | player123 | Logged in successfully.
+[2025-11-20 01:45:55] | player123 | Logged in successfully.
+[2025-11-20 01:46:21] | player123 | Logged in successfully.
+[2025-11-20 01:46:54] | player123 | Logged in successfully.
+[2025-11-20 01:47:26] | player123 | Logged in successfully.

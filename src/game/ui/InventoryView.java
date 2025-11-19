@@ -7,6 +7,7 @@ import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +53,7 @@ public class InventoryView {
         cardBackground = AssetLoader.loadImage(cardPath, 300, 400); 
     }
     
+    // Reverted: Removed ImageObserver to fix flickering
     public void render(Graphics2D g, int width, int height) {
         // 1. Draw Background (Static)
         if (background != null) {
@@ -165,13 +167,13 @@ public class InventoryView {
     		g.drawRect(x, y, w, h);
     	}
     	
-    	// C. Draw Hangpie Image with Uniform Scaling (No Type-Based Scaling)
+    	// C. Draw Hangpie Image
     	String imageName = pet.getImageName();
     	String imgPath;
     	
-    	// Standard uniform size for all
-    	int imgW = 120; 
-    	int imgH = 120; 
+    	// SCALED LARGER
+    	int imgW = 170; 
+    	int imgH = 170; 
     	
     	// Path resolution
     	if (imageName != null && (imageName.contains(".png") || imageName.contains(".gif") || imageName.contains(".jpg"))) {
@@ -189,13 +191,19 @@ public class InventoryView {
     	
     	if (petImg != null) {
     		int imgX = x + (w - imgW) / 2;
+    		
     		// Center vertically in the top portion of the card
-    		int centerY = y + 100; 
+            // ADJUST THIS VALUE TO MOVE IMAGE UP/DOWN (Lower value = higher up)
+            // Original was 100. Changed to 85 to move image up away from text.
+    		int centerY = y + 50; 
     		int imgY = centerY - (imgH / 2);
     		
     		// Ensure it doesn't go too high if the image is very tall
-    		if (imgY < y + 10) imgY = y + 10;
+    		if (imgY < y + 5) imgY = y + 5;
     		
+    		// FLICKER FIX: Use Nearest Neighbor, but DO NOT pass observer (pass null)
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+            
     		g.drawImage(petImg, imgX, imgY, imgW, imgH, null);
     	}
     	

@@ -211,6 +211,7 @@ public class GameWindow extends Frame implements Runnable {
                 renderMenu(g);
                 break;
             case INVENTORY:
+                // Reverted: Removed 'gameCanvas' (observer) to fix flickering
                 inventoryView.render(g, gameCanvas.getWidth(), gameCanvas.getHeight());
                 break;
             case PLAYING:
