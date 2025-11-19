@@ -42,12 +42,27 @@ public class Hangpie extends Character implements Comparable<Hangpie>
 	// --- Animation Methods ---
 	
 	public void setAnimationState(AnimState state) {
-		this.currentAnimState = state;
+		if (this.currentAnimState != state) {
+			this.currentAnimState = state;
+			
+			// Fix: Flush the image to reset GIF animation when switching to an action
+			if (state == AnimState.ATTACK || state == AnimState.DAMAGE || state == AnimState.DEATH) {
+				Image img = getCurrentImage();
+				if (img != null) {
+					img.flush();
+				}
+			}
+		}
 	}
 	
 	public Image getCurrentImage() {
+		return getImageForState(this.currentAnimState);
+	}
+	
+	// Helper to resolve path based on state
+	private Image getImageForState(AnimState state) {
 		String fileName = "idle.gif";
-		switch(currentAnimState) {
+		switch(state) {
 			case ATTACK: fileName = "attack.gif"; break;
 			case DAMAGE: fileName = "damage.gif"; break;
 			case DEATH: fileName = "death.gif"; break;
@@ -59,6 +74,13 @@ public class Hangpie extends Character implements Comparable<Hangpie>
 		
 		// Use AssetLoader to get the GIF (returns original size/toolkit image for animation)
 		return AssetLoader.loadImage(fullPath, -1, -1); 
+	}
+	
+	// Preloads all assets to prevent lag/skipping on first use
+	public void preloadAssets() {
+		for (AnimState state : AnimState.values()) {
+			getImageForState(state);
+		}
 	}
 	
 	// --- Existing Methods ---
