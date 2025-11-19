@@ -5,32 +5,56 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;
 import java.io.IOException;
+import javax.swing.ImageIcon; // Useful for loading GIFs synchronously
 
 public class AssetLoader {
 
+    // Helper component to use MediaTracker
+    private static final Component component = new Component() {};
+    private static final MediaTracker tracker = new MediaTracker(component);
+    private static int trackerId = 0;
+
     public static Image loadImage(String path, int width, int height) {
-        // Special handling for GIFs to preserve animation
-        if (path.toLowerCase().endsWith(".gif")) {
-            Image gif = Toolkit.getDefaultToolkit().createImage(path);
-            // Scaling GIFs in AWT can be tricky; we return it as-is 
-            // and let drawImage handle the scaling in the paint method.
-            return gif; 
-        }
+        Image image = null;
 
         try {
-            File file = new File(path);
-            if (file.exists()) {
-                BufferedImage original = ImageIO.read(file);
-                // Scale static images immediately for better performance
-                return original.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+            // Special handling for GIFs to preserve animation
+            if (path.toLowerCase().endsWith(".gif")) {
+                // Toolkit creates the image, but doesn't load data immediately
+                image = Toolkit.getDefaultToolkit().createImage(path);
             } else {
-                System.err.println("Asset not found: " + path);
-                return generatePlaceholder(width, height, Color.GRAY, "Missing: " + file.getName());
+                File file = new File(path);
+                if (file.exists()) {
+                    BufferedImage original = ImageIO.read(file);
+                    if (original != null) {
+                        image = original.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+                    }
+                }
             }
+
+            if (image == null) {
+                System.err.println("Asset not found or format unsupported: " + path);
+                return generatePlaceholder(width, height, Color.GRAY, "Missing: " + new File(path).getName());
+            }
+
+            // Wait for the image to fully load
+            synchronized (tracker) {
+                tracker.addImage(image, trackerId);
+                try {
+                    tracker.waitForID(trackerId);
+                } catch (InterruptedException e) {
+                    System.err.println("Interrupted while loading image: " + path);
+                }
+                tracker.removeImage(image, trackerId);
+                trackerId++;
+            }
+
         } catch (IOException e) {
             System.err.println("Error loading image: " + path);
             return generatePlaceholder(width, height, Color.RED, "Error");
         }
+
+        return image;
     }
 
     private static Image generatePlaceholder(int width, int height, Color color, String text) {
