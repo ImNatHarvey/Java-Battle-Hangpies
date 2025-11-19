@@ -1,0 +1,2 @@
+// uniqueId|ownerUsername|productId|customName|level
+7cd63f67-c0a2-4ee9-b84e-416c3add970f|player1|HP-002|Armored Hangpie|1

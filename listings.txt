@@ -1,0 +1,2 @@
+// FORMAT: uniquePetId|sellerUsername|price|productId|petName|petLevel|petHealth|petAttack|description
+377baaf5-9155-4cea-8a38-dd4b18ce9ea5|player02|100.0|HP-001|Regular Hangpie|1|50|3|A reliable and friendly companion.

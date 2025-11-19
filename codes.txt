@@ -1,0 +1,7 @@
+// Format: codeString|goldValue|isUsed
+ZSOF-CL86-A4LD|600.0|false
+FCC8-5P7X-CXJE|600.0|false
+CCCC-DDDD-0001|500.0|false
+AAAA-BBBB-0001|100.0|true
+AAAA-BBBB-0002|100.0|true
+PNHP-OVJQ-6OV6|600.0|false

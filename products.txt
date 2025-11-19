@@ -1,0 +1,5 @@
+// Format: hangpieID|name|description|price|maxHealth|level|attackPower
+HP-002|Armored Hangpie|A tough companion with extra defense.|250.0|80|1|2
+HP-001|Regular Hangpie|A reliable and friendly companion.|100.0|50|1|3
+HP-004|Premium Hangpie|An expensive and high-maintenance companion.|900.0|90|1|9
+HP-003|Switfie Hangpie|A quick and agile companion.|300.0|40|1|1
