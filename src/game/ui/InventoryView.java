@@ -6,7 +6,9 @@ import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Rectangle;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import game.GameConstants;
 import models.Hangpie;
@@ -19,8 +21,12 @@ public class InventoryView {
     private Image cardBackground; // Using titlecover.png as the placeholder/card bg
     private Rectangle backButtonBounds;
     
+    // Cache for pet images to prevent flickering (GIFs need persistent instances to animate)
+    private Map<String, Image> petImageCache;
+    
     public InventoryView(User user) {
         this.user = user;
+        this.petImageCache = new HashMap<>();
         loadAssets();
     }
     
@@ -109,8 +115,28 @@ public class InventoryView {
     	g.drawRect(x, y, w, h);
     	
     	// B. Draw Hangpie Image (Centered in top half)
-    	String imgPath = GameConstants.HANGPIE_DIR + pet.getImageName();
-    	Image petImg = AssetLoader.loadImage(imgPath, 120, 120);
+    	String imageName = pet.getImageName();
+    	String imgPath;
+    	
+    	// Check if it is a legacy file (has extension) or a new folder type
+    	if (imageName != null && (imageName.contains(".png") || imageName.contains(".gif") || imageName.contains(".jpg"))) {
+    		// Old behavior: loads specific file
+    		imgPath = GameConstants.HANGPIE_DIR + imageName;
+    	} else {
+    		// New behavior: treats imageName as a folder name and looks for idle.gif
+    		imgPath = GameConstants.HANGPIE_DIR + imageName + "/idle.gif";
+    	}
+    	
+    	// Check Cache First
+    	Image petImg = petImageCache.get(imgPath);
+    	
+    	// If not in cache, load it and store it
+    	if (petImg == null) {
+    		petImg = AssetLoader.loadImage(imgPath, 120, 120);
+    		if (petImg != null) {
+    			petImageCache.put(imgPath, petImg);
+    		}
+    	}
     	
     	if (petImg != null) {
     		int imgX = x + (w - 120) / 2;

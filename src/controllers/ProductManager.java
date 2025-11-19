@@ -34,7 +34,8 @@ public class ProductManager
 					continue;
 				}
 
-				String[] parts = line.split("\\|");
+				// Use limit -1 to ensure empty trailing strings are included (though rare for products)
+				String[] parts = line.split("\\|", -1);
 
 				if (parts.length < 6)
 				{

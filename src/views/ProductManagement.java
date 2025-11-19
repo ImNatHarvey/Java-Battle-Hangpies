@@ -92,7 +92,7 @@ public class ProductManagement
 			System.out.print("Enter Attack Power (e.g., 10): ");
 			int attackPower = Integer.parseInt(scanner.nextLine().trim());
 			
-			// New Image Selection
+			// New Image Selection (Selects Folder Name)
 			String imageName = selectImageFile();
 
 			Hangpie newProduct = new Hangpie(id, name, description, price, maxHealth, level, attackPower, imageName);
@@ -205,18 +205,19 @@ public class ProductManagement
 	}
 	
 	/**
-	 * Scans the images/hangpies folder and asks the user to select one.
-	 * @return The filename of the selected image.
+	 * Scans the images/hangpies folder and asks the user to select a SUBFOLDER (Type).
+	 * @return The name of the selected folder (e.g., "crystal").
 	 */
 	private static String selectImageFile() {
-		System.out.println("\n--- Select Hangpie Image ---");
+		System.out.println("\n--- Select Hangpie Type (Folder) ---");
 		
 		File folder = new File(GameConstants.HANGPIE_DIR);
-		File[] fileList = folder.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
+		// Filter for directories only (e.g., crystal, ice, dude)
+		File[] fileList = folder.listFiles(File::isDirectory);
 		
 		if (fileList == null || fileList.length == 0) {
-			System.out.println("No images found in " + GameConstants.HANGPIE_DIR);
-			return "default.png";
+			System.out.println("No asset folders found in " + GameConstants.HANGPIE_DIR);
+			return "default";
 		}
 		
 		for (int i = 0; i < fileList.length; i++) {
@@ -224,12 +225,13 @@ public class ProductManagement
 		}
 		
 		while (true) {
-			System.out.print("Enter number to select image: ");
+			System.out.print("Enter number to select asset type: ");
 			try {
 				String input = scanner.nextLine().trim();
 				int choice = Integer.parseInt(input);
 				
 				if (choice > 0 && choice <= fileList.length) {
+					// Return the folder name. The view will automatically append /idle.gif
 					return fileList[choice - 1].getName();
 				} else {
 					System.out.println("Invalid number.");

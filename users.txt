@@ -1,4 +1,3 @@
 // FORMAT: username|password|isAdmin|firstName|lastName|contactNum|goldBalance|worldLvl|progressLvl
-player02|password|false|Player 2|Player 2|09127774547|0.0|1|1
-player1|password|false|Juanito|Dela Cruz|09987654321|250.0|1|1
 admin|admin123|true|Admin|User|09123456789|0.0|1|1
+player123|password123|false|player|password|09060585188|8729.0|1|1

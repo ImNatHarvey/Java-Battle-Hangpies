@@ -71,3 +71,27 @@
 [2025-11-19 19:53:43] | admin | Logged in successfully.
 [2025-11-19 20:03:28] | admin | Logged in successfully.
 [2025-11-19 20:06:16] | player1 | Logged in successfully.
+[2025-11-19 23:12:52] | admin | Logged in successfully.
+[2025-11-19 23:16:42] | player1 | Logged in successfully.
+[2025-11-19 23:17:19] | admin | Logged in successfully.
+[2025-11-19 23:17:53] | player1 | Logged in successfully.
+[2025-11-19 23:18:29] | player1 | Bought Regular Hangpie from player02 for 100.0G.
+[2025-11-19 23:18:29] | player02 | Sold Regular Hangpie to player1 for 100.0G.
+[2025-11-19 23:20:51] | admin | Logged in successfully.
+[2025-11-19 23:22:15] | player1 | Logged in successfully.
+[2025-11-19 23:25:00] | player123 | Logged in successfully.
+[2025-11-19 23:35:30] | player123 | Logged in successfully.
+[2025-11-19 23:36:12] | admin | Logged in successfully.
+[2025-11-19 23:40:48] | player123 | Logged in successfully.
+[2025-11-19 23:41:18] | admin | Logged in successfully.
+[2025-11-19 23:47:19] | player123 | Logged in successfully.
+[2025-11-19 23:48:36] | admin | Logged in successfully.
+[2025-11-19 23:50:16] | player123 | Logged in successfully.
+[2025-11-19 23:51:51] | player123 | Bought Dude from the Shop for 100.0G.
+[2025-11-19 23:52:32] | player123 | Bought Huntress from the Shop for 300.0G.
+[2025-11-19 23:52:37] | player123 | Bought Icy from the Shop for 350.0G.
+[2025-11-19 23:52:40] | player123 | Bought Owl from the Shop for 400.0G.
+[2025-11-19 23:53:56] | player123 | Bought Crystal from the Shop for 120.0G.
+[2025-11-19 23:58:32] | admin | Logged in successfully.
+[2025-11-20 00:00:59] | admin | Logged in successfully.
+[2025-11-20 00:02:37] | player123 | Logged in successfully.

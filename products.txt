@@ -1,6 +1,6 @@
 // FORMAT: hangpieID|name|description|price|maxHealth|level|attackPower|imageName
-HP-002|Armored Hangpie|A tough companion with extra defense.|250.0|80|1|2|golem.png
-HP-001|Regular Hangpie|A reliable and friendly companion.|100.0|50|1|3|fox.png
-HP-004|Premium Hangpie|An expensive and high-maintenance companion.|900.0|90|1|9|dragon.png
-HP-003|Switfie Hangpie|A quick and agile companion.|300.0|40|1|1|unicorn.png
-HP-005|Ariel Hangpie|The glorious king.|999.0|99|1|99|serpent.png
+HP-002|Dude|Just a dude.|150.0|70|1|15|dude
+HP-001|Crystal|Crystal golem|100.0|80|1|10|crystal
+HP-004|Icy|Ice golem.|350.0|100|1|15|ice
+HP-003|Huntress|Amazonian huntress.|300.0|70|1|13|huntress
+HP-005|Owl|Mysterious.|400.0|90|1|20|owl

@@ -37,10 +37,12 @@ public class ListingManager
 					continue;
 				}
 				
-				String[] parts = line.split("\\|");
+				// CRITICAL FIX: Use limit -1 to keep empty strings if description (last field) is empty
+				String[] parts = line.split("\\|", -1);
 
 				if (parts.length < 9)
 				{
+					System.out.println("Skipping corrupt listing: " + line);
 					continue;
 				}
 				

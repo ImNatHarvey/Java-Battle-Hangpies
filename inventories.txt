@@ -1,2 +1,6 @@
 // uniqueId|ownerUsername|productId|customName|level
-7cd63f67-c0a2-4ee9-b84e-416c3add970f|player1|HP-002|Armored Hangpie|1
+1d5436e1-0356-45cf-94f5-1963152a7fcf|player123|HP-001|Dude|1
+ad38ea36-3415-45ac-9552-e6d2ec88eea4|player123|HP-003|Huntress|1
+97842b26-cf10-4b63-a6b6-cd159b65cfc0|player123|HP-004|Icy|1
+edb361ae-3a56-4f06-8a58-da813526d205|player123|HP-005|Owl|1
+1473322b-49e4-461b-8f9a-6949a6bd8d73|player123|HP-002|Crystal|5
