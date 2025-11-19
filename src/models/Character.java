@@ -61,7 +61,7 @@ public abstract class Character
 		return attackPower;
 	}
 
-	//Setter Method
+	// Setter Method
 	public void setName(String name)
 	{
 		this.name = name;
@@ -75,6 +75,15 @@ public abstract class Character
 	public void setMaxHealth(int maxHealth)
 	{
 		this.maxHealth = maxHealth;
+	}
+	
+	// --- NEWLY ADDED METHOD TO FIX ERROR ---
+	public void setCurrentHealth(int health) 
+	{
+		this.currentHealth = health;
+		if (this.currentHealth > this.maxHealth) {
+			this.currentHealth = this.maxHealth;
+		}
 	}
 	
 	public void setAttackPower(int attackPower)

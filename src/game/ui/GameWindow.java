@@ -1,6 +1,8 @@
 package game.ui;
 
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -9,6 +11,7 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferStrategy;
 
 import game.GameConstants;
+import models.Hangpie;
 import models.User;
 import utils.AssetLoader;
 
@@ -18,28 +21,32 @@ public class GameWindow extends Frame implements Runnable {
 	private Canvas gameCanvas;
 	private Thread gameThread;
 
-// State Management
-	private enum GameState {
+	// State Management
+	public enum GameState {
 		MENU, INVENTORY, PLAYING
 	}
 
 	private GameState currentState;
 
-// Views
+	// Views
 	private InventoryView inventoryView;
+	private BattleView battleView;
 
-// Assets
+	// Game Data
+	private Hangpie equippedHangpie = null; 
+
+	// Assets
 	private Image background;
 	private Image titleImage;
 	private Image titleCoverImage;
 
-// Dimensions
+	// Dimensions
 	private final int COVER_WIDTH = 980;
 	private final int COVER_HEIGHT = 140;
 	private final int TITLE_WIDTH = 900;
 	private final int TITLE_HEIGHT = 100;
 
-// Menu State
+	// Menu State
 	private String[] options = { "Play Game", "Inventory", "Exit Game" };
 	private volatile int selectedOption = -1;
 	private Rectangle[] menuBounds;
@@ -47,9 +54,8 @@ public class GameWindow extends Frame implements Runnable {
 	public GameWindow(User user) {
 		this.currentUser = user;
 		this.menuBounds = new Rectangle[options.length];
-		this.currentState = GameState.MENU; // Start at Menu
+		this.currentState = GameState.MENU;
 
-		// Initialize Views
 		this.inventoryView = new InventoryView(user);
 
 		setupWindow();
@@ -67,34 +73,27 @@ public class GameWindow extends Frame implements Runnable {
 		setLocationRelativeTo(null);
 		setBackground(Color.BLACK);
 
-		// FIX: Override update() to prevent AWT from clearing the background
-		// This prevents flickering when animated GIFs trigger repaints
 		gameCanvas = new Canvas() {
 			private static final long serialVersionUID = 1L;
-
 			@Override
-			public void update(Graphics g) {
-				// Do nothing. We handle clearing in the render loop.
-			}
-
+			public void update(Graphics g) {} 
 			@Override
-			public void paint(Graphics g) {
-				// Do nothing. Active rendering handles this.
-			}
+			public void paint(Graphics g) {}
 		};
 
 		gameCanvas.setPreferredSize(new Dimension(GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT));
 		gameCanvas.setFocusable(true);
 		gameCanvas.setBackground(Color.BLACK);
-		gameCanvas.setIgnoreRepaint(true); // Further disable automatic repaints
+		gameCanvas.setIgnoreRepaint(true);
 
+		// --- Input Listeners ---
+		
 		MouseAdapter mouseHandler = new MouseAdapter() {
 			@Override
 			public void mouseMoved(MouseEvent e) {
 				if (currentState == GameState.MENU) {
 					checkMenuHover(e.getX(), e.getY());
 				} else if (currentState == GameState.INVENTORY) {
-					// Pass mouse move events to inventory to handle hover effects
 					inventoryView.handleMouseMove(e.getX(), e.getY());
 				}
 			}
@@ -106,8 +105,11 @@ public class GameWindow extends Frame implements Runnable {
 						handleMenuClick(selectedOption);
 					}
 				} else if (currentState == GameState.INVENTORY) {
-					if (inventoryView.handleMouseClick(e.getX(), e.getY())) {
-						currentState = GameState.MENU; // Go back to menu
+					String action = inventoryView.handleMouseClick(e.getX(), e.getY());
+					if (action.equals("BACK")) {
+						currentState = GameState.MENU;
+					} else if (action.equals("SELECT")) {
+						equippedHangpie = inventoryView.getSelectedPet();
 					}
 				}
 			}
@@ -115,11 +117,27 @@ public class GameWindow extends Frame implements Runnable {
 			@Override
 			public void mouseWheelMoved(MouseWheelEvent e) {
 				if (currentState == GameState.INVENTORY) {
-					// Forward scroll event to inventory view
 					inventoryView.handleMouseScroll(e.getWheelRotation());
 				}
 			}
 		};
+
+		gameCanvas.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (currentState == GameState.PLAYING && battleView != null) {
+					// Pass Key Press to Battle View
+					battleView.handleKeyPress(e.getKeyCode(), e.getKeyChar());
+					
+					// FIX: Use isExitRequested() instead of isBattleOver()
+					// This ensures we wait for the player to press ENTER/ESC on the victory screen
+					if (battleView.isExitRequested()) {
+						currentState = GameState.MENU; 
+						battleView = null; // Reset battle view to free resources
+					}
+				}
+			}
+		});
 
 		gameCanvas.addMouseListener(mouseHandler);
 		gameCanvas.addMouseMotionListener(mouseHandler);
@@ -150,15 +168,28 @@ public class GameWindow extends Frame implements Runnable {
 	}
 
 	private void handleMenuClick(int option) {
-		if (option == 0) {
-			System.out.println("[Game] Action: Play Game clicked!");
-			// TODO: Implement Play State later
+		if (option == 0) { 
+			// PLAY GAME
+			if (equippedHangpie == null) {
+				System.out.println("[Game] Cannot start: No Hangpie equipped.");
+				currentState = GameState.INVENTORY;
+			} else {
+				startBattle();
+			}
+			
 		} else if (option == 1) {
-			System.out.println("[Game] Switching to Inventory View...");
+			// INVENTORY
 			currentState = GameState.INVENTORY;
+			
 		} else if (option == 2) {
+			// EXIT
 			stop();
 		}
+	}
+
+	private void startBattle() {
+		battleView = new BattleView(currentUser, equippedHangpie);
+		currentState = GameState.PLAYING;
 	}
 
 	private void loadAssets() {
@@ -173,16 +204,14 @@ public class GameWindow extends Frame implements Runnable {
 	}
 
 	private synchronized void start() {
-		if (isRunning)
-			return;
+		if (isRunning) return;
 		isRunning = true;
 		gameThread = new Thread(this);
 		gameThread.start();
 	}
 
 	private synchronized void stop() {
-		if (!isRunning)
-			return;
+		if (!isRunning) return;
 		isRunning = false;
 		try {
 			gameThread.join();
@@ -208,10 +237,11 @@ public class GameWindow extends Frame implements Runnable {
 			lastTime = now;
 
 			if (delta >= 1) {
-				// update(); // Logic updates can go here
+				if (currentState == GameState.PLAYING && battleView != null) {
+					battleView.update();
+				}
 				delta--;
 			}
-
 			render(bs);
 		}
 	}
@@ -221,17 +251,17 @@ public class GameWindow extends Frame implements Runnable {
 		g.setColor(Color.BLACK);
 		g.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
 
-		// Render based on State
 		switch (currentState) {
 		case MENU:
 			renderMenu(g);
 			break;
 		case INVENTORY:
-			// Pass gameCanvas as observer to support animations
 			inventoryView.render(g, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
 			break;
 		case PLAYING:
-			// renderGameplay(g);
+			if (battleView != null) {
+				battleView.render(g, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
+			}
 			break;
 		}
 
@@ -241,12 +271,10 @@ public class GameWindow extends Frame implements Runnable {
 	}
 
 	private void renderMenu(Graphics2D g) {
-		// 1. Background
 		if (background != null) {
 			g.drawImage(background, 0, 0, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
 		}
 
-		// 2. Title Section
 		int bannerY = 100;
 		if (titleCoverImage != null) {
 			int coverX = (gameCanvas.getWidth() - COVER_WIDTH) / 2;
@@ -259,7 +287,6 @@ public class GameWindow extends Frame implements Runnable {
 			g.drawImage(titleImage, textX, textY, TITLE_WIDTH, TITLE_HEIGHT, null);
 		}
 
-		// Draw Subtitle
 		g.setFont(GameConstants.SUBTITLE_FONT);
 		g.setColor(GameConstants.TEXT_COLOR);
 		FontMetrics fm = g.getFontMetrics();
@@ -268,8 +295,22 @@ public class GameWindow extends Frame implements Runnable {
 		int subX = (gameCanvas.getWidth() - subWidth) / 2;
 		int subY = bannerY + COVER_HEIGHT + 25;
 		g.drawString(subtitle, subX, subY);
+		
+		// Draw Equipped Status
+		if (equippedHangpie != null) {
+			String equipText = "Equipped: " + equippedHangpie.getName() + " (Lvl " + equippedHangpie.getLevel() + ")";
+			g.setColor(Color.GREEN);
+			g.setFont(GameConstants.BUTTON_FONT);
+			int eqWidth = g.getFontMetrics().stringWidth(equipText);
+			g.drawString(equipText, (gameCanvas.getWidth() - eqWidth) / 2, subY + 30);
+		} else {
+			String equipText = "No Hangpie Equipped! Please go to Inventory.";
+			g.setColor(Color.RED);
+			g.setFont(GameConstants.BUTTON_FONT);
+			int eqWidth = g.getFontMetrics().stringWidth(equipText);
+			g.drawString(equipText, (gameCanvas.getWidth() - eqWidth) / 2, subY + 30);
+		}
 
-		// 3. Draw Menu Options
 		drawMenuOptions(g);
 	}
 

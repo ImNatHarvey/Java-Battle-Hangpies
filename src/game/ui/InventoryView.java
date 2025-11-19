@@ -24,19 +24,18 @@ public class InventoryView {
 	private Image cardBackground;
 	private Rectangle backButtonBounds;
 
-// Scrolling & Selection
+	// Scrolling & Selection
 	private int scrollY = 0;
 	private Hangpie selectedPet = null;
-	private boolean isBackHovered = false; // Track hover state
+	private boolean isBackHovered = false;
 
-// Layout Constants
+	// Layout Constants
 	private final int CARD_WIDTH = 220;
 	private final int CARD_HEIGHT = 320;
 	private final int GAP = 40;
 	private final int START_X = 100;
-	private final int START_Y = 150; // Start drawing items below header
+	private final int START_Y = 150;
 
-// Cache for pet images
 	private Map<String, Image> petImageCache;
 
 	public InventoryView(User user) {
@@ -52,9 +51,12 @@ public class InventoryView {
 		String cardPath = GameConstants.BG_DIR + GameConstants.TITLE_COVER_IMG;
 		cardBackground = AssetLoader.loadImage(cardPath, 300, 400);
 	}
+	
+	public Hangpie getSelectedPet() {
+		return selectedPet;
+	}
 
 	public void render(Graphics2D g, int width, int height, ImageObserver observer) {
-		// 1. Draw Background (Static)
 		if (background != null) {
 			g.drawImage(background, 0, 0, width, height, observer);
 		} else {
@@ -62,12 +64,7 @@ public class InventoryView {
 			g.fillRect(0, 0, width, height);
 		}
 
-		// 2. Draw Inventory Grid (With Clipping)
-		// We set a clip so items don't draw over the Header or the Footer/Back Button
-		// area
 		Shape originalClip = g.getClip();
-
-		// Clip area: x=0, y=100 (below header), width=full, height=until bottom area
 		g.setClip(0, 100, width, height - 200);
 
 		List<Hangpie> inventory = user.getInventory();
@@ -79,17 +76,14 @@ public class InventoryView {
 		} else {
 
 			int x = START_X;
-			int y = START_Y - scrollY; // Apply Scroll Offset
+			int y = START_Y - scrollY;
 
 			for (Hangpie pet : inventory) {
-				// Optimization: Only draw if visible within the clip area
 				if (y + CARD_HEIGHT > 0 && y < height) {
 					drawPetCard(g, pet, x, y, CARD_WIDTH, CARD_HEIGHT, observer);
 				}
 
 				x += CARD_WIDTH + GAP;
-
-				// Wrap to next line if we run out of width
 				if (x + CARD_WIDTH > width - 50) {
 					x = START_X;
 					y += CARD_HEIGHT + GAP;
@@ -97,23 +91,20 @@ public class InventoryView {
 			}
 		}
 
-		// Restore full screen drawing for Header and Buttons
 		g.setClip(originalClip);
 
-		// 3. Draw Header (Drawn AFTER grid to stay on top)
-		// Optional: Semi-transparent background for header to make text pop
+		// Header
 		g.setColor(new Color(0, 0, 0, 150));
 		g.fillRect(0, 0, width, 100);
 
 		g.setFont(GameConstants.HEADER_FONT);
 		g.setColor(Color.WHITE);
-		String title = "MY INVENTORY";
+		String title = "MY INVENTORY - Select to Equip";
 		FontMetrics fm = g.getFontMetrics();
 		int titleX = (width - fm.stringWidth(title)) / 2;
 		g.drawString(title, titleX, 70);
 
-		// 4. Draw Back Button (Footer Area)
-		// Draw background for footer
+		// Footer
 		g.setColor(new Color(0, 0, 0, 150));
 		g.fillRect(0, height - 100, width, 100);
 
@@ -127,25 +118,21 @@ public class InventoryView {
 		int backW = fm.stringWidth(backText);
 		int backH = fm.getHeight();
 
-		// Place button in bottom right based on fixed center
 		int backX = buttonCenterX - (backW / 2);
 		int backY = height - 50;
 
-		// Store bounds for click/hover detection
-		// We make the hit box slightly larger than text for easier clicking
 		backButtonBounds = new Rectangle(backX - 10, backY - fm.getAscent() - 10, backW + 20, backH + 20);
 
 		if (isBackHovered) {
-			g.setColor(GameConstants.SELECTION_COLOR); // Yellow
+			g.setColor(GameConstants.SELECTION_COLOR);
 		} else {
-			g.setColor(Color.WHITE); // White
+			g.setColor(Color.WHITE);
 		}
 
 		g.drawString(backText, backX, backY);
 	}
 
 	private void drawPetCard(Graphics2D g, Hangpie pet, int x, int y, int w, int h, ImageObserver observer) {
-		// A. Draw Card Background
 		if (cardBackground != null) {
 			g.drawImage(cardBackground, x, y, w, h, null);
 		} else {
@@ -153,24 +140,26 @@ public class InventoryView {
 			g.fillRect(x, y, w, h);
 		}
 
-		// B. Selection Highlight Border
 		if (pet == selectedPet) {
-			g.setColor(Color.CYAN);
-			g.setStroke(new BasicStroke(3)); // Thicker border for selection
+			g.setColor(Color.GREEN); // Green for equipped
+			g.setStroke(new BasicStroke(4));
 			g.drawRect(x, y, w, h);
-			g.setStroke(new BasicStroke(1)); // Reset
+			g.setStroke(new BasicStroke(1));
+			
+			// Draw "EQUIPPED" text
+			g.setColor(Color.GREEN);
+			g.setFont(new Font("Monospaced", Font.BOLD, 14));
+			g.drawString("EQUIPPED", x + 10, y + 30);
 		} else {
 			g.setColor(Color.WHITE);
 			g.drawRect(x, y, w, h);
 		}
 
-		// C. Draw Hangpie Image
 		String imageName = pet.getImageName();
 		String imgPath;
 		int imgW = 120;
 		int imgH = 120;
 
-		// Path resolution
 		if (imageName != null
 				&& (imageName.contains(".png") || imageName.contains(".gif") || imageName.contains(".jpg"))) {
 			imgPath = GameConstants.HANGPIE_DIR + imageName;
@@ -178,7 +167,6 @@ public class InventoryView {
 			imgPath = GameConstants.HANGPIE_DIR + imageName + "/idle.gif";
 		}
 
-		// Cache & Draw
 		Image petImg = petImageCache.get(imgPath);
 		if (petImg == null) {
 			petImg = AssetLoader.loadImage(imgPath, imgW, imgH);
@@ -188,17 +176,12 @@ public class InventoryView {
 
 		if (petImg != null) {
 			int imgX = x + (w - imgW) / 2;
-
 			int centerY = y + 80;
 			int imgY = centerY - (imgH / 2);
-
-			if (imgY < y + 10)
-				imgY = y + 10;
-
+			if (imgY < y + 10) imgY = y + 10;
 			g.drawImage(petImg, imgX, imgY, imgW, imgH, observer);
 		}
 
-		// D. Draw Stats Text
 		int textStartY = y + 190;
 
 		g.setColor(Color.YELLOW);
@@ -214,42 +197,27 @@ public class InventoryView {
 		g.setColor(Color.WHITE);
 		g.setFont(new Font("Monospaced", Font.PLAIN, 14));
 		g.drawString("Level: " + pet.getLevel(), x + 15, textStartY + 25);
-		g.drawString("HP: " + pet.getCurrentHealth() + "/" + pet.getMaxHealth(), x + 15, textStartY + 45);
+		g.drawString("HP: " + pet.getMaxHealth(), x + 15, textStartY + 45);
 		g.drawString("Attack: " + pet.getAttackPower(), x + 15, textStartY + 65);
-
-		// E. Draw Description
-		g.setColor(Color.LIGHT_GRAY);
-		g.setFont(new Font("Monospaced", Font.ITALIC, 12));
-		String desc = pet.getDescription();
-		if (desc != null && desc.length() > 28)
-			desc = desc.substring(0, 25) + "...";
-		if (desc != null)
-			g.drawString(desc, x + 15, textStartY + 95);
 	}
 
-	public boolean handleMouseClick(int mx, int my) {
-		// 1. Check Back Button
+	public String handleMouseClick(int mx, int my) {
 		if (backButtonBounds != null && backButtonBounds.contains(mx, my)) {
-			return true; // Go back
+			return "BACK";
 		}
 
-		// 2. Check Pet Selection
 		int x = START_X;
 		int y = START_Y - scrollY;
 		int width = GameConstants.WINDOW_WIDTH;
 
-		// We need to apply the same logic as render to find where the cards are
 		for (Hangpie pet : user.getInventory()) {
 			Rectangle cardBounds = new Rectangle(x, y, CARD_WIDTH, CARD_HEIGHT);
-
-			// Only allow selection if visible (simple check based on clip area)
-			// Top clip is 100, bottom is Height - 100.
 			boolean isVisible = (y + CARD_HEIGHT > 100) && (y < GameConstants.WINDOW_HEIGHT - 100);
 
 			if (isVisible && cardBounds.contains(mx, my)) {
 				this.selectedPet = pet;
-				System.out.println("[Inventory] Selected: " + pet.getName());
-				return false;
+				System.out.println("[Inventory] Equipped: " + pet.getName());
+				return "SELECT";
 			}
 
 			x += CARD_WIDTH + GAP;
@@ -259,7 +227,7 @@ public class InventoryView {
 			}
 		}
 
-		return false;
+		return "NONE";
 	}
 
 	public void handleMouseMove(int mx, int my) {
@@ -272,16 +240,13 @@ public class InventoryView {
 		int scrollSpeed = 30;
 		scrollY += units * scrollSpeed;
 
-		// Clamp Scrolling logic
 		int totalRows = (int) Math.ceil((double) user.getInventory().size() / 4.0);
 		int totalContentHeight = (totalRows * (CARD_HEIGHT + GAP));
-		// Subtract viewable height to find max scroll
-		int maxScroll = Math.max(0, totalContentHeight - (GameConstants.WINDOW_HEIGHT - 200)); // 200 accounts for
-																								// header/footer
+		int maxScroll = Math.max(0, totalContentHeight - (GameConstants.WINDOW_HEIGHT - 200));
 
 		if (scrollY < 0)
 			scrollY = 0;
 		if (scrollY > maxScroll + 100)
-			scrollY = maxScroll + 100; // Allow a little extra overscroll padding
+			scrollY = maxScroll + 100;
 	}
 }
