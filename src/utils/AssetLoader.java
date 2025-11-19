@@ -5,36 +5,54 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;
 import java.io.IOException;
-import javax.swing.ImageIcon; // Useful for loading GIFs synchronously
+import java.util.HashMap;
+import java.util.Map;
 
 public class AssetLoader {
 
-    // Helper component to use MediaTracker
     private static final Component component = new Component() {};
     private static final MediaTracker tracker = new MediaTracker(component);
     private static int trackerId = 0;
+    
+    // Global Cache to prevent reloading images from disk repeatedly
+    private static final Map<String, Image> imageCache = new HashMap<>();
 
     public static Image loadImage(String path, int width, int height) {
+        // Create a unique key for caching that includes dimensions
+        String cacheKey = path + "_" + width + "_" + height;
+        
+        if (imageCache.containsKey(cacheKey)) {
+            return imageCache.get(cacheKey);
+        }
+        
         Image image = null;
 
         try {
-            // Special handling for GIFs to preserve animation
+            // Special handling for GIFs to preserve animation (Toolkit images are not pre-scaled by us)
+            // We use the raw path as key for GIFs since we don't scale them here
             if (path.toLowerCase().endsWith(".gif")) {
-                // Toolkit creates the image, but doesn't load data immediately
+                if (imageCache.containsKey(path)) {
+                    return imageCache.get(path);
+                }
                 image = Toolkit.getDefaultToolkit().createImage(path);
+                // For GIFs, we cache by path only since we return the original Toolkit image
+                imageCache.put(path, image);
+                // We also put it under the sized key to avoid cache misses logic below
+                imageCache.put(cacheKey, image); 
             } else {
                 File file = new File(path);
                 if (file.exists()) {
                     BufferedImage original = ImageIO.read(file);
                     if (original != null) {
                         image = original.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+                        imageCache.put(cacheKey, image);
                     }
                 }
             }
 
             if (image == null) {
                 System.err.println("Asset not found or format unsupported: " + path);
-                return generatePlaceholder(width, height, Color.GRAY, "Missing: " + new File(path).getName());
+                return generatePlaceholder(width, height, Color.GRAY, "Missing");
             }
 
             // Wait for the image to fully load

@@ -7,7 +7,6 @@ import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Rectangle;
-import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.util.HashMap;
 import java.util.List;
@@ -53,7 +52,6 @@ public class InventoryView {
         cardBackground = AssetLoader.loadImage(cardPath, 300, 400); 
     }
     
-    // Reverted: Removed ImageObserver to fix flickering
     public void render(Graphics2D g, int width, int height) {
         // 1. Draw Background (Static)
         if (background != null) {
@@ -117,25 +115,22 @@ public class InventoryView {
         g.setColor(new Color(0, 0, 0, 150));
         g.fillRect(0, height - 100, width, 100);
         
-        // Logic: Plain "Back" vs "> Back <"
         String backText = isBackHovered ? "> Back <" : "Back";
-        
         g.setFont(GameConstants.BUTTON_FONT);
         fm = g.getFontMetrics();
         
-        // Calculate a fixed center point based on the unhovered "Back" text width.
-        // This anchors the button so "Back" stays in the same visual position.
         int baseWidth = fm.stringWidth("Back");
         int buttonCenterX = (width - 150) - (baseWidth / 2); 
         
         int backW = fm.stringWidth(backText);
         int backH = fm.getHeight();
         
-        // Calculate X to center the current text (hovered or not) around that fixed point
+        // Place button in bottom right based on fixed center
         int backX = buttonCenterX - (backW / 2);
         int backY = height - 50;
         
         // Store bounds for click/hover detection
+        // We make the hit box slightly larger than text for easier clicking
         backButtonBounds = new Rectangle(backX - 10, backY - fm.getAscent() - 10, backW + 20, backH + 20);
         
         if (isBackHovered) {
@@ -170,11 +165,12 @@ public class InventoryView {
     	// C. Draw Hangpie Image
     	String imageName = pet.getImageName();
     	String imgPath;
+    	int imgW = 120; 
+    	int imgH = 120; 
     	
-    	// SCALED LARGER
-    	int imgW = 170; 
-    	int imgH = 170; 
-    	
+    	// Removed specific name checks to clean up code
+        // If you need specific sizing per unit, it's best to standardize the assets
+
     	// Path resolution
     	if (imageName != null && (imageName.contains(".png") || imageName.contains(".gif") || imageName.contains(".jpg"))) {
     		imgPath = GameConstants.HANGPIE_DIR + imageName;
@@ -191,18 +187,13 @@ public class InventoryView {
     	
     	if (petImg != null) {
     		int imgX = x + (w - imgW) / 2;
-    		
-    		// Center vertically in the top portion of the card
-            // ADJUST THIS VALUE TO MOVE IMAGE UP/DOWN (Lower value = higher up)
-            // Original was 100. Changed to 85 to move image up away from text.
-    		int centerY = y + 50; 
+            
+            // CHANGED: Moved up from y+100 to y+80 to fix text overlap
+    		int centerY = y + 80; 
     		int imgY = centerY - (imgH / 2);
-    		
-    		// Ensure it doesn't go too high if the image is very tall
-    		if (imgY < y + 5) imgY = y + 5;
-    		
-    		// FLICKER FIX: Use Nearest Neighbor, but DO NOT pass observer (pass null)
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+            
+            // Ensure it doesn't clip top of card too much
+            if (imgY < y + 10) imgY = y + 10;
             
     		g.drawImage(petImg, imgX, imgY, imgW, imgH, null);
     	}
