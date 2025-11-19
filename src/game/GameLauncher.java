@@ -11,7 +11,6 @@ public class GameLauncher {
             return;
         }
 
-        // Check if user has a Hangpie to battle with
         if (user.getInventory().isEmpty()) {
             System.out.println("*************************************************");
             System.out.println("  You cannot enter the Arena without a Hangpie!  ");
@@ -22,9 +21,6 @@ public class GameLauncher {
 
         System.out.println("Launching Battle Arena...");
         
-        // Launch AWT Window
-        // We run this without blocking the main thread, 
-        // but the console menu loop will naturally wait for input.
         new GameWindow(user);
     }
 }

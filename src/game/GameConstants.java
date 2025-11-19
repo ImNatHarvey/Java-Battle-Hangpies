@@ -14,8 +14,9 @@ public class GameConstants {
     public static final Color ACCENT_COLOR = new Color(231, 76, 60);
     public static final Color BACKGROUND_COLOR = new Color(30, 30, 30); 
     public static final Color TEXT_COLOR = Color.WHITE;
-    public static final Color SELECTION_COLOR = Color.YELLOW; 
+    public static final Color SELECTION_COLOR = Color.YELLOW; // Color for selected item
     
+    // Fonts
     public static final Font HEADER_FONT = new Font("Monospaced", Font.BOLD, 40);
     public static final Font UI_FONT = new Font("Monospaced", Font.BOLD, 24);
     public static final Font BUTTON_FONT = new Font("Monospaced", Font.BOLD, 20);
@@ -29,4 +30,5 @@ public class GameConstants {
     // Assets
     public static final String MAIN_BG = "game_interface.gif"; 
     public static final String TITLE_IMG = "title.png"; 
+    public static final String TITLE_COVER_IMG = "titlecover.png"; // Added Title Background
 }

@@ -20,11 +20,18 @@ public class GameWindow extends Frame implements Runnable {
     // Assets
     private Image background;
     private Image titleImage;
+    private Image titleCoverImage; 
+
+    // Dimensions for Layout Adjustments
+    private final int COVER_WIDTH = 700; 
+    private final int COVER_HEIGHT = 250; 
+    private final int TITLE_WIDTH = 500; 
+    private final int TITLE_HEIGHT = 150; 
 
     // Menu State
     private String[] options = {"Play Game", "Inventory"};
-    private volatile int selectedOption = -1; // -1 means no selection
-    private Rectangle[] menuBounds; // Store hitboxes for the buttons
+    private volatile int selectedOption = -1; 
+    private Rectangle[] menuBounds; 
 
     public GameWindow(User user) {
         this.currentUser = user;
@@ -47,16 +54,13 @@ public class GameWindow extends Frame implements Runnable {
         setLocationRelativeTo(null);
         setBackground(Color.BLACK);
 
-        // Use a Canvas for active rendering
         gameCanvas = new Canvas();
         gameCanvas.setPreferredSize(new Dimension(GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT));
         gameCanvas.setFocusable(true);
         gameCanvas.setBackground(Color.BLACK);
         
-        // IMPORTANT: Ignore OS repaints to prevent flickering
         gameCanvas.setIgnoreRepaint(true);
         
-        // --- MOUSE INPUT HANDLING ---
         MouseAdapter mouseHandler = new MouseAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
@@ -87,14 +91,12 @@ public class GameWindow extends Frame implements Runnable {
     private void checkMouseHover(int mx, int my) {
         boolean found = false;
         for (int i = 0; i < options.length; i++) {
-            // Check collision with the button bounds
             if (menuBounds[i] != null && menuBounds[i].contains(mx, my)) {
                 selectedOption = i;
                 found = true;
                 break;
             }
         }
-        // If mouse isn't over any button, reset selection
         if (!found) {
             selectedOption = -1;
         }
@@ -103,10 +105,8 @@ public class GameWindow extends Frame implements Runnable {
     private void handleMenuClick(int option) {
         if (option == 0) {
             System.out.println("[Game] Action: Play Game clicked!");
-            // TODO: Transition to Battle Scene
         } else if (option == 1) {
             System.out.println("[Game] Action: Inventory clicked!");
-            // TODO: Transition to Inventory Overlay
         }
     }
 
@@ -114,10 +114,11 @@ public class GameWindow extends Frame implements Runnable {
         String bgPath = GameConstants.BG_DIR + GameConstants.MAIN_BG;
         background = AssetLoader.loadImage(bgPath, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
 
-        int titleWidth = 600;
-        int titleHeight = 200;
         String titlePath = GameConstants.BG_DIR + GameConstants.TITLE_IMG;
-        titleImage = AssetLoader.loadImage(titlePath, titleWidth, titleHeight);
+        titleImage = AssetLoader.loadImage(titlePath, TITLE_WIDTH, TITLE_HEIGHT);
+        
+        String titleCoverPath = GameConstants.BG_DIR + GameConstants.TITLE_COVER_IMG;
+        titleCoverImage = AssetLoader.loadImage(titleCoverPath, COVER_WIDTH, COVER_HEIGHT);
     }
 
     private synchronized void start() {
@@ -141,11 +142,9 @@ public class GameWindow extends Frame implements Runnable {
 
     @Override
     public void run() {
-        // Create BufferStrategy for Triple Buffering
         gameCanvas.createBufferStrategy(3);
         BufferStrategy bs = gameCanvas.getBufferStrategy();
 
-        // Game Loop Constants
         final double FPS = 60.0;
         final double TIME_PER_TICK = 1000000000 / FPS;
         long lastTime = System.nanoTime();
@@ -166,32 +165,36 @@ public class GameWindow extends Frame implements Runnable {
     }
 
     private void update() {
-        // Logic updates can go here
     }
 
     private void render(BufferStrategy bs) {
         Graphics2D g = (Graphics2D) bs.getDrawGraphics();
 
-        // Clear screen 
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
 
-        // 1. Draw Background
+        // 1. Background
         if (background != null) {
             g.drawImage(background, 0, 0, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
         }
 
-        // 2. Draw Title
+        // 2. Title Section
+        int bannerY = 50; 
+
+        if (titleCoverImage != null) {
+            int coverX = (gameCanvas.getWidth() - COVER_WIDTH) / 2;
+            g.drawImage(titleCoverImage, coverX, bannerY, COVER_WIDTH, COVER_HEIGHT, null);
+        }
+
         if (titleImage != null) {
-            int x = (gameCanvas.getWidth() - 600) / 2;
-            int y = 50;
-            g.drawImage(titleImage, x, y, 600, 200, null);
+            int textX = (gameCanvas.getWidth() - TITLE_WIDTH) / 2;
+            int textY = bannerY + (COVER_HEIGHT - TITLE_HEIGHT) / 2; 
+            g.drawImage(titleImage, textX, textY, TITLE_WIDTH, TITLE_HEIGHT, null);
         }
 
         // 3. Draw Menu
         drawMenu(g);
 
-        // Clean up and flip the buffer
         g.dispose();
         bs.show();
         
@@ -202,14 +205,13 @@ public class GameWindow extends Frame implements Runnable {
         g.setFont(GameConstants.UI_FONT);
         FontMetrics fm = g.getFontMetrics();
 
-        int startY = 400;
-        int spacing = 50;
+        int startY = 550; 
+        int spacing = 60;
 
         for (int i = 0; i < options.length; i++) {
             String text = options[i];
             boolean isSelected = (i == selectedOption);
             
-            // Hover Effect: Change Color and Add Arrows
             if (isSelected) {
                 g.setColor(GameConstants.SELECTION_COLOR);
                 text = "> " + text + " <";
@@ -219,12 +221,9 @@ public class GameWindow extends Frame implements Runnable {
 
             int textWidth = fm.stringWidth(text);
             int textHeight = fm.getHeight();
-            // Use gameCanvas dimensions for accurate centering
             int x = (gameCanvas.getWidth() - textWidth) / 2;
             int y = startY + (i * spacing);
 
-            // Update Hitbox for Mouse Detection
-            // Note: drawString y is the baseline, so we subtract ascent to get top-left y
             menuBounds[i] = new Rectangle(x, y - fm.getAscent(), textWidth, textHeight);
 
             g.drawString(text, x, y);
