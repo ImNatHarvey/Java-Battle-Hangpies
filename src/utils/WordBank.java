@@ -20,23 +20,38 @@ public class WordBank {
 	private static List<WordData> hardWords = new ArrayList<>();
 	
 	static {
-		// Easy (Level 1-3)
-		easyWords.add(new WordData("JAVA", "A popular programming language"));
-		easyWords.add(new WordData("CLASS", "Blueprint for objects"));
-		easyWords.add(new WordData("OBJECT", "Instance of a class"));
-		easyWords.add(new WordData("LOOP", "Repeats code execution"));
-		easyWords.add(new WordData("ARRAY", "Fixed-size collection"));
+		// --- EASY (Single Words: Animals, Food, Nature) ---
+		easyWords.add(new WordData("BANANA", "A long curved yellow fruit"));
+		easyWords.add(new WordData("GIRAFFE", "The tallest land animal"));
+		easyWords.add(new WordData("PIZZA", "Italian dish with cheese and tomato"));
+		easyWords.add(new WordData("GUITAR", "A musical instrument with strings"));
+		easyWords.add(new WordData("OCEAN", "A large body of salt water"));
+		easyWords.add(new WordData("PENGUIN", "A flightless bird living in ice"));
+		easyWords.add(new WordData("DOCTOR", "Someone who treats sick people"));
+		easyWords.add(new WordData("SOCCER", "Most popular sport in the world"));
+		easyWords.add(new WordData("SUMMER", "The hottest season of the year"));
+		easyWords.add(new WordData("LIBRARY", "A place full of books"));
+		easyWords.add(new WordData("PLANET", "Earth is one of these"));
+		easyWords.add(new WordData("BUTTERFLY", "Insect with colorful wings"));
+		easyWords.add(new WordData("RAINBOW", "Colorful arc in the sky"));
 		
-		// Hard (Level 4+)
-		hardWords.add(new WordData("POLYMORPHISM", "Many forms"));
-		hardWords.add(new WordData("INHERITANCE", "Acquiring properties of parent"));
-		hardWords.add(new WordData("ENCAPSULATION", "Hiding data"));
-		hardWords.add(new WordData("INTERFACE", "Contract of methods"));
-		hardWords.add(new WordData("EXCEPTION", "An error event"));
+		// --- HARD (Phrases, Idioms, Pop Culture) ---
+		hardWords.add(new WordData("PIECE OF CAKE", "Idiom: Something very easy"));
+		hardWords.add(new WordData("BREAK A LEG", "Idiom: Good luck performance"));
+		hardWords.add(new WordData("HARRY POTTER", "The Boy Who Lived"));
+		hardWords.add(new WordData("STAR WARS", "May the Force be with you"));
+		hardWords.add(new WordData("THE LION KING", "Disney movie with Simba"));
+		hardWords.add(new WordData("UP IN THE AIR", "Idiom: Uncertain or unresolved"));
+		hardWords.add(new WordData("JURASSIC PARK", "Movie with dinosaurs"));
+		hardWords.add(new WordData("NEW YORK CITY", "The Big Apple"));
+		hardWords.add(new WordData("ICE CREAM CAKE", "A frozen birthday treat"));
+		hardWords.add(new WordData("UNDER THE WEATHER", "Idiom: Feeling sick"));
+		hardWords.add(new WordData("SPIDER MAN", "Hero bitten by an arachnid"));
 	}
 	
 	public static WordData getRandomWord(int level) {
 		Random rand = new Random();
+		// Use Hard words (Phrases) for levels > 3, otherwise Easy words
 		List<WordData> source = (level > 3) ? hardWords : easyWords;
 		return source.get(rand.nextInt(source.size()));
 	}

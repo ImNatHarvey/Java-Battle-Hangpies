@@ -6,12 +6,13 @@ import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.event.KeyEvent;
 import java.awt.image.ImageObserver;
+import java.io.File;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
 import game.GameConstants;
-import main.Main; // Needed to access global managers for saving import models.Enemy; import models.Hangpie; import models.User; import utils.AssetLoader; import utils.WordBank;
+import main.Main;
 import models.Enemy;
 import models.Hangpie;
 import models.User;
@@ -24,26 +25,33 @@ public class BattleView {
 	private Hangpie playerPet;
 	private Enemy currentEnemy;
 
-// Battle State
+	// Battle State
 	private String secretWord;
 	private String clue;
 	private Set<Character> guessedLetters;
 	private boolean battleOver = false;
 	private boolean playerWon = false;
-	private boolean exitRequested = false; // Signal to GameWindow
+	private boolean exitRequested = false;
+	
+	private boolean isBossFight = false;
 
-// Rewards
+	// Rewards
 	private int goldReward = 0;
 	private boolean rewardsClaimed = false;
 
 	private String message = "";
 
-// Animation Timers
+	// Animation Timers
 	private long actionStartTime = 0;
 	private boolean isAnimatingAction = false;
-	private final int ANIMATION_DURATION = 1000;
+	private final int ANIMATION_DURATION = 2500;
+	
+	// Death Animation Timers
+	private boolean isAnimatingDeath = false;
+	private long deathStartTime = 0;
+	private final int DEATH_DURATION = 2500; // 1.5 seconds for death animation
 
-// Assets
+	// Assets
 	private Image bgImage;
 	private Random random = new Random();
 
@@ -52,86 +60,154 @@ public class BattleView {
 		this.playerPet = pet;
 		this.guessedLetters = new HashSet<>();
 
-		// Ensure full health at start
 		this.playerPet.setCurrentHealth(this.playerPet.getMaxHealth());
-		// Reset animation state
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
 
 		initBattle();
 	}
 
-	private void initBattle() {
-		// Reset Round State
+	private void loadNewPuzzle() {
 		this.guessedLetters.clear();
-		this.battleOver = false;
-		this.playerWon = false;
-		this.rewardsClaimed = false;
-		this.message = "";
-		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
-
-		// 1. Pick Word
 		WordBank.WordData data = WordBank.getRandomWord(playerUser.getWorldLevel());
 		this.secretWord = data.word.toUpperCase();
 		this.clue = data.clue;
+	}
 
-		// 2. Pick Random Background
-		int bgNum = random.nextInt(19) + 1;
-		String bgPath = GameConstants.BG_DIR + "battle_bg/bg" + bgNum + ".gif";
+	private void initBattle() {
+		// Reset Round State
+		this.battleOver = false;
+		this.playerWon = false;
+		this.rewardsClaimed = false;
+		this.isAnimatingAction = false;
+		this.isAnimatingDeath = false;
+		this.message = "";
+		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
+		
+		loadNewPuzzle();
+
+		// Boss Logic
+		this.isBossFight = (playerUser.getProgressLevel() % 5 == 0);
+
+		// --- 1. Background ---
+		String bgPath;
+		if (isBossFight) {
+			int bgNum = random.nextInt(2) + 1; 
+			bgPath = GameConstants.BG_DIR + "battle_bg/boss_bg" + bgNum + ".gif";
+		} else {
+			int bgNum = random.nextInt(19) + 1;
+			bgPath = GameConstants.BG_DIR + "battle_bg/bg" + bgNum + ".gif";
+		}
 		this.bgImage = AssetLoader.loadImage(bgPath, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
 
-		// 3. Spawn Enemy
-		// Difficulty Scaling: Base + (World Level * Multiplier)
-		int hp = 50 + (playerUser.getWorldLevel() * 15);
-		int atk = 5 + (playerUser.getWorldLevel() * 2);
+		// --- 2. Enemy Spawning ---
+		int baseHp = 50 + (playerUser.getWorldLevel() * 15);
+		int baseAtk = 5 + (playerUser.getWorldLevel() * 2);
+		
+		String enemyFolder = "worm";
+		String enemyName = "Enemy";
+		String scanPath;
 
-		// FIX: Updated path to match the file structure (double enemies folder based on
-		// logs)
-		this.currentEnemy = new Enemy("Skeleton Warrior", hp, playerUser.getWorldLevel(), atk,
-				"enemies/enemies/skeleton");
+		if (isBossFight) {
+			scanPath = "images/enemies/boss/";
+			baseHp *= 3;   
+			baseAtk = (int)(baseAtk * 1.5);
+			enemyName = "BOSS";
+		} else {
+			scanPath = "images/enemies/enemies/";
+			enemyName = "Monster";
+		}
+		
+		File directory = new File(scanPath);
+		if (directory.exists() && directory.isDirectory()) {
+			File[] subFolders = directory.listFiles(File::isDirectory);
+			
+			if (subFolders != null && subFolders.length > 0) {
+				File selected = subFolders[random.nextInt(subFolders.length)];
+				enemyFolder = selected.getName();
+				
+				String rawName = selected.getName();
+				enemyName = rawName.substring(0, 1).toUpperCase() + rawName.substring(1);
+				
+				if (isBossFight) {
+					enemyName = "Dark " + enemyName;
+				}
+			}
+		}
+
+		String fullAssetPath = (isBossFight ? "enemies/boss/" : "enemies/enemies/") + enemyFolder;
+
+		this.currentEnemy = new Enemy(enemyName, baseHp, playerUser.getWorldLevel(), baseAtk, fullAssetPath);
+		System.out.println("[Battle] Level " + playerUser.getProgressLevel() + " | Spawning: " + enemyName);
 	}
 
 	public void update() {
+		// 1. Handle Action Animation (Attack/Damage)
 		if (isAnimatingAction) {
 			if (System.currentTimeMillis() - actionStartTime > ANIMATION_DURATION) {
 				isAnimatingAction = false;
+				
+				// Check for Deaths FIRST
+				if (!currentEnemy.isAlive() || !playerPet.isAlive()) {
+					startDeathSequence();
+					return; // Exit immediately, don't load new puzzle
+				}
 
-				// Reset idle states if still alive
-				if (playerPet.isAlive())
-					playerPet.setAnimationState(Hangpie.AnimState.IDLE);
-				if (currentEnemy.isAlive())
-					currentEnemy.setAnimationState(Enemy.AnimState.IDLE);
+				// If both alive, reset to IDLE
+				playerPet.setAnimationState(Hangpie.AnimState.IDLE);
+				currentEnemy.setAnimationState(Enemy.AnimState.IDLE);
 
-				// Check deaths
+				// If enemy alive but word done, Next Puzzle
+				if (checkWinCondition()) {
+					message = "Word Complete! Next Puzzle...";
+					loadNewPuzzle();
+				}
+			}
+		}
+		
+		// 2. Handle Death Animation (Wait for it to finish before showing menu)
+		if (isAnimatingDeath) {
+			if (System.currentTimeMillis() - deathStartTime > DEATH_DURATION) {
+				isAnimatingDeath = false;
+				
+				// Now trigger the actual game over state
 				if (!currentEnemy.isAlive()) {
 					handleWin();
-				} else if (!playerPet.isAlive()) {
+				} else {
 					handleLoss();
 				}
 			}
+		}
+	}
+	
+	private void startDeathSequence() {
+		isAnimatingDeath = true;
+		deathStartTime = System.currentTimeMillis();
+		
+		if (!currentEnemy.isAlive()) {
+			currentEnemy.setAnimationState(Enemy.AnimState.DEATH);
+			playerPet.setAnimationState(Hangpie.AnimState.IDLE); // Player stands victoriously
+		} else {
+			playerPet.setAnimationState(Hangpie.AnimState.DEATH);
+			currentEnemy.setAnimationState(Enemy.AnimState.IDLE); // Enemy stands victoriously
 		}
 	}
 
 	private void handleWin() {
 		battleOver = true;
 		playerWon = true;
-		currentEnemy.setAnimationState(Enemy.AnimState.DEATH);
+		// Animation state is already set in startDeathSequence
 
 		if (!rewardsClaimed) {
-			// Calculate Rewards
-			goldReward = 50 + (playerUser.getWorldLevel() * 10);
-
-			// Apply to User
+			int multiplier = isBossFight ? 50 : 10;
+			goldReward = 50 + (playerUser.getWorldLevel() * multiplier);
+			
 			playerUser.addGold(goldReward);
-
-			// Simple progression: Every win increases progress level
 			playerUser.setProgressLevel(playerUser.getProgressLevel() + 1);
 
-			// Optional: Increase World Level every 5 wins
-			if (playerUser.getProgressLevel() % 5 == 0) {
+			if (isBossFight) {
 				playerUser.setWorldLevel(playerUser.getWorldLevel() + 1);
 			}
 
-			// Save Data
 			Main.userManager.updateUser(playerUser);
 			rewardsClaimed = true;
 		}
@@ -140,24 +216,21 @@ public class BattleView {
 	private void handleLoss() {
 		battleOver = true;
 		playerWon = false;
-		playerPet.setAnimationState(Hangpie.AnimState.DEATH);
-		// No rewards on loss
+		// Animation state is already set in startDeathSequence
 	}
 
 	public void handleKeyPress(int keyCode, char keyChar) {
-		// 1. Menu Input (If battle is over)
+		// Block inputs during ANY animation or if battle is over
 		if (battleOver) {
 			handleMenuInput(keyCode);
 			return;
 		}
 
-		// 2. Game Input (If fighting)
-		if (isAnimatingAction)
-			return; // Block input during animation
+		// FIX: Strictly block guessing while animations are playing
+		if (isAnimatingAction || isAnimatingDeath) return;
 
 		char guess = Character.toUpperCase(keyChar);
-		if (guess < 'A' || guess > 'Z')
-			return;
+		if (guess < 'A' || guess > 'Z') return;
 
 		if (guessedLetters.contains(guess)) {
 			message = "Already guessed " + guess + "!";
@@ -168,11 +241,9 @@ public class BattleView {
 
 		boolean isCorrect = false;
 		for (char c : secretWord.toCharArray()) {
-			if (c == guess)
-				isCorrect = true;
+			if (c == guess) isCorrect = true;
 		}
 
-		// Trigger Animation
 		actionStartTime = System.currentTimeMillis();
 		isAnimatingAction = true;
 
@@ -187,26 +258,16 @@ public class BattleView {
 			playerPet.setAnimationState(Hangpie.AnimState.DAMAGE);
 			playerPet.takeDamage(currentEnemy.getAttackPower());
 		}
-
-		// Check instant word completion
-		if (checkWinCondition()) {
-			// Wait for update() to process the win logic after animation
-			// But we can flag state here if needed
-		}
 	}
 
 	private void handleMenuInput(int keyCode) {
 		if (playerWon) {
-			// Victory Menu
 			if (keyCode == KeyEvent.VK_ENTER) {
-				// Proceed / Next Battle
 				initBattle();
 			} else if (keyCode == KeyEvent.VK_ESCAPE) {
-				// Return to Main Menu
 				exitRequested = true;
 			}
 		} else {
-			// Defeat Menu
 			if (keyCode == KeyEvent.VK_ENTER || keyCode == KeyEvent.VK_ESCAPE) {
 				exitRequested = true;
 			}
@@ -215,8 +276,8 @@ public class BattleView {
 
 	private boolean checkWinCondition() {
 		for (char c : secretWord.toCharArray()) {
-			if (!guessedLetters.contains(c))
-				return false;
+			if (c == ' ') continue;
+			if (!guessedLetters.contains(c)) return false;
 		}
 		return true;
 	}
@@ -226,73 +287,80 @@ public class BattleView {
 	}
 
 	public void render(Graphics2D g, int width, int height, ImageObserver observer) {
-		// 1. Background
 		if (bgImage != null) {
 			g.drawImage(bgImage, 0, 0, width, height, observer);
 		}
 
-		// 2. UI Bars
 		g.setColor(new Color(0, 0, 0, 150));
-
-		// Top Bar (Health Bars & Puzzle Background)
-		// Increased height to accommodate the puzzle being moved up
 		g.fillRect(0, 0, width, 180);
+		
+		// --- LEVEL DISPLAY ---
+		g.setFont(GameConstants.HEADER_FONT);
+		g.setColor(Color.WHITE);
+		String levelStr = "LEVEL " + playerUser.getProgressLevel();
+		int lvlW = g.getFontMetrics().stringWidth(levelStr);
+		g.drawString(levelStr, (width - lvlW) / 2, 50);
 
-		// Bottom Bar REMOVED as requested
+		// --- BOSS INDICATOR ---
+		if (isBossFight) {
+			g.setColor(new Color(100, 0, 0, 100)); // Red tint
+			g.fillRect(0, 0, width, 180);
+			
+			g.setColor(Color.WHITE);
+			g.drawString(levelStr, (width - lvlW) / 2, 50);
+			
+			g.setFont(GameConstants.UI_FONT);
+			g.setColor(Color.RED);
+			String bossText = "- BOSS BATTLE -";
+			g.drawString(bossText, (width - g.getFontMetrics().stringWidth(bossText))/2, 85);
+		}
 
-		// 3. HUD Text
+		// --- HUD STATS ---
 		g.setColor(Color.WHITE);
 		g.setFont(GameConstants.UI_FONT);
 
-		// Player HP
 		g.setColor(Color.GREEN);
-		g.drawString(playerPet.getName() + " HP: " + playerPet.getCurrentHealth() + "/" + playerPet.getMaxHealth(), 50,
-				50);
+		g.drawString(playerPet.getName() + " HP: " + playerPet.getCurrentHealth() + "/" + playerPet.getMaxHealth(), 50, 50);
 
-		// Enemy HP
 		g.setColor(Color.RED);
-		String enemyText = currentEnemy.getName() + " HP: " + currentEnemy.getCurrentHealth() + "/"
-				+ currentEnemy.getMaxHealth();
+		String enemyText = currentEnemy.getName() + " HP: " + currentEnemy.getCurrentHealth() + "/" + currentEnemy.getMaxHealth();
 		int enemyTextW = g.getFontMetrics().stringWidth(enemyText);
 		g.drawString(enemyText, width - enemyTextW - 50, 50);
 
-		// Message Center (Moved slightly down to not overlap with puzzle)
 		if (!message.isEmpty()) {
 			g.setColor(Color.YELLOW);
 			int msgW = g.getFontMetrics().stringWidth(message);
 			g.drawString(message, (width - msgW) / 2, 210);
 		}
 
-		// 4. Draw Characters
-		// Y Position: Kept as height - 380 based on your feedback that the Hangpie
-		// position was good.
+		// --- CHARACTERS ---
 		int charSize = 320;
 		int floorY = height - 380;
 
-		// Enemy (Right)
 		int enemyX = width - charSize - 100;
 		Image enemyImg = currentEnemy.getCurrentImage();
+		
+		int renderSize = isBossFight ? 500 : charSize;
+		int renderY = isBossFight ? floorY - 180 : floorY;
+		int renderX = isBossFight ? enemyX - 130 : enemyX;
+		
 		if (enemyImg != null) {
-			g.drawImage(enemyImg, enemyX, floorY, charSize, charSize, observer);
+			g.drawImage(enemyImg, renderX, renderY, renderSize, renderSize, observer);
 		} else {
-			// Debug placeholder if image fails
 			g.setColor(Color.RED);
-			g.fillRect(enemyX, floorY, 100, 100);
+			g.fillRect(renderX, renderY, 100, 100);
 			g.setColor(Color.WHITE);
-			g.drawString("Enemy Missing", enemyX, floorY);
+			g.drawString("Enemy Missing", renderX, renderY);
 		}
 
-		// Player (Left)
 		int playerX = 100;
 		Image playerImg = playerPet.getCurrentImage();
 		if (playerImg != null) {
 			g.drawImage(playerImg, playerX, floorY, charSize, charSize, observer);
 		}
 
-		// 5. Word Puzzle (Moved to TOP)
 		drawWordPuzzle(g, width, height, observer);
 
-		// 6. End Game Overlay
 		if (battleOver) {
 			drawEndScreen(g, width, height);
 		}
@@ -300,28 +368,27 @@ public class BattleView {
 
 	private void drawWordPuzzle(Graphics2D g, int width, int height, ImageObserver obs) {
 		int spacing = 60;
+		int clueY = 110; 
+		if (isBossFight) clueY = 130; 
+		int lettersY = 160;
 
-		// Move to TOP of screen
-		int clueY = 100;
-		int lettersY = 150;
-
-		// Clue
 		g.setColor(Color.CYAN);
 		g.setFont(GameConstants.SUBTITLE_FONT);
 		String clueText = "CLUE: " + clue;
-		// Centering the clue
 		int clueW = g.getFontMetrics().stringWidth(clueText);
 		g.drawString(clueText, (width - clueW) / 2, clueY);
 
-		// Calculate centered position for letters
 		int totalWidth = secretWord.length() * spacing;
 		int startX = (width - totalWidth) / 2;
-
 		int currentX = startX;
 
 		for (char c : secretWord.toCharArray()) {
+			if (c == ' ') {
+				currentX += spacing;
+				continue; 
+			}
+			
 			if (guessedLetters.contains(c)) {
-				// Draw Letter Asset
 				String letterPath = "images/utilities/letters/" + c + ".png";
 				Image letterImg = AssetLoader.loadImage(letterPath, 40, 40);
 				if (letterImg != null) {
@@ -331,7 +398,6 @@ public class BattleView {
 					g.drawString(String.valueOf(c), currentX + 10, lettersY);
 				}
 			} else {
-				// Draw Underscore
 				g.setColor(Color.WHITE);
 				g.fillRect(currentX, lettersY + 5, 40, 4);
 			}
@@ -340,7 +406,6 @@ public class BattleView {
 	}
 
 	private void drawEndScreen(Graphics2D g, int width, int height) {
-		// Dim background
 		g.setColor(new Color(0, 0, 0, 200));
 		g.fillRect(0, 0, width, height);
 
@@ -349,7 +414,7 @@ public class BattleView {
 
 		if (playerWon) {
 			g.setColor(Color.GREEN);
-			String title = "VICTORY!";
+			String title = isBossFight ? "BOSS DEFEATED!" : "VICTORY!";
 			g.drawString(title, (width - fm.stringWidth(title)) / 2, height / 2 - 50);
 
 			g.setFont(GameConstants.UI_FONT);
