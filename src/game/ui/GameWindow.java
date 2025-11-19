@@ -13,276 +13,292 @@ import models.User;
 import utils.AssetLoader;
 
 public class GameWindow extends Frame implements Runnable {
-    private User currentUser;
-    private boolean isRunning;
-    private Canvas gameCanvas;
-    private Thread gameThread;
+	private User currentUser;
+	private boolean isRunning;
+	private Canvas gameCanvas;
+	private Thread gameThread;
 
-    // State Management
-    private enum GameState {
-        MENU,
-        INVENTORY,
-        PLAYING
-    }
-    private GameState currentState;
+// State Management
+	private enum GameState {
+		MENU, INVENTORY, PLAYING
+	}
 
-    // Views
-    private InventoryView inventoryView;
+	private GameState currentState;
 
-    // Assets
-    private Image background;
-    private Image titleImage;
-    private Image titleCoverImage;
+// Views
+	private InventoryView inventoryView;
 
-    // Dimensions
-    private final int COVER_WIDTH = 980;
-    private final int COVER_HEIGHT = 140;
-    private final int TITLE_WIDTH = 900;
-    private final int TITLE_HEIGHT = 100;
+// Assets
+	private Image background;
+	private Image titleImage;
+	private Image titleCoverImage;
 
-    // Menu State
-    private String[] options = { "Play Game", "Inventory", "Exit Game" };
-    private volatile int selectedOption = -1;
-    private Rectangle[] menuBounds;
+// Dimensions
+	private final int COVER_WIDTH = 980;
+	private final int COVER_HEIGHT = 140;
+	private final int TITLE_WIDTH = 900;
+	private final int TITLE_HEIGHT = 100;
 
-    public GameWindow(User user) {
-        this.currentUser = user;
-        this.menuBounds = new Rectangle[options.length];
-        this.currentState = GameState.MENU; // Start at Menu
-        
-        // Initialize Views
-        this.inventoryView = new InventoryView(user);
+// Menu State
+	private String[] options = { "Play Game", "Inventory", "Exit Game" };
+	private volatile int selectedOption = -1;
+	private Rectangle[] menuBounds;
 
-        setupWindow();
-        loadAssets();
+	public GameWindow(User user) {
+		this.currentUser = user;
+		this.menuBounds = new Rectangle[options.length];
+		this.currentState = GameState.MENU; // Start at Menu
 
-        setVisible(true);
-        start();
-    }
+		// Initialize Views
+		this.inventoryView = new InventoryView(user);
 
-    private void setupWindow() {
-        setTitle(GameConstants.GAME_TITLE);
-        setSize(GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
-        setResizable(false);
-        setLayout(new BorderLayout());
-        setLocationRelativeTo(null);
-        setBackground(Color.BLACK);
+		setupWindow();
+		loadAssets();
 
-        gameCanvas = new Canvas();
-        gameCanvas.setPreferredSize(new Dimension(GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT));
-        gameCanvas.setFocusable(true);
-        gameCanvas.setBackground(Color.BLACK);
-        gameCanvas.setIgnoreRepaint(true);
+		setVisible(true);
+		start();
+	}
 
-        MouseAdapter mouseHandler = new MouseAdapter() {
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                if (currentState == GameState.MENU) {
-                    checkMenuHover(e.getX(), e.getY());
-                } else if (currentState == GameState.INVENTORY) {
-                	// Pass mouse move events to inventory to handle hover effects
-                    inventoryView.handleMouseMove(e.getX(), e.getY());
-                }
-            }
+	private void setupWindow() {
+		setTitle(GameConstants.GAME_TITLE);
+		setSize(GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
+		setResizable(false);
+		setLayout(new BorderLayout());
+		setLocationRelativeTo(null);
+		setBackground(Color.BLACK);
 
-            @Override
-            public void mousePressed(MouseEvent e) {
-                if (currentState == GameState.MENU) {
-                    if (selectedOption != -1) {
-                        handleMenuClick(selectedOption);
-                    }
-                } else if (currentState == GameState.INVENTORY) {
-                    if (inventoryView.handleMouseClick(e.getX(), e.getY())) {
-                        currentState = GameState.MENU; // Go back to menu
-                    }
-                }
-            }
-            
-            @Override
-            public void mouseWheelMoved(MouseWheelEvent e) {
-            	if (currentState == GameState.INVENTORY) {
-            		// Forward scroll event to inventory view
-            		inventoryView.handleMouseScroll(e.getWheelRotation());
-            	}
-            }
-        };
+		// FIX: Override update() to prevent AWT from clearing the background
+		// This prevents flickering when animated GIFs trigger repaints
+		gameCanvas = new Canvas() {
+			private static final long serialVersionUID = 1L;
 
-        gameCanvas.addMouseListener(mouseHandler);
-        gameCanvas.addMouseMotionListener(mouseHandler);
-        gameCanvas.addMouseWheelListener(mouseHandler); 
+			@Override
+			public void update(Graphics g) {
+				// Do nothing. We handle clearing in the render loop.
+			}
 
-        add(gameCanvas, BorderLayout.CENTER);
+			@Override
+			public void paint(Graphics g) {
+				// Do nothing. Active rendering handles this.
+			}
+		};
 
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                stop();
-            }
-        });
-    }
+		gameCanvas.setPreferredSize(new Dimension(GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT));
+		gameCanvas.setFocusable(true);
+		gameCanvas.setBackground(Color.BLACK);
+		gameCanvas.setIgnoreRepaint(true); // Further disable automatic repaints
 
-    private void checkMenuHover(int mx, int my) {
-        boolean found = false;
-        for (int i = 0; i < options.length; i++) {
-            if (menuBounds[i] != null && menuBounds[i].contains(mx, my)) {
-                selectedOption = i;
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            selectedOption = -1;
-        }
-    }
+		MouseAdapter mouseHandler = new MouseAdapter() {
+			@Override
+			public void mouseMoved(MouseEvent e) {
+				if (currentState == GameState.MENU) {
+					checkMenuHover(e.getX(), e.getY());
+				} else if (currentState == GameState.INVENTORY) {
+					// Pass mouse move events to inventory to handle hover effects
+					inventoryView.handleMouseMove(e.getX(), e.getY());
+				}
+			}
 
-    private void handleMenuClick(int option) {
-        if (option == 0) {
-            System.out.println("[Game] Action: Play Game clicked!");
-            // TODO: Implement Play State later
-        } else if (option == 1) {
-            System.out.println("[Game] Switching to Inventory View...");
-            currentState = GameState.INVENTORY;
-        } else if (option == 2) {
-            stop();
-        }
-    }
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (currentState == GameState.MENU) {
+					if (selectedOption != -1) {
+						handleMenuClick(selectedOption);
+					}
+				} else if (currentState == GameState.INVENTORY) {
+					if (inventoryView.handleMouseClick(e.getX(), e.getY())) {
+						currentState = GameState.MENU; // Go back to menu
+					}
+				}
+			}
 
-    private void loadAssets() {
-        String bgPath = GameConstants.BG_DIR + GameConstants.MAIN_BG;
-        background = AssetLoader.loadImage(bgPath, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
+			@Override
+			public void mouseWheelMoved(MouseWheelEvent e) {
+				if (currentState == GameState.INVENTORY) {
+					// Forward scroll event to inventory view
+					inventoryView.handleMouseScroll(e.getWheelRotation());
+				}
+			}
+		};
 
-        String titlePath = GameConstants.BG_DIR + GameConstants.TITLE_IMG;
-        titleImage = AssetLoader.loadImage(titlePath, TITLE_WIDTH, TITLE_HEIGHT);
+		gameCanvas.addMouseListener(mouseHandler);
+		gameCanvas.addMouseMotionListener(mouseHandler);
+		gameCanvas.addMouseWheelListener(mouseHandler);
 
-        String titleCoverPath = GameConstants.BG_DIR + GameConstants.TITLE_COVER_IMG;
-        titleCoverImage = AssetLoader.loadImage(titleCoverPath, COVER_WIDTH, COVER_HEIGHT);
-    }
+		add(gameCanvas, BorderLayout.CENTER);
 
-    private synchronized void start() {
-        if (isRunning) return;
-        isRunning = true;
-        gameThread = new Thread(this);
-        gameThread.start();
-    }
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				stop();
+			}
+		});
+	}
 
-    private synchronized void stop() {
-        if (!isRunning) return;
-        isRunning = false;
-        try {
-            gameThread.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        dispose();
-    }
+	private void checkMenuHover(int mx, int my) {
+		boolean found = false;
+		for (int i = 0; i < options.length; i++) {
+			if (menuBounds[i] != null && menuBounds[i].contains(mx, my)) {
+				selectedOption = i;
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			selectedOption = -1;
+		}
+	}
 
-    @Override
-    public void run() {
-        gameCanvas.createBufferStrategy(3);
-        BufferStrategy bs = gameCanvas.getBufferStrategy();
+	private void handleMenuClick(int option) {
+		if (option == 0) {
+			System.out.println("[Game] Action: Play Game clicked!");
+			// TODO: Implement Play State later
+		} else if (option == 1) {
+			System.out.println("[Game] Switching to Inventory View...");
+			currentState = GameState.INVENTORY;
+		} else if (option == 2) {
+			stop();
+		}
+	}
 
-        final double FPS = 60.0;
-        final double TIME_PER_TICK = 1000000000 / FPS;
-        long lastTime = System.nanoTime();
-        double delta = 0;
+	private void loadAssets() {
+		String bgPath = GameConstants.BG_DIR + GameConstants.MAIN_BG;
+		background = AssetLoader.loadImage(bgPath, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
 
-        while (isRunning) {
-            long now = System.nanoTime();
-            delta += (now - lastTime) / TIME_PER_TICK;
-            lastTime = now;
+		String titlePath = GameConstants.BG_DIR + GameConstants.TITLE_IMG;
+		titleImage = AssetLoader.loadImage(titlePath, TITLE_WIDTH, TITLE_HEIGHT);
 
-            if (delta >= 1) {
-                // update(); // Logic updates can go here
-                delta--;
-            }
+		String titleCoverPath = GameConstants.BG_DIR + GameConstants.TITLE_COVER_IMG;
+		titleCoverImage = AssetLoader.loadImage(titleCoverPath, COVER_WIDTH, COVER_HEIGHT);
+	}
 
-            render(bs);
-        }
-    }
+	private synchronized void start() {
+		if (isRunning)
+			return;
+		isRunning = true;
+		gameThread = new Thread(this);
+		gameThread.start();
+	}
 
-    private void render(BufferStrategy bs) {
-        Graphics2D g = (Graphics2D) bs.getDrawGraphics();
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
+	private synchronized void stop() {
+		if (!isRunning)
+			return;
+		isRunning = false;
+		try {
+			gameThread.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		dispose();
+	}
 
-        // Render based on State
-        switch (currentState) {
-            case MENU:
-                renderMenu(g);
-                break;
-            case INVENTORY:
-                // Reverted: Removed 'gameCanvas' (observer) to fix flickering
-                inventoryView.render(g, gameCanvas.getWidth(), gameCanvas.getHeight());
-                break;
-            case PLAYING:
-                // renderGameplay(g);
-                break;
-        }
+	@Override
+	public void run() {
+		gameCanvas.createBufferStrategy(3);
+		BufferStrategy bs = gameCanvas.getBufferStrategy();
 
-        g.dispose();
-        bs.show();
-        Toolkit.getDefaultToolkit().sync();
-    }
+		final double FPS = 60.0;
+		final double TIME_PER_TICK = 1000000000 / FPS;
+		long lastTime = System.nanoTime();
+		double delta = 0;
 
-    private void renderMenu(Graphics2D g) {
-        // 1. Background
-        if (background != null) {
-            g.drawImage(background, 0, 0, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
-        }
+		while (isRunning) {
+			long now = System.nanoTime();
+			delta += (now - lastTime) / TIME_PER_TICK;
+			lastTime = now;
 
-        // 2. Title Section
-        int bannerY = 100;
-        if (titleCoverImage != null) {
-            int coverX = (gameCanvas.getWidth() - COVER_WIDTH) / 2;
-            g.drawImage(titleCoverImage, coverX, bannerY, COVER_WIDTH, COVER_HEIGHT, null);
-        }
+			if (delta >= 1) {
+				// update(); // Logic updates can go here
+				delta--;
+			}
 
-        if (titleImage != null) {
-            int textX = (gameCanvas.getWidth() - TITLE_WIDTH) / 2;
-            int textY = bannerY + (COVER_HEIGHT - TITLE_HEIGHT) / 2;
-            g.drawImage(titleImage, textX, textY, TITLE_WIDTH, TITLE_HEIGHT, null);
-        }
+			render(bs);
+		}
+	}
 
-        // Draw Subtitle
-        g.setFont(GameConstants.SUBTITLE_FONT);
-        g.setColor(GameConstants.TEXT_COLOR);
-        FontMetrics fm = g.getFontMetrics();
-        String subtitle = GameConstants.SUBTITLE_TEXT;
-        int subWidth = fm.stringWidth(subtitle);
-        int subX = (gameCanvas.getWidth() - subWidth) / 2;
-        int subY = bannerY + COVER_HEIGHT + 25;
-        g.drawString(subtitle, subX, subY);
+	private void render(BufferStrategy bs) {
+		Graphics2D g = (Graphics2D) bs.getDrawGraphics();
+		g.setColor(Color.BLACK);
+		g.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
 
-        // 3. Draw Menu Options
-        drawMenuOptions(g);
-    }
+		// Render based on State
+		switch (currentState) {
+		case MENU:
+			renderMenu(g);
+			break;
+		case INVENTORY:
+			// Pass gameCanvas as observer to support animations
+			inventoryView.render(g, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
+			break;
+		case PLAYING:
+			// renderGameplay(g);
+			break;
+		}
 
-    private void drawMenuOptions(Graphics g) {
-        g.setFont(GameConstants.UI_FONT);
-        FontMetrics fm = g.getFontMetrics();
+		g.dispose();
+		bs.show();
+		Toolkit.getDefaultToolkit().sync();
+	}
 
-        int startY = 530;
-        int spacing = 50;
+	private void renderMenu(Graphics2D g) {
+		// 1. Background
+		if (background != null) {
+			g.drawImage(background, 0, 0, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
+		}
 
-        for (int i = 0; i < options.length; i++) {
-            String text = options[i];
-            boolean isSelected = (i == selectedOption);
+		// 2. Title Section
+		int bannerY = 100;
+		if (titleCoverImage != null) {
+			int coverX = (gameCanvas.getWidth() - COVER_WIDTH) / 2;
+			g.drawImage(titleCoverImage, coverX, bannerY, COVER_WIDTH, COVER_HEIGHT, null);
+		}
 
-            if (isSelected) {
-                g.setColor(GameConstants.SELECTION_COLOR);
-                text = "> " + text + " <";
-            } else {
-                g.setColor(GameConstants.TEXT_COLOR);
-            }
+		if (titleImage != null) {
+			int textX = (gameCanvas.getWidth() - TITLE_WIDTH) / 2;
+			int textY = bannerY + (COVER_HEIGHT - TITLE_HEIGHT) / 2;
+			g.drawImage(titleImage, textX, textY, TITLE_WIDTH, TITLE_HEIGHT, null);
+		}
 
-            int textWidth = fm.stringWidth(text);
-            int textHeight = fm.getHeight();
-            int x = (gameCanvas.getWidth() - textWidth) / 2;
-            int y = startY + (i * spacing);
+		// Draw Subtitle
+		g.setFont(GameConstants.SUBTITLE_FONT);
+		g.setColor(GameConstants.TEXT_COLOR);
+		FontMetrics fm = g.getFontMetrics();
+		String subtitle = GameConstants.SUBTITLE_TEXT;
+		int subWidth = fm.stringWidth(subtitle);
+		int subX = (gameCanvas.getWidth() - subWidth) / 2;
+		int subY = bannerY + COVER_HEIGHT + 25;
+		g.drawString(subtitle, subX, subY);
 
-            menuBounds[i] = new Rectangle(x, y - fm.getAscent(), textWidth, textHeight);
+		// 3. Draw Menu Options
+		drawMenuOptions(g);
+	}
 
-            g.drawString(text, x, y);
-        }
-    }
+	private void drawMenuOptions(Graphics g) {
+		g.setFont(GameConstants.UI_FONT);
+		FontMetrics fm = g.getFontMetrics();
+
+		int startY = 530;
+		int spacing = 50;
+
+		for (int i = 0; i < options.length; i++) {
+			String text = options[i];
+			boolean isSelected = (i == selectedOption);
+
+			if (isSelected) {
+				g.setColor(GameConstants.SELECTION_COLOR);
+				text = "> " + text + " <";
+			} else {
+				g.setColor(GameConstants.TEXT_COLOR);
+			}
+
+			int textWidth = fm.stringWidth(text);
+			int textHeight = fm.getHeight();
+			int x = (gameCanvas.getWidth() - textWidth) / 2;
+			int y = startY + (i * spacing);
+
+			menuBounds[i] = new Rectangle(x, y - fm.getAscent(), textWidth, textHeight);
+
+			g.drawString(text, x, y);
+		}
+	}
 }
