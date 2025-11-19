@@ -8,6 +8,7 @@ public class GameConstants {
     public static final int WINDOW_WIDTH = 1280;
     public static final int WINDOW_HEIGHT = 720;
     public static final String GAME_TITLE = "Battle Hangpies - Arena";
+    public static final String SUBTITLE_TEXT = "AN INTEGRATED GAMING AND MARKETPLACE SYSTEM";
 
     // Colors
     public static final Color PRIMARY_COLOR = new Color(41, 128, 185);
@@ -20,6 +21,7 @@ public class GameConstants {
     public static final Font HEADER_FONT = new Font("Monospaced", Font.BOLD, 40);
     public static final Font UI_FONT = new Font("Monospaced", Font.BOLD, 24);
     public static final Font BUTTON_FONT = new Font("Monospaced", Font.BOLD, 20);
+    public static final Font SUBTITLE_FONT = new Font("Monospaced", Font.BOLD, 18);
     
     // Paths
     public static final String ASSET_DIR = "images/";
