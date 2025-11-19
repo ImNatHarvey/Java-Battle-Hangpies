@@ -95,3 +95,8 @@
 [2025-11-19 23:58:32] | admin | Logged in successfully.
 [2025-11-20 00:00:59] | admin | Logged in successfully.
 [2025-11-20 00:02:37] | player123 | Logged in successfully.
+[2025-11-20 00:04:20] | player123 | Bought Crystal from the Shop for 100.0G.
+[2025-11-20 00:04:23] | player123 | Bought Dude from the Shop for 150.0G.
+[2025-11-20 00:11:44] | player123 | Logged in successfully.
+[2025-11-20 00:14:41] | player123 | Logged in successfully.
+[2025-11-20 00:18:34] | player123 | Logged in successfully.

@@ -3,6 +3,7 @@ package game.ui;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferStrategy;
@@ -78,6 +79,9 @@ public class GameWindow extends Frame implements Runnable {
             public void mouseMoved(MouseEvent e) {
                 if (currentState == GameState.MENU) {
                     checkMenuHover(e.getX(), e.getY());
+                } else if (currentState == GameState.INVENTORY) {
+                	// Pass mouse move events to inventory to handle hover effects
+                    inventoryView.handleMouseMove(e.getX(), e.getY());
                 }
             }
 
@@ -93,10 +97,19 @@ public class GameWindow extends Frame implements Runnable {
                     }
                 }
             }
+            
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+            	if (currentState == GameState.INVENTORY) {
+            		// Forward scroll event to inventory view
+            		inventoryView.handleMouseScroll(e.getWheelRotation());
+            	}
+            }
         };
 
         gameCanvas.addMouseListener(mouseHandler);
         gameCanvas.addMouseMotionListener(mouseHandler);
+        gameCanvas.addMouseWheelListener(mouseHandler); 
 
         add(gameCanvas, BorderLayout.CENTER);
 
