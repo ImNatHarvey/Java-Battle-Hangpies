@@ -24,6 +24,12 @@ public class InventoryView {
 	private Image cardBackground;
 	private Rectangle backButtonBounds;
 
+	// New UI Assets
+	private Image nameFrameImg;
+	private Image frameImg;
+	private Image heartImg;
+	private Image emptyHeartImg;
+
 	// Scrolling & Selection
 	private int scrollY = 0;
 	private Hangpie selectedPet = null;
@@ -50,6 +56,12 @@ public class InventoryView {
 
 		String cardPath = GameConstants.BG_DIR + GameConstants.TITLE_COVER_IMG;
 		cardBackground = AssetLoader.loadImage(cardPath, 300, 400);
+		
+		// Load UI Elements
+		nameFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 200, 50);
+		frameImg = AssetLoader.loadImage(GameConstants.FRAME_IMG, 220, 60);
+		heartImg = AssetLoader.loadImage(GameConstants.HEART_IMG, 20, 20);
+		emptyHeartImg = AssetLoader.loadImage(GameConstants.EMPTY_HEART_IMG, 20, 20);
 	}
 	
 	public Hangpie getSelectedPet() {
@@ -133,6 +145,7 @@ public class InventoryView {
 	}
 
 	private void drawPetCard(Graphics2D g, Hangpie pet, int x, int y, int w, int h, ImageObserver observer) {
+		// Draw Background
 		if (cardBackground != null) {
 			g.drawImage(cardBackground, x, y, w, h, null);
 		} else {
@@ -140,13 +153,13 @@ public class InventoryView {
 			g.fillRect(x, y, w, h);
 		}
 
+		// Draw Selection Border
 		if (pet == selectedPet) {
-			g.setColor(Color.GREEN); // Green for equipped
+			g.setColor(Color.GREEN); 
 			g.setStroke(new BasicStroke(4));
 			g.drawRect(x, y, w, h);
 			g.setStroke(new BasicStroke(1));
 			
-			// Draw "EQUIPPED" text
 			g.setColor(Color.GREEN);
 			g.setFont(new Font("Monospaced", Font.BOLD, 14));
 			g.drawString("EQUIPPED", x + 10, y + 30);
@@ -154,14 +167,28 @@ public class InventoryView {
 			g.setColor(Color.WHITE);
 			g.drawRect(x, y, w, h);
 		}
+		
+		// --- Draw Name Frame (Top) ---
+		int nameFrameH = 40;
+		if (nameFrameImg != null) {
+			g.drawImage(nameFrameImg, x + 10, y + 40, w - 20, nameFrameH, observer);
+		}
+		
+		g.setColor(Color.WHITE);
+		g.setFont(new Font("Monospaced", Font.BOLD, 14));
+		FontMetrics fm = g.getFontMetrics();
+		String name = pet.getName();
+		if (name.length() > 15) name = name.substring(0, 12) + "...";
+		int nameX = x + (w - fm.stringWidth(name)) / 2;
+		g.drawString(name, nameX, y + 40 + 25);
 
+		// --- Draw Character Image ---
 		String imageName = pet.getImageName();
 		String imgPath;
-		int imgW = 120;
-		int imgH = 120;
+		int imgW = 100;
+		int imgH = 100;
 
-		if (imageName != null
-				&& (imageName.contains(".png") || imageName.contains(".gif") || imageName.contains(".jpg"))) {
+		if (imageName != null && (imageName.contains(".png") || imageName.contains(".gif") || imageName.contains(".jpg"))) {
 			imgPath = GameConstants.HANGPIE_DIR + imageName;
 		} else {
 			imgPath = GameConstants.HANGPIE_DIR + imageName + "/idle.gif";
@@ -176,29 +203,38 @@ public class InventoryView {
 
 		if (petImg != null) {
 			int imgX = x + (w - imgW) / 2;
-			int centerY = y + 80;
-			int imgY = centerY - (imgH / 2);
-			if (imgY < y + 10) imgY = y + 10;
+			int imgY = y + 90;
 			g.drawImage(petImg, imgX, imgY, imgW, imgH, observer);
 		}
 
-		int textStartY = y + 190;
-
-		g.setColor(Color.YELLOW);
-		g.setFont(new Font("Monospaced", Font.BOLD, 16));
-		FontMetrics fm = g.getFontMetrics();
-
-		String name = pet.getName();
-		if (name.length() > 15)
-			name = name.substring(0, 12) + "...";
-		int textX = x + (w - fm.stringWidth(name)) / 2;
-		g.drawString(name, textX, textStartY);
-
+		// --- Draw Stats Section (Frame + Hearts) ---
+		int statsY = y + 200;
+		
+		// Draw Frame for Hearts
+		if (frameImg != null) {
+			// x, y, width, height
+			g.drawImage(frameImg, x + 10, statsY, w - 20, 50, observer);
+		}
+		
+		// Draw Hearts logic (Assume 1 HP = 1 Heart)
+		int hearts = Math.min(pet.getMaxHealth(), 8); // Cap at 8 visually for inventory card width
+		int heartStartX = x + 25;
+		int heartY = statsY + 15;
+		
+		for (int i = 0; i < hearts; i++) {
+			if (heartImg != null) {
+				g.drawImage(heartImg, heartStartX + (i * 22), heartY, 20, 20, observer);
+			}
+		}
+		
+		// Draw Text details
 		g.setColor(Color.WHITE);
-		g.setFont(new Font("Monospaced", Font.PLAIN, 14));
-		g.drawString("Level: " + pet.getLevel(), x + 15, textStartY + 25);
-		g.drawString("HP: " + pet.getMaxHealth(), x + 15, textStartY + 45);
-		g.drawString("Attack: " + pet.getAttackPower(), x + 15, textStartY + 65);
+		g.setFont(new Font("Monospaced", Font.PLAIN, 12));
+		String lvlTxt = "Level: " + pet.getLevel();
+		String atkTxt = "Atk Scale: " + (1 + (pet.getLevel()/2)); // Approximation of battle logic
+		
+		g.drawString(lvlTxt, x + 20, statsY + 70);
+		g.drawString(atkTxt, x + 20, statsY + 90);
 	}
 
 	public String handleMouseClick(int mx, int my) {

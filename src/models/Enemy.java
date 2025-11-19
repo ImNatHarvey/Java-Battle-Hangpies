@@ -5,16 +5,17 @@ import utils.AssetLoader;
 
 public class Enemy extends Character {
 
+	// Animation States - This definition is required for BattleView
 	public enum AnimState {
 		IDLE, ATTACK, DAMAGE, DEATH
 	}
 
-	private String assetFolder; // e.g., "enemies/skeleton"
+	private String assetFolder; 
 	private AnimState currentState;
 
 	public Enemy(String name, int maxHealth, int level, int attackPower, String folderName) {
 		super(name, maxHealth, level, attackPower);
-		this.assetFolder = "images/" + folderName; // e.g., "images/enemies/skeleton"
+		this.assetFolder = "images/" + folderName; 
 		this.currentState = AnimState.IDLE;
 	}
 
@@ -22,7 +23,6 @@ public class Enemy extends Character {
 		if (this.currentState != state) {
 			this.currentState = state;
 
-			// Fix: Flush the image to reset GIF animation
 			if (state == AnimState.ATTACK || state == AnimState.DAMAGE || state == AnimState.DEATH) {
 				Image img = getCurrentImage();
 				if (img != null) {

@@ -7,6 +7,8 @@ public class GameConstants {
     // Resolution based on Figma Design (Landscape)
     public static final int WINDOW_WIDTH = 1280;
     public static final int WINDOW_HEIGHT = 720;
+    
+    // Texts
     public static final String GAME_TITLE = "Battle Hangpies - Arena";
     public static final String SUBTITLE_TEXT = "AN INTEGRATED GAMING AND MARKETPLACE SYSTEM";
 
@@ -29,10 +31,21 @@ public class GameConstants {
     public static final String HANGPIE_DIR = ASSET_DIR + "hangpies/";
     public static final String ENEMY_DIR = ASSET_DIR + "enemies/";
     public static final String BG_DIR = ASSET_DIR + "bg/";
+    public static final String GUI_DIR = ASSET_DIR + "utilities/gui/";
+    public static final String CHAR_UTIL_DIR = ASSET_DIR + "utilities/characters/";
     
     // Assets
     public static final String MAIN_BG = "game_interface.gif"; 
     public static final String TITLE_IMG = "title.png"; 
     public static final String TITLE_COVER_IMG = "titlecover.png"; 
-    public static final String INVENTORY_BG = "inventory_bg.gif"; 
+    public static final String INVENTORY_BG = "inventory_bg.gif";
+    
+    // New UI Assets
+    public static final String FRAME_IMG = GUI_DIR + "frame.png";
+    public static final String NAME_FRAME_IMG = GUI_DIR + "nameframe.png";
+    public static final String SETTINGS_BTN_IMG = GUI_DIR + "settings.png";
+    public static final String MODAL_IMG = GUI_DIR + "modal.png";
+    
+    public static final String HEART_IMG = CHAR_UTIL_DIR + "heart.png";
+    public static final String EMPTY_HEART_IMG = CHAR_UTIL_DIR + "empty_heart.png";
 }

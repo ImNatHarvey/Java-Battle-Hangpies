@@ -7,7 +7,7 @@ import game.GameConstants;
 
 public class Hangpie extends Character implements Comparable<Hangpie>
 {
-	// Animation States
+	// Animation States - This definition is required for BattleView
 	public enum AnimState {
 		IDLE, ATTACK, DAMAGE, DEATH
 	}
@@ -45,7 +45,7 @@ public class Hangpie extends Character implements Comparable<Hangpie>
 		if (this.currentAnimState != state) {
 			this.currentAnimState = state;
 			
-			// Fix: Flush the image to reset GIF animation when switching to an action
+			// Flush image to reset GIF animation when switching states
 			if (state == AnimState.ATTACK || state == AnimState.DAMAGE || state == AnimState.DEATH) {
 				Image img = getCurrentImage();
 				if (img != null) {
@@ -59,7 +59,6 @@ public class Hangpie extends Character implements Comparable<Hangpie>
 		return getImageForState(this.currentAnimState);
 	}
 	
-	// Helper to resolve path based on state
 	private Image getImageForState(AnimState state) {
 		String fileName = "idle.gif";
 		switch(state) {
@@ -69,14 +68,10 @@ public class Hangpie extends Character implements Comparable<Hangpie>
 			default: fileName = "idle.gif"; break;
 		}
 		
-		// Path example: images/hangpies/wizard/attack.gif
 		String fullPath = GameConstants.HANGPIE_DIR + imageName + "/" + fileName;
-		
-		// Use AssetLoader to get the GIF (returns original size/toolkit image for animation)
 		return AssetLoader.loadImage(fullPath, -1, -1); 
 	}
 	
-	// Preloads all assets to prevent lag/skipping on first use
 	public void preloadAssets() {
 		for (AnimState state : AnimState.values()) {
 			getImageForState(state);
@@ -88,8 +83,8 @@ public class Hangpie extends Character implements Comparable<Hangpie>
 	@Override
 	public String toString()
 	{
-		return String.format("[%s]\t%s\t\tLvl:%d\t(HP:%d, Atk:%d)\t[Img: %s]\t[Price: %.2fG]\t%s", 
-				productId, name, level, maxHealth, attackPower, imageName, price, description); 
+		return String.format("[%s]\t%s\t\tLvl:%d\t(Hearts: %d)\t\t[Price: %.2fG]\t%s", 
+				productId, name, level, maxHealth, price, description); 
 	}
 	
 	@Override

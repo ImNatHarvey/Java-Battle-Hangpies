@@ -21,32 +21,32 @@ public class GameWindow extends Frame implements Runnable {
 	private Canvas gameCanvas;
 	private Thread gameThread;
 
-	// State Management
+// State Management
 	public enum GameState {
 		MENU, INVENTORY, PLAYING
 	}
 
 	private GameState currentState;
 
-	// Views
+// Views
 	private InventoryView inventoryView;
 	private BattleView battleView;
 
-	// Game Data
-	private Hangpie equippedHangpie = null; 
+// Game Data
+	private Hangpie equippedHangpie = null;
 
-	// Assets
+// Assets
 	private Image background;
 	private Image titleImage;
 	private Image titleCoverImage;
 
-	// Dimensions
+// Dimensions
 	private final int COVER_WIDTH = 980;
 	private final int COVER_HEIGHT = 140;
 	private final int TITLE_WIDTH = 900;
 	private final int TITLE_HEIGHT = 100;
 
-	// Menu State
+// Menu State
 	private String[] options = { "Play Game", "Inventory", "Exit Game" };
 	private volatile int selectedOption = -1;
 	private Rectangle[] menuBounds;
@@ -75,10 +75,14 @@ public class GameWindow extends Frame implements Runnable {
 
 		gameCanvas = new Canvas() {
 			private static final long serialVersionUID = 1L;
+
 			@Override
-			public void update(Graphics g) {} 
+			public void update(Graphics g) {
+			}
+
 			@Override
-			public void paint(Graphics g) {}
+			public void paint(Graphics g) {
+			}
 		};
 
 		gameCanvas.setPreferredSize(new Dimension(GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT));
@@ -87,7 +91,7 @@ public class GameWindow extends Frame implements Runnable {
 		gameCanvas.setIgnoreRepaint(true);
 
 		// --- Input Listeners ---
-		
+
 		MouseAdapter mouseHandler = new MouseAdapter() {
 			@Override
 			public void mouseMoved(MouseEvent e) {
@@ -95,6 +99,8 @@ public class GameWindow extends Frame implements Runnable {
 					checkMenuHover(e.getX(), e.getY());
 				} else if (currentState == GameState.INVENTORY) {
 					inventoryView.handleMouseMove(e.getX(), e.getY());
+				} else if (currentState == GameState.PLAYING && battleView != null) {
+					// Optional: handle hover effects in battle view
 				}
 			}
 
@@ -110,6 +116,15 @@ public class GameWindow extends Frame implements Runnable {
 						currentState = GameState.MENU;
 					} else if (action.equals("SELECT")) {
 						equippedHangpie = inventoryView.getSelectedPet();
+					}
+				} else if (currentState == GameState.PLAYING && battleView != null) {
+					// Pass click to BattleView to handle Settings/Modal interaction
+					String action = battleView.handleMouseClick(e.getX(), e.getY());
+					if (action.equals("EXIT")) {
+						stop(); // Close game entirely
+					} else if (action.equals("MENU")) {
+						currentState = GameState.MENU;
+						battleView = null;
 					}
 				}
 			}
@@ -128,12 +143,10 @@ public class GameWindow extends Frame implements Runnable {
 				if (currentState == GameState.PLAYING && battleView != null) {
 					// Pass Key Press to Battle View
 					battleView.handleKeyPress(e.getKeyCode(), e.getKeyChar());
-					
-					// FIX: Use isExitRequested() instead of isBattleOver()
-					// This ensures we wait for the player to press ENTER/ESC on the victory screen
+
 					if (battleView.isExitRequested()) {
-						currentState = GameState.MENU; 
-						battleView = null; // Reset battle view to free resources
+						currentState = GameState.MENU;
+						battleView = null;
 					}
 				}
 			}
@@ -168,7 +181,7 @@ public class GameWindow extends Frame implements Runnable {
 	}
 
 	private void handleMenuClick(int option) {
-		if (option == 0) { 
+		if (option == 0) {
 			// PLAY GAME
 			if (equippedHangpie == null) {
 				System.out.println("[Game] Cannot start: No Hangpie equipped.");
@@ -176,11 +189,11 @@ public class GameWindow extends Frame implements Runnable {
 			} else {
 				startBattle();
 			}
-			
+
 		} else if (option == 1) {
 			// INVENTORY
 			currentState = GameState.INVENTORY;
-			
+
 		} else if (option == 2) {
 			// EXIT
 			stop();
@@ -204,14 +217,16 @@ public class GameWindow extends Frame implements Runnable {
 	}
 
 	private synchronized void start() {
-		if (isRunning) return;
+		if (isRunning)
+			return;
 		isRunning = true;
 		gameThread = new Thread(this);
 		gameThread.start();
 	}
 
 	private synchronized void stop() {
-		if (!isRunning) return;
+		if (!isRunning)
+			return;
 		isRunning = false;
 		try {
 			gameThread.join();
@@ -295,7 +310,7 @@ public class GameWindow extends Frame implements Runnable {
 		int subX = (gameCanvas.getWidth() - subWidth) / 2;
 		int subY = bannerY + COVER_HEIGHT + 25;
 		g.drawString(subtitle, subX, subY);
-		
+
 		// Draw Equipped Status
 		if (equippedHangpie != null) {
 			String equipText = "Equipped: " + equippedHangpie.getName() + " (Lvl " + equippedHangpie.getLevel() + ")";
