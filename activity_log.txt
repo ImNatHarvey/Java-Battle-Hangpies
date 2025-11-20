@@ -187,3 +187,13 @@
 [2025-11-20 18:46:15] | player123 | Logged in successfully.
 [2025-11-20 18:46:31] | player123 | Logged in successfully.
 [2025-11-20 19:08:34] | player123 | Logged in successfully.
+[2025-11-20 19:59:04] | admin | Logged in successfully.
+[2025-11-20 19:59:58] | player123 | Logged in successfully.
+[2025-11-20 20:00:03] | player123 | Bought Warrior from the Shop for 300.0G.
+[2025-11-20 20:04:03] | player123 | Logged in successfully.
+[2025-11-20 20:07:02] | player123 | Logged in successfully.
+[2025-11-20 20:10:38] | player123 | Logged in successfully.
+[2025-11-20 20:12:34] | player123 | Logged in successfully.
+[2025-11-20 20:16:21] | player123 | Logged in successfully.
+[2025-11-20 20:17:11] | player123 | Logged in successfully.
+[2025-11-20 20:20:26] | player123 | Logged in successfully.

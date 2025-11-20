@@ -1,3 +1,4 @@
 // FORMAT: hangpieID|name|description|price|maxHealth|level|attackPower|imageName
 HP-002|King|My king.|300.0|15|1|1|king
 HP-001|Evil Wizard|Reincarnation of Baal.|300.0|10|1|2|evil_wizard
+HP-003|Warrior|General warrior.|300.0|13|1|1|warrior

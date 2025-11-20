@@ -13,7 +13,7 @@ import java.util.Random;
 import java.util.Set;
 
 import game.GameConstants;
-import main.Main; 
+import main.Main;
 import models.Character;
 import models.Enemy;
 import models.Hangpie;
@@ -27,43 +27,43 @@ public class BattleView {
 	private Hangpie playerPet;
 	private Enemy currentEnemy;
 
-	// Battle State
+// Battle State
 	private String secretWord;
 	private String clue;
 	private Set<java.lang.Character> guessedLetters;
 	private boolean battleOver = false;
 	private boolean playerWon = false;
-	private boolean exitRequested = false; 
+	private boolean exitRequested = false;
 
-	// Rewards
+// Rewards
 	private int goldReward = 0;
 	private boolean rewardsClaimed = false;
 
 	private String message = "";
 
-	// Animation Timers
+// Animation Timers
 	private long actionStartTime = 0;
 	private boolean isAnimatingAction = false;
 	private final int ANIMATION_DURATION = 1000;
 
-	// Assets
+// Assets
 	private Image bgImage;
 	private Image nameFrameImg;
 	private Image settingsImg;
 	private Image modalImg;
-	
-	// Heart Assets
+
+// Heart Assets
 	private Image heartImg;
 	private Image halfHeartImg;
 	private Image emptyHeartImg;
-	
+
 	private Random random = new Random();
 
-	// Settings Modal State
+// Settings Modal State
 	private boolean isSettingsOpen = false;
 	private boolean isExitConfirmation = false;
-	
-	// UI Buttons (Clickable Areas)
+
+// UI Buttons (Clickable Areas)
 	private Rectangle settingsBtnBounds;
 	private Rectangle modalSaveBounds;
 	private Rectangle modalMenuBounds;
@@ -76,16 +76,16 @@ public class BattleView {
 
 		// Reset animations
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
-		
+
 		loadAssets();
 		initBattle();
 	}
-	
+
 	private void loadAssets() {
 		nameFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 200, 50);
 		settingsImg = AssetLoader.loadImage(GameConstants.SETTINGS_BTN_IMG, 50, 50);
 		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, 400, 300);
-		
+
 		// Load Hearts
 		heartImg = AssetLoader.loadImage(GameConstants.HEART_IMG, 20, 20);
 		halfHeartImg = AssetLoader.loadImage(GameConstants.HALF_HEART_IMG, 20, 20);
@@ -100,7 +100,7 @@ public class BattleView {
 		this.rewardsClaimed = false;
 		this.message = "";
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
-		
+
 		this.playerPet.setCurrentHealth(this.playerPet.getMaxHealth());
 
 		// 1. Pick Word
@@ -113,24 +113,35 @@ public class BattleView {
 		String bgPath = GameConstants.BG_DIR + "battle_bg/bg" + bgNum + ".gif";
 		this.bgImage = AssetLoader.loadImage(bgPath, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
 
-		// 3. Spawn Enemy
-		int enemyHp = 3 + playerUser.getWorldLevel(); 
-		int enemyAtk = 2 * (1 + (playerUser.getWorldLevel() / 2)); 
+		// 3. Spawn Random Enemy
+		int enemyHp = 3 + playerUser.getWorldLevel();
+		int enemyAtk = 2 * (1 + (playerUser.getWorldLevel() / 2));
 
-		this.currentEnemy = new Enemy("Lava Worm", enemyHp, playerUser.getWorldLevel(), enemyAtk, "enemies/enemies/worm");
-		
+		// Define the available enemy types and their folder paths
+		String[][] availableEnemies = { { "Lava Worm", "enemies/enemies/worm" },
+				{ "Evil Eye", "enemies/enemies/evil_eye" }, { "Goblin", "enemies/enemies/goblin" },
+				{ "Mushroom", "enemies/enemies/mushroom" }, { "Skeleton", "enemies/enemies/skeleton" } };
+
+		// Select a random enemy from the list
+		int idx = random.nextInt(availableEnemies.length);
+		String eName = availableEnemies[idx][0];
+		String ePath = availableEnemies[idx][1];
+
+		this.currentEnemy = new Enemy(eName, enemyHp, playerUser.getWorldLevel(), enemyAtk, ePath);
+
 		// 4. Preload Assets
 		System.out.println("[Battle] Preloading assets...");
 		this.playerPet.preloadAssets();
 		this.currentEnemy.preloadAssets();
-		
+
 		// Initialize button bounds
 		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, 20, 50, 50);
 	}
 
 	public void update() {
-		if (isSettingsOpen) return; 
-		
+		if (isSettingsOpen)
+			return;
+
 		if (isAnimatingAction) {
 			if (System.currentTimeMillis() - actionStartTime > ANIMATION_DURATION) {
 				isAnimatingAction = false;
@@ -175,26 +186,24 @@ public class BattleView {
 		playerWon = false;
 		playerPet.setAnimationState(Hangpie.AnimState.DEATH);
 	}
-	
-	// --- Input Handling ---
-	
+
+// --- Input Handling ---
+
 	public String handleMouseClick(int x, int y) {
 		if (isSettingsOpen) {
 			if (modalSaveBounds != null && modalSaveBounds.contains(x, y)) {
 				Main.userManager.updateUser(playerUser);
 				message = "Game Saved!";
-				isSettingsOpen = false; 
+				isSettingsOpen = false;
 				isExitConfirmation = false;
 				return "NONE";
-			}
-			else if (modalMenuBounds != null && modalMenuBounds.contains(x, y)) {
-				return "MENU"; 
-			}
-			else if (modalExitBounds != null && modalExitBounds.contains(x, y)) {
+			} else if (modalMenuBounds != null && modalMenuBounds.contains(x, y)) {
+				return "MENU";
+			} else if (modalExitBounds != null && modalExitBounds.contains(x, y)) {
 				if (!isExitConfirmation) {
-					isExitConfirmation = true; 
+					isExitConfirmation = true;
 				} else {
-					return "EXIT"; 
+					return "EXIT";
 				}
 				return "NONE";
 			}
@@ -216,13 +225,14 @@ public class BattleView {
 			}
 			return;
 		}
-		
+
 		if (battleOver) {
 			handleMenuInput(keyCode);
 			return;
 		}
 
-		if (isAnimatingAction) return;
+		if (isAnimatingAction)
+			return;
 
 		char guess = java.lang.Character.toUpperCase(keyChar);
 		if (guess < 'A' || guess > 'Z')
@@ -243,7 +253,7 @@ public class BattleView {
 
 		actionStartTime = System.currentTimeMillis();
 		isAnimatingAction = true;
-		
+
 		int playerDmg = 1 + (playerUser.getWorldLevel() / 2);
 		int enemyDmg = 2 * playerDmg;
 
@@ -293,7 +303,8 @@ public class BattleView {
 
 		// Draw Settings Button
 		if (settingsImg != null && settingsBtnBounds != null) {
-			g.drawImage(settingsImg, settingsBtnBounds.x, settingsBtnBounds.y, settingsBtnBounds.width, settingsBtnBounds.height, observer);
+			g.drawImage(settingsImg, settingsBtnBounds.x, settingsBtnBounds.y, settingsBtnBounds.width,
+					settingsBtnBounds.height, observer);
 		}
 
 		// Draw Message (Correct/Wrong) - Positioned just below the backdrop
@@ -307,24 +318,24 @@ public class BattleView {
 
 		// --- Character Rendering (Scaled & Centered) ---
 		// Lowered groundY to height - 100 to match the yellow line visual
-		int groundY = height - 50; 
-		int scaleFactor = 4; 
+		int groundY = height - 50;
+		int scaleFactor = 4;
 
 		// Render Enemy
 		Image enemyImg = currentEnemy.getCurrentImage();
 		if (enemyImg != null) {
 			int eW = enemyImg.getWidth(observer);
 			int eH = enemyImg.getHeight(observer);
-			
+
 			if (eW > 0 && eH > 0) {
 				int drawW = eW * scaleFactor;
 				int drawH = eH * scaleFactor;
-				
+
 				// UI Center Right is at: (width - 250) + (200/2) = width - 150
 				// Center character at X = (width - 150) - (drawW / 2)
 				int drawX = (width - 150) - (drawW / 2);
-				int drawY = groundY - drawH;     
-				
+				int drawY = groundY - drawH;
+
 				g.drawImage(enemyImg, drawX, drawY, drawW, drawH, observer);
 			}
 		}
@@ -334,16 +345,16 @@ public class BattleView {
 		if (playerImg != null) {
 			int pW = playerImg.getWidth(observer);
 			int pH = playerImg.getHeight(observer);
-			
+
 			if (pW > 0 && pH > 0) {
 				int drawW = pW * scaleFactor;
 				int drawH = pH * scaleFactor;
-				
+
 				// UI Center Left is at: 30 + (200/2) = 130
 				// Center character at X = 130 - (drawW / 2)
 				int drawX = 130 - (drawW / 2);
-				int drawY = groundY - drawH; 
-				
+				int drawY = groundY - drawH;
+
 				g.drawImage(playerImg, drawX, drawY, drawW, drawH, observer);
 			}
 		}
@@ -356,21 +367,21 @@ public class BattleView {
 			drawEndScreen(g, width, height);
 		}
 	}
-	
+
 	private void drawCharacterUI(Graphics2D g, int width, int backdropBottomY, ImageObserver observer) {
 		// Positioned immediately BELOW the backdrop
-		int topY = backdropBottomY + 20; 
+		int topY = backdropBottomY + 20;
 		int startX = 30;
 		int frameW = 200;
 		int frameH = 50;
-		
+
 		// --- PLAYER UI (LEFT) ---
-		
+
 		// Name Frame
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, startX, topY, frameW, frameH, null);
 		}
-		
+
 		// Centered Name Text
 		g.setColor(Color.WHITE);
 		g.setFont(new Font("Monospaced", Font.BOLD, 18));
@@ -378,19 +389,18 @@ public class BattleView {
 		String pName = playerPet.getName();
 		int pNameX = startX + (frameW - fm.stringWidth(pName)) / 2;
 		g.drawString(pName, pNameX, topY + 32);
-		
+
 		// Heart Display (Below Name)
 		drawHearts(g, playerPet, startX, topY + 60, observer);
-		
-		
+
 		// --- ENEMY UI (RIGHT) ---
 		int enemyX = width - 250;
-		
+
 		// Name Frame
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, enemyX, topY, frameW, frameH, null);
 		}
-		
+
 		// Centered Name Text
 		g.setColor(Color.WHITE);
 		g.setFont(new Font("Monospaced", Font.BOLD, 18));
@@ -398,7 +408,7 @@ public class BattleView {
 		String eName = currentEnemy.getName();
 		int eNameX = enemyX + (frameW - fm.stringWidth(eName)) / 2;
 		g.drawString(eName, eNameX, topY + 32);
-		
+
 		// Heart Display (Below Name, right aligned visually)
 		drawHearts(g, currentEnemy, enemyX, topY + 60, observer);
 	}
@@ -406,22 +416,22 @@ public class BattleView {
 	private void drawHearts(Graphics2D g, Character character, int x, int y, ImageObserver observer) {
 		int maxHp = character.getMaxHealth();
 		int currentHp = character.getCurrentHealth();
-		
+
 		// 2 HP = 1 Heart
 		// 1 HP = Half Heart
-		
+
 		int totalHearts = (maxHp + 1) / 2;
-		
-		int heartSize = 20;
-		int spacing = 5;
-		
+
+		int heartSize = 15;
+		int spacing = 3;
+
 		for (int i = 0; i < totalHearts; i++) {
 			// Index 0 (Heart 1) represents HP 1 & 2
 			int hpThresholdForFull = (i + 1) * 2;
 			int hpThresholdForHalf = hpThresholdForFull - 1;
-			
+
 			Image imgToDraw;
-			
+
 			if (currentHp >= hpThresholdForFull) {
 				imgToDraw = heartImg;
 			} else if (currentHp >= hpThresholdForHalf) {
@@ -429,7 +439,7 @@ public class BattleView {
 			} else {
 				imgToDraw = emptyHeartImg;
 			}
-			
+
 			if (imgToDraw != null) {
 				g.drawImage(imgToDraw, x + (i * (heartSize + spacing)), y, heartSize, heartSize, observer);
 			}
@@ -439,8 +449,8 @@ public class BattleView {
 	private void drawWordPuzzle(Graphics2D g, int width, int height, ImageObserver obs) {
 		int spacing = 60;
 		// Moved Up inside the backdrop
-		int clueY = 50; 
-		int lettersY = 95; 
+		int clueY = 50;
+		int lettersY = 95;
 
 		g.setColor(Color.CYAN);
 		g.setFont(GameConstants.SUBTITLE_FONT);
@@ -457,7 +467,7 @@ public class BattleView {
 				currentX += spacing;
 				continue;
 			}
-			
+
 			if (guessedLetters.contains(c)) {
 				String letterPath = "images/utilities/letters/" + c + ".png";
 				Image letterImg = AssetLoader.loadImage(letterPath, 40, 40);
@@ -474,60 +484,62 @@ public class BattleView {
 			currentX += spacing;
 		}
 	}
-	
+
 	private void drawSettingsModal(Graphics2D g, int width, int height) {
 		g.setColor(new Color(0, 0, 0, 150));
-		g.fillRect(0, 0, width, height); 
-		
+		g.fillRect(0, 0, width, height);
+
 		int mW = 400;
 		int mH = 300;
 		int mX = (width - mW) / 2;
 		int mY = (height - mH) / 2;
-		
+
 		if (modalImg != null) {
 			g.drawImage(modalImg, mX, mY, mW, mH, null);
 		} else {
 			g.setColor(Color.GRAY);
 			g.fillRect(mX, mY, mW, mH);
 		}
-		
+
 		g.setColor(Color.BLACK);
 		g.setFont(GameConstants.HEADER_FONT);
 		String title = "PAUSED";
-		g.drawString(title, mX + (mW - g.getFontMetrics().stringWidth(title))/2, mY + 60);
-		
+		g.drawString(title, mX + (mW - g.getFontMetrics().stringWidth(title)) / 2, mY + 60);
+
 		// Buttons
 		g.setFont(GameConstants.BUTTON_FONT);
 		int btnH = 40;
 		int btnGap = 15;
 		int startBtnY = mY + 100;
-		
+
 		// Save
 		String saveTxt = "SAVE GAME";
 		int saveW = g.getFontMetrics().stringWidth(saveTxt);
-		modalSaveBounds = new Rectangle(mX + (mW - saveW)/2 - 10, startBtnY, saveW + 20, btnH);
-		g.drawString(saveTxt, mX + (mW - saveW)/2, startBtnY + 25);
-		
+		modalSaveBounds = new Rectangle(mX + (mW - saveW) / 2 - 10, startBtnY, saveW + 20, btnH);
+		g.drawString(saveTxt, mX + (mW - saveW) / 2, startBtnY + 25);
+
 		// Menu
 		String menuTxt = "MAIN MENU";
 		int menuW = g.getFontMetrics().stringWidth(menuTxt);
-		modalMenuBounds = new Rectangle(mX + (mW - menuW)/2 - 10, startBtnY + btnH + btnGap, menuW + 20, btnH);
-		g.drawString(menuTxt, mX + (mW - menuW)/2, startBtnY + btnH + btnGap + 25);
-		
+		modalMenuBounds = new Rectangle(mX + (mW - menuW) / 2 - 10, startBtnY + btnH + btnGap, menuW + 20, btnH);
+		g.drawString(menuTxt, mX + (mW - menuW) / 2, startBtnY + btnH + btnGap + 25);
+
 		// Exit
 		String exitTxt = "EXIT GAME";
-		if (isExitConfirmation) exitTxt = "CONFIRM EXIT?";
+		if (isExitConfirmation)
+			exitTxt = "CONFIRM EXIT?";
 		int exitW = g.getFontMetrics().stringWidth(exitTxt);
-		
+
 		g.setColor(isExitConfirmation ? Color.RED : Color.BLACK);
-		modalExitBounds = new Rectangle(mX + (mW - exitW)/2 - 10, startBtnY + (2 * (btnH + btnGap)), exitW + 20, btnH);
-		g.drawString(exitTxt, mX + (mW - exitW)/2, startBtnY + (2 * (btnH + btnGap)) + 25);
-		
+		modalExitBounds = new Rectangle(mX + (mW - exitW) / 2 - 10, startBtnY + (2 * (btnH + btnGap)), exitW + 20,
+				btnH);
+		g.drawString(exitTxt, mX + (mW - exitW) / 2, startBtnY + (2 * (btnH + btnGap)) + 25);
+
 		// Warning text for Exit
 		if (isExitConfirmation) {
 			g.setFont(new Font("Monospaced", Font.PLAIN, 12));
 			String warn = "Unsaved progress will be lost!";
-			g.drawString(warn, mX + (mW - g.getFontMetrics().stringWidth(warn))/2, mY + mH - 20);
+			g.drawString(warn, mX + (mW - g.getFontMetrics().stringWidth(warn)) / 2, mY + mH - 20);
 		}
 	}
 

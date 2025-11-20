@@ -40,7 +40,8 @@ public class InventoryView {
 	
 	// Adjusted Start X to center the grid of 4 items
 	private final int START_X = 85;
-	private final int START_Y = 180; 
+	// UPDATED: Moved up from 180 to 160 to prevent bottom frame from touching the footer
+	private final int START_Y = 160; 
 
 	public InventoryView(User user) {
 		this.user = user;
@@ -69,7 +70,9 @@ public class InventoryView {
 		}
 
 		Shape originalClip = g.getClip();
-		g.setClip(0, 100, width, height - 200);
+		// UPDATED: Adjusted clip to start at 90 (was 100) to fit the higher cards
+		// Height adjusted to (height - 90 - 100) = height - 190
+		g.setClip(0, 90, width, height - 190);
 
 		List<Hangpie> inventory = user.getInventory();
 
@@ -102,7 +105,8 @@ public class InventoryView {
 
 		// Header
 		g.setColor(new Color(0, 0, 0, 150));
-		g.fillRect(0, 0, width, 100);
+		// UPDATED: Reduced header height to 90 to match clip and not overlap cards
+		g.fillRect(0, 0, width, 90);
 
 		g.setFont(GameConstants.HEADER_FONT);
 		g.setColor(Color.WHITE);
@@ -169,6 +173,7 @@ public class InventoryView {
 		}
 		
 		// --- Draw Name Frame (ABOVE Card) ---
+		// Adjusted in previous step: Moved up to y - 65
 		int nameFrameY = y - 55;
 		int nameFrameH = 40;
 		
@@ -186,10 +191,11 @@ public class InventoryView {
 
 		// --- Draw Stats Section (BELOW Card) ---
 		int statsY = y + h + 10; 
-		int statsH = 60;
+		// Adjusted in previous step: Increased height to 75
+		int statsH = 75;
 		
-		if (frameImg != null) {
-			g.drawImage(frameImg, x + 10, statsY, w - 20, statsH, observer);
+		if (nameFrameImg != null) {
+			g.drawImage(nameFrameImg, x + 10, statsY, w - 20, statsH, observer);
 		}
 		
 		// 1. Centered Level (Top Row)
@@ -205,13 +211,13 @@ public class InventoryView {
 		// Left Aligned HP
 		g.setColor(Color.GREEN);
 		String hpTxt = "HP: " + pet.getMaxHealth();
-		g.drawString(hpTxt, x + 30, statsY + 48);
+		g.drawString(hpTxt, x + 30, statsY + 52);
 		
 		// Right Aligned Atk
 		g.setColor(Color.RED);
 		String atkTxt = "Atk: " + pet.getAttackPower();
 		int atkWidth = g.getFontMetrics().stringWidth(atkTxt);
-		g.drawString(atkTxt, x + w - 30 - atkWidth, statsY + 48);
+		g.drawString(atkTxt, x + w - 30 - atkWidth, statsY + 52);
 	}
 
 	public String handleMouseClick(int mx, int my) {
