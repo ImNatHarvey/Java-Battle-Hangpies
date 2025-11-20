@@ -40,6 +40,7 @@ public class BattleView {
 	private boolean rewardsClaimed = false;
 
 	private String message = "";
+	private Color messageColor = Color.YELLOW; // Default color
 
 	// Animation Timers
 	private long actionStartTime = 0;
@@ -99,6 +100,7 @@ public class BattleView {
 		this.playerWon = false;
 		this.rewardsClaimed = false;
 		this.message = "";
+		this.messageColor = Color.YELLOW;
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
 
 		this.playerPet.setCurrentHealth(this.playerPet.getMaxHealth());
@@ -109,7 +111,6 @@ public class BattleView {
 		this.clue = data.clue;
 
 		// 2. Pick Random Background (Updated for range 1-22, skipping missing 19)
-		// Available BGs: 1-18, 20-22. (19 is missing from assets)
 		int[] validBgIndices = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22 };
 
 		int bgIndex = random.nextInt(validBgIndices.length);
@@ -199,6 +200,7 @@ public class BattleView {
 			if (modalSaveBounds != null && modalSaveBounds.contains(x, y)) {
 				Main.userManager.updateUser(playerUser);
 				message = "Game Saved!";
+				messageColor = Color.YELLOW;
 				isSettingsOpen = false;
 				isExitConfirmation = false;
 				return "NONE";
@@ -245,6 +247,7 @@ public class BattleView {
 
 		if (guessedLetters.contains(guess)) {
 			message = "Already guessed " + guess + "!";
+			messageColor = Color.YELLOW;
 			return;
 		}
 
@@ -264,11 +267,13 @@ public class BattleView {
 
 		if (isCorrect) {
 			message = "Correct! Hit!";
+			messageColor = Color.GREEN;
 			playerPet.setAnimationState(Hangpie.AnimState.ATTACK);
 			currentEnemy.setAnimationState(Enemy.AnimState.DAMAGE);
 			currentEnemy.takeDamage(playerDmg);
 		} else {
 			message = "Wrong! Ouch!";
+			messageColor = Color.RED;
 			currentEnemy.setAnimationState(Enemy.AnimState.ATTACK);
 			playerPet.setAnimationState(Hangpie.AnimState.DAMAGE);
 			playerPet.takeDamage(enemyDmg);
@@ -299,13 +304,15 @@ public class BattleView {
 		}
 
 		// --- Top Backdrop (HUD Area) ---
-		// Increased Height to prevent overlap between Clue and Letters
 		int backdropH = 160;
 		g.setColor(new Color(0, 0, 0, 180));
 		g.fillRect(0, 0, width, backdropH);
 
-		// Draw Player and Enemy UI (Now Positioned BELOW the backdrop)
-		drawCharacterUI(g, width, backdropH, observer);
+		// Define the shared Top Y for all Frames (Name Frames AND Message Frame)
+		int framesTopY = backdropH + 10;
+
+		// Draw Player and Enemy UI (Using the shared Top Y)
+		drawCharacterUI(g, width, framesTopY, observer);
 
 		// Draw Settings Button
 		if (settingsImg != null && settingsBtnBounds != null) {
@@ -313,26 +320,27 @@ public class BattleView {
 					settingsBtnBounds.height, observer);
 		}
 
-		// Draw Message (Correct/Wrong) - Positioned just below the backdrop with NameFrame Background
+		// Draw Message (Damage/Indicator) - Aligned with Character Frames
 		if (!message.isEmpty()) {
-			g.setFont(GameConstants.UI_FONT);
+			g.setFont(GameConstants.UI_FONT); // Same font size as Clue
 			FontMetrics fm = g.getFontMetrics();
 			int msgW = fm.stringWidth(message);
 
 			// Dynamic Background Calculation
 			int bgW = msgW + 60; // Padding
-			int bgH = 50;
+			int bgH = 50;        // Fixed Height to match Name Frames roughly
 			int bgX = (width - bgW) / 2;
-			int bgY = backdropH + 15; // Position below backdrop
+			int bgY = framesTopY; // ALIGN TOP EDGE WITH NAME FRAMES
 
 			if (nameFrameImg != null) {
 				g.drawImage(nameFrameImg, bgX, bgY, bgW, bgH, observer);
 			}
 
-			g.setColor(Color.YELLOW);
-			// Precise Vertical Centering
+			g.setColor(messageColor);
+			
+			// Updated Vertical Centering: Lifted by 4 pixels
 			int textX = (width - msgW) / 2;
-			int textY = bgY + ((bgH - fm.getHeight()) / 2) + fm.getAscent();
+			int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 7; // MANUAL LIFT -4
 			g.drawString(message, textX, textY);
 		}
 
@@ -350,12 +358,8 @@ public class BattleView {
 			if (eW > 0 && eH > 0) {
 				int drawW = eW * scaleFactor;
 				int drawH = eH * scaleFactor;
-
-				// UI Center Right is at: (width - 250) + (200/2) = width - 150
-				// Center character at X = (width - 150) - (drawW / 2)
 				int drawX = (width - 150) - (drawW / 2);
 				int drawY = groundY - drawH;
-
 				g.drawImage(enemyImg, drawX, drawY, drawW, drawH, observer);
 			}
 		}
@@ -369,12 +373,8 @@ public class BattleView {
 			if (pW > 0 && pH > 0) {
 				int drawW = pW * scaleFactor;
 				int drawH = pH * scaleFactor;
-
-				// UI Center Left is at: 30 + (200/2) = 130
-				// Center character at X = 130 - (drawW / 2)
 				int drawX = 130 - (drawW / 2);
 				int drawY = groundY - drawH;
-
 				g.drawImage(playerImg, drawX, drawY, drawW, drawH, observer);
 			}
 		}
@@ -388,10 +388,7 @@ public class BattleView {
 		}
 	}
 
-	private void drawCharacterUI(Graphics2D g, int width, int backdropBottomY, ImageObserver observer) {
-		// Positioned immediately BELOW the backdrop
-		int topY = backdropBottomY + 10;
-		
+	private void drawCharacterUI(Graphics2D g, int width, int topY, ImageObserver observer) {
 		// Revert to original margin startX
 		int startX = 30;
 		
@@ -416,24 +413,36 @@ public class BattleView {
 
 		g.setColor(Color.WHITE);
 
-		// 1. Player Level (Top) - Pushed down slightly
+		// 1. Player Level (Top)
 		g.setFont(levelFont);
 		String pLevel = "LEVEL " + playerUser.getWorldLevel();
 		FontMetrics fm = g.getFontMetrics();
 		int pLevelX = pFrameX + (frameW - fm.stringWidth(pLevel)) / 2;
-		int pLevelY = topY + 28; // Moved down for tighter spacing
+		int pLevelY = topY + 28; 
 		g.drawString(pLevel, pLevelX, pLevelY);
 
-		// 2. Player Name (Bottom) - Pulled up slightly
+		// 2. Player Name (Bottom)
 		g.setFont(nameFont);
 		fm = g.getFontMetrics();
 		String pName = playerPet.getName();
 		int pNameX = pFrameX + (frameW - fm.stringWidth(pName)) / 2;
-		int pNameY = topY + 46; // Reduced gap between level and name
+		int pNameY = topY + 46; 
 		g.drawString(pName, pNameX, pNameY);
 
 		// Heart Display (Below Frame)
-		drawHearts(g, playerPet, pFrameX + 10, topY + frameH + 5, observer);
+		int heartsY = topY + frameH + 5;
+		drawHearts(g, playerPet, pFrameX + 10, heartsY, observer);
+
+		// 3. Player Stats (HP | ATK) - Below Hearts
+		g.setFont(levelFont); // Size 12, same as Level
+		int playerDmg = 1 + (playerUser.getWorldLevel() / 2);
+		String pStats = "HP " + playerPet.getCurrentHealth() + "/" + playerPet.getMaxHealth() + " | ATK " + playerDmg;
+		fm = g.getFontMetrics();
+		int pStatsX = pFrameX + (frameW - fm.stringWidth(pStats)) / 2;
+		// Hearts height is ~15 (heartSize). Text below that.
+		int statsY = heartsY + 15 + 15; 
+		g.drawString(pStats, pStatsX, statsY);
+
 
 		// --- ENEMY UI (RIGHT) ---
 
@@ -459,23 +468,27 @@ public class BattleView {
 		g.drawString(eName, eNameX, pNameY);
 
 		// Heart Display (Below Name)
-		drawHearts(g, currentEnemy, eFrameX + 10, topY + frameH + 5, observer);
+		drawHearts(g, currentEnemy, eFrameX + 10, heartsY, observer);
+		
+		// 3. Enemy Stats (HP | ATK) - Below Hearts
+		g.setFont(levelFont);
+		// Calculate enemy damage consistent with handleKeyPress logic
+		int enemyDmg = 2 * playerDmg;
+		String eStats = "HP " + currentEnemy.getCurrentHealth() + "/" + currentEnemy.getMaxHealth() + " | ATK " + enemyDmg;
+		fm = g.getFontMetrics();
+		int eStatsX = eFrameX + (frameW - fm.stringWidth(eStats)) / 2;
+		g.drawString(eStats, eStatsX, statsY);
 	}
 
 	private void drawHearts(Graphics2D g, Character character, int x, int y, ImageObserver observer) {
 		int maxHp = character.getMaxHealth();
 		int currentHp = character.getCurrentHealth();
 
-		// 2 HP = 1 Heart
-		// 1 HP = Half Heart
-
 		int totalHearts = (maxHp + 1) / 2;
-
 		int heartSize = 15;
 		int spacing = 3;
 
 		for (int i = 0; i < totalHearts; i++) {
-			// Index 0 (Heart 1) represents HP 1 & 2
 			int hpThresholdForFull = (i + 1) * 2;
 			int hpThresholdForHalf = hpThresholdForFull - 1;
 
@@ -498,32 +511,30 @@ public class BattleView {
 	private void drawWordPuzzle(Graphics2D g, int width, int height, ImageObserver obs) {
 		int spacing = 60;
 
-		// Adjusted positions to avoid overlap
-		// Clue Center Y approx 50
-		// Letters Baseline approx 130
 		int clueCenterY = 50;
-		int lettersY = 130; // Moved down from 95
+		int lettersY = 130; 
 
-		g.setFont(GameConstants.SUBTITLE_FONT);
+		// Use same font as Message for consistency
+		g.setFont(GameConstants.UI_FONT); 
 		String clueText = "CLUE: " + clue;
 		FontMetrics fm = g.getFontMetrics();
 		int textW = fm.stringWidth(clueText);
 
 		// Draw Clue Background (Scaled NameFrame)
-		int bgW = textW + 60; // Extra width for padding
-		int bgH = 50; // Fixed height
+		int bgW = textW + 60; 
+		int bgH = 50; 
 		int bgX = (width - bgW) / 2;
-		int bgY = clueCenterY - (bgH / 2); // Centered on clueCenterY
+		int bgY = clueCenterY - (bgH / 2); 
 
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, bgX, bgY, bgW, bgH, obs);
 		}
 
-		g.setColor(Color.CYAN);
+		g.setColor(Color.WHITE); 
 
-		// Precise Vertical Centering for Clue Text
+		// Updated Vertical Centering: Lifted by 4 pixels
 		int textX = (width - textW) / 2;
-		int textY = bgY + ((bgH - fm.getHeight()) / 2) + fm.getAscent();
+		int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 7; // MANUAL LIFT -4
 		g.drawString(clueText, textX, textY);
 
 		int totalWidth = secretWord.length() * spacing;

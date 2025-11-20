@@ -173,7 +173,6 @@ public class InventoryView {
 		}
 		
 		// --- Draw Name Frame (ABOVE Card) ---
-		// Adjusted in previous step: Moved up to y - 65
 		int nameFrameY = y - 55;
 		int nameFrameH = 40;
 		
@@ -186,12 +185,14 @@ public class InventoryView {
 		FontMetrics fm = g.getFontMetrics();
 		String name = pet.getName();
 		if (name.length() > 15) name = name.substring(0, 12) + "...";
+		
+		// Precise vertical centering for name
 		int nameX = x + (w - fm.stringWidth(name)) / 2;
-		g.drawString(name, nameX, nameFrameY + 25);
+		int nameY = nameFrameY + ((nameFrameH - fm.getHeight()) / 2) + fm.getAscent();
+		g.drawString(name, nameX, nameY);
 
 		// --- Draw Stats Section (BELOW Card) ---
 		int statsY = y + h + 10; 
-		// Adjusted in previous step: Increased height to 75
 		int statsH = 75;
 		
 		if (nameFrameImg != null) {
@@ -200,24 +201,28 @@ public class InventoryView {
 		
 		// 1. Centered Level (Top Row)
 		g.setColor(Color.WHITE);
-		g.setFont(new Font("Monospaced", Font.BOLD, 16));
+		Font statFont = new Font("Monospaced", Font.BOLD, 16); // Uniform Size
+		g.setFont(statFont);
+		
 		String lvlTxt = "Lvl: " + pet.getLevel();
-		int lvlWidth = g.getFontMetrics().stringWidth(lvlTxt);
-		g.drawString(lvlTxt, x + (w - lvlWidth) / 2, statsY + 25);
+		fm = g.getFontMetrics();
+		int lvlWidth = fm.stringWidth(lvlTxt);
+		
+		// UPDATED: Pushed down to +28 (was +25) to avoid top edge
+		g.drawString(lvlTxt, x + (w - lvlWidth) / 2, statsY + 28);
 
 		// 2. Horizontal HP and Atk (Bottom Row)
-		g.setFont(new Font("Monospaced", Font.BOLD, 14));
+		
+		// UPDATED: Pulled up to +50 (was +55) to avoid bottom edge and reduce center gap
 		
 		// Left Aligned HP
-		g.setColor(Color.GREEN);
 		String hpTxt = "HP: " + pet.getMaxHealth();
-		g.drawString(hpTxt, x + 30, statsY + 52);
+		g.drawString(hpTxt, x + 30, statsY + 50);
 		
 		// Right Aligned Atk
-		g.setColor(Color.RED);
 		String atkTxt = "Atk: " + pet.getAttackPower();
-		int atkWidth = g.getFontMetrics().stringWidth(atkTxt);
-		g.drawString(atkTxt, x + w - 30 - atkWidth, statsY + 52);
+		int atkWidth = fm.stringWidth(atkTxt);
+		g.drawString(atkTxt, x + w - 30 - atkWidth, statsY + 50);
 	}
 
 	public String handleMouseClick(int mx, int my) {
