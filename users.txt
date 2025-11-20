@@ -1,4 +1,4 @@
 // FORMAT: username|password|isAdmin|firstName|lastName|contactNum|goldBalance|worldLvl|progressLvl
 qwer1234|qwer1234|false|player|asd|09160854212|0.0|1|1
 admin|admin123|true|Admin|User|09123456789|0.0|1|1
-player123|password123|false|player|password|09060585188|11899.0|5|24
+player123|password123|false|player|password|09060585188|13409.0|8|37

@@ -14,6 +14,7 @@ import java.util.Set;
 
 import game.GameConstants;
 import main.Main; 
+import models.Character;
 import models.Enemy;
 import models.Hangpie;
 import models.User;
@@ -29,7 +30,7 @@ public class BattleView {
 	// Battle State
 	private String secretWord;
 	private String clue;
-	private Set<Character> guessedLetters;
+	private Set<java.lang.Character> guessedLetters;
 	private boolean battleOver = false;
 	private boolean playerWon = false;
 	private boolean exitRequested = false; 
@@ -50,6 +51,11 @@ public class BattleView {
 	private Image nameFrameImg;
 	private Image settingsImg;
 	private Image modalImg;
+	
+	// Heart Assets
+	private Image heartImg;
+	private Image halfHeartImg;
+	private Image emptyHeartImg;
 	
 	private Random random = new Random();
 
@@ -79,6 +85,11 @@ public class BattleView {
 		nameFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 200, 50);
 		settingsImg = AssetLoader.loadImage(GameConstants.SETTINGS_BTN_IMG, 50, 50);
 		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, 400, 300);
+		
+		// Load Hearts
+		heartImg = AssetLoader.loadImage(GameConstants.HEART_IMG, 20, 20);
+		halfHeartImg = AssetLoader.loadImage(GameConstants.HALF_HEART_IMG, 20, 20);
+		emptyHeartImg = AssetLoader.loadImage(GameConstants.EMPTY_HEART_IMG, 20, 20);
 	}
 
 	private void initBattle() {
@@ -213,7 +224,7 @@ public class BattleView {
 
 		if (isAnimatingAction) return;
 
-		char guess = Character.toUpperCase(keyChar);
+		char guess = java.lang.Character.toUpperCase(keyChar);
 		if (guess < 'A' || guess > 'Z')
 			return;
 
@@ -272,36 +283,69 @@ public class BattleView {
 			g.drawImage(bgImage, 0, 0, width, height, observer);
 		}
 
-		g.setColor(new Color(0, 0, 0, 100));
-		g.fillRect(0, 0, width, 180);
+		// --- Top Backdrop (HUD Area) ---
+		int backdropH = 130;
+		g.setColor(new Color(0, 0, 0, 180));
+		g.fillRect(0, 0, width, backdropH);
 
-		drawCharacterUI(g, width);
+		// Draw Player and Enemy UI (Now Positioned BELOW the backdrop)
+		drawCharacterUI(g, width, backdropH, observer);
 
+		// Draw Settings Button
 		if (settingsImg != null && settingsBtnBounds != null) {
 			g.drawImage(settingsImg, settingsBtnBounds.x, settingsBtnBounds.y, settingsBtnBounds.width, settingsBtnBounds.height, observer);
 		}
 
+		// Draw Message (Correct/Wrong) - Positioned just below the backdrop
 		g.setColor(Color.WHITE);
 		g.setFont(GameConstants.UI_FONT);
 		if (!message.isEmpty()) {
 			g.setColor(Color.YELLOW);
 			int msgW = g.getFontMetrics().stringWidth(message);
-			g.drawString(message, (width - msgW) / 2, 210);
+			g.drawString(message, (width - msgW) / 2, backdropH + 40);
 		}
 
-		int charSize = 320;
-		int floorY = height - 380;
+		// --- Character Rendering (Scaled & Centered) ---
+		// Lowered groundY to height - 100 to match the yellow line visual
+		int groundY = height - 50; 
+		int scaleFactor = 4; 
 
-		int enemyX = width - charSize - 100;
+		// Render Enemy
 		Image enemyImg = currentEnemy.getCurrentImage();
 		if (enemyImg != null) {
-			g.drawImage(enemyImg, enemyX, floorY, charSize, charSize, observer);
+			int eW = enemyImg.getWidth(observer);
+			int eH = enemyImg.getHeight(observer);
+			
+			if (eW > 0 && eH > 0) {
+				int drawW = eW * scaleFactor;
+				int drawH = eH * scaleFactor;
+				
+				// UI Center Right is at: (width - 250) + (200/2) = width - 150
+				// Center character at X = (width - 150) - (drawW / 2)
+				int drawX = (width - 150) - (drawW / 2);
+				int drawY = groundY - drawH;     
+				
+				g.drawImage(enemyImg, drawX, drawY, drawW, drawH, observer);
+			}
 		}
 
-		int playerX = 100;
+		// Render Player
 		Image playerImg = playerPet.getCurrentImage();
 		if (playerImg != null) {
-			g.drawImage(playerImg, playerX, floorY, charSize, charSize, observer);
+			int pW = playerImg.getWidth(observer);
+			int pH = playerImg.getHeight(observer);
+			
+			if (pW > 0 && pH > 0) {
+				int drawW = pW * scaleFactor;
+				int drawH = pH * scaleFactor;
+				
+				// UI Center Left is at: 30 + (200/2) = 130
+				// Center character at X = 130 - (drawW / 2)
+				int drawX = 130 - (drawW / 2);
+				int drawY = groundY - drawH; 
+				
+				g.drawImage(playerImg, drawX, drawY, drawW, drawH, observer);
+			}
 		}
 
 		drawWordPuzzle(g, width, height, observer);
@@ -313,9 +357,9 @@ public class BattleView {
 		}
 	}
 	
-	private void drawCharacterUI(Graphics2D g, int width) {
-		// Moved down to avoid Settings button overlap
-		int topY = 80; 
+	private void drawCharacterUI(Graphics2D g, int width, int backdropBottomY, ImageObserver observer) {
+		// Positioned immediately BELOW the backdrop
+		int topY = backdropBottomY + 20; 
 		int startX = 30;
 		int frameW = 200;
 		int frameH = 50;
@@ -335,11 +379,8 @@ public class BattleView {
 		int pNameX = startX + (frameW - fm.stringWidth(pName)) / 2;
 		g.drawString(pName, pNameX, topY + 32);
 		
-		// Text Based HP (No Frame, No Hearts)
-		g.setFont(new Font("Monospaced", Font.BOLD, 24));
-		g.setColor(Color.GREEN);
-		String hpText = "HP: " + playerPet.getCurrentHealth() + "/" + playerPet.getMaxHealth();
-		g.drawString(hpText, startX, topY + 85);
+		// Heart Display (Below Name)
+		drawHearts(g, playerPet, startX, topY + 60, observer);
 		
 		
 		// --- ENEMY UI (RIGHT) ---
@@ -358,19 +399,48 @@ public class BattleView {
 		int eNameX = enemyX + (frameW - fm.stringWidth(eName)) / 2;
 		g.drawString(eName, eNameX, topY + 32);
 		
-		// Text Based HP
-		g.setFont(new Font("Monospaced", Font.BOLD, 24));
-		g.setColor(Color.RED);
-		String eHpText = "HP: " + currentEnemy.getCurrentHealth() + "/" + currentEnemy.getMaxHealth();
-		// Right align the HP text to match the frame end
-		int eHpW = g.getFontMetrics().stringWidth(eHpText);
-		g.drawString(eHpText, enemyX + frameW - eHpW, topY + 85);
+		// Heart Display (Below Name, right aligned visually)
+		drawHearts(g, currentEnemy, enemyX, topY + 60, observer);
+	}
+
+	private void drawHearts(Graphics2D g, Character character, int x, int y, ImageObserver observer) {
+		int maxHp = character.getMaxHealth();
+		int currentHp = character.getCurrentHealth();
+		
+		// 2 HP = 1 Heart
+		// 1 HP = Half Heart
+		
+		int totalHearts = (maxHp + 1) / 2;
+		
+		int heartSize = 20;
+		int spacing = 5;
+		
+		for (int i = 0; i < totalHearts; i++) {
+			// Index 0 (Heart 1) represents HP 1 & 2
+			int hpThresholdForFull = (i + 1) * 2;
+			int hpThresholdForHalf = hpThresholdForFull - 1;
+			
+			Image imgToDraw;
+			
+			if (currentHp >= hpThresholdForFull) {
+				imgToDraw = heartImg;
+			} else if (currentHp >= hpThresholdForHalf) {
+				imgToDraw = halfHeartImg;
+			} else {
+				imgToDraw = emptyHeartImg;
+			}
+			
+			if (imgToDraw != null) {
+				g.drawImage(imgToDraw, x + (i * (heartSize + spacing)), y, heartSize, heartSize, observer);
+			}
+		}
 	}
 
 	private void drawWordPuzzle(Graphics2D g, int width, int height, ImageObserver obs) {
 		int spacing = 60;
-		int clueY = 110;
-		int lettersY = 160;
+		// Moved Up inside the backdrop
+		int clueY = 50; 
+		int lettersY = 95; 
 
 		g.setColor(Color.CYAN);
 		g.setFont(GameConstants.SUBTITLE_FONT);

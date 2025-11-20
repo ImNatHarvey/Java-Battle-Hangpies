@@ -47,5 +47,6 @@ public class GameConstants {
     public static final String MODAL_IMG = GUI_DIR + "modal.png";
     
     public static final String HEART_IMG = CHAR_UTIL_DIR + "heart.png";
+    public static final String HALF_HEART_IMG = CHAR_UTIL_DIR + "half_heart.png";
     public static final String EMPTY_HEART_IMG = CHAR_UTIL_DIR + "empty_heart.png";
 }

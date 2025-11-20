@@ -27,8 +27,6 @@ public class InventoryView {
 	// New UI Assets
 	private Image nameFrameImg;
 	private Image frameImg;
-	private Image heartImg;
-	private Image emptyHeartImg;
 
 	// Scrolling & Selection
 	private int scrollY = 0;
@@ -60,8 +58,6 @@ public class InventoryView {
 		// Load UI Elements
 		nameFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 200, 50);
 		frameImg = AssetLoader.loadImage(GameConstants.FRAME_IMG, 220, 60);
-		heartImg = AssetLoader.loadImage(GameConstants.HEART_IMG, 20, 20);
-		emptyHeartImg = AssetLoader.loadImage(GameConstants.EMPTY_HEART_IMG, 20, 20);
 	}
 	
 	public Hangpie getSelectedPet() {
@@ -171,7 +167,7 @@ public class InventoryView {
 		// --- Draw Name Frame (Top) ---
 		int nameFrameH = 40;
 		if (nameFrameImg != null) {
-			g.drawImage(nameFrameImg, x + 10, y + 40, w - 20, nameFrameH, observer);
+			g.drawImage(nameFrameImg, x + 10, y + 35, w - 20, nameFrameH, observer);
 		}
 		
 		g.setColor(Color.WHITE);
@@ -180,14 +176,12 @@ public class InventoryView {
 		String name = pet.getName();
 		if (name.length() > 15) name = name.substring(0, 12) + "...";
 		int nameX = x + (w - fm.stringWidth(name)) / 2;
-		g.drawString(name, nameX, y + 40 + 25);
+		g.drawString(name, nameX, y + 35 + 25);
 
-		// --- Draw Character Image ---
+		// --- Draw Character Image (Centered and Scaled Up) ---
 		String imageName = pet.getImageName();
 		String imgPath;
-		int imgW = 100;
-		int imgH = 100;
-
+		
 		if (imageName != null && (imageName.contains(".png") || imageName.contains(".gif") || imageName.contains(".jpg"))) {
 			imgPath = GameConstants.HANGPIE_DIR + imageName;
 		} else {
@@ -196,45 +190,45 @@ public class InventoryView {
 
 		Image petImg = petImageCache.get(imgPath);
 		if (petImg == null) {
-			petImg = AssetLoader.loadImage(imgPath, imgW, imgH);
+			// Load strictly for width/height ref or scaled preview
+			petImg = AssetLoader.loadImage(imgPath, -1, -1); // Load original to scale manually
 			if (petImg != null)
 				petImageCache.put(imgPath, petImg);
 		}
 
 		if (petImg != null) {
-			int imgX = x + (w - imgW) / 2;
-			int imgY = y + 90;
-			g.drawImage(petImg, imgX, imgY, imgW, imgH, observer);
+			int maxImgW = 170; // Increased Size (Max width before hitting card borders)
+			int maxImgH = 170; // Increased Size
+			
+			// Center logic
+			int imgX = x + (w - maxImgW) / 2;
+			int imgY = y + 75; // Push down below name
+			
+			g.drawImage(petImg, imgX, imgY, maxImgW, maxImgH, observer);
 		}
 
-		// --- Draw Stats Section (Frame + Hearts) ---
-		int statsY = y + 200;
+		// --- Draw Stats Section (Frame + Text Only) ---
+		// Moved to the absolute bottom of the card
+		int statsY = y + 250; 
 		
-		// Draw Frame for Hearts
+		// Draw Frame for Stats
 		if (frameImg != null) {
-			// x, y, width, height
 			g.drawImage(frameImg, x + 10, statsY, w - 20, 50, observer);
 		}
 		
-		// Draw Hearts logic (Assume 1 HP = 1 Heart)
-		int hearts = Math.min(pet.getMaxHealth(), 8); // Cap at 8 visually for inventory card width
-		int heartStartX = x + 25;
-		int heartY = statsY + 15;
-		
-		for (int i = 0; i < hearts; i++) {
-			if (heartImg != null) {
-				g.drawImage(heartImg, heartStartX + (i * 22), heartY, 20, 20, observer);
-			}
-		}
-		
-		// Draw Text details
+		// Text Stats
 		g.setColor(Color.WHITE);
-		g.setFont(new Font("Monospaced", Font.PLAIN, 12));
-		String lvlTxt = "Level: " + pet.getLevel();
-		String atkTxt = "Atk Scale: " + (1 + (pet.getLevel()/2)); // Approximation of battle logic
+		g.setFont(new Font("Monospaced", Font.PLAIN, 13));
+		String lvlTxt = "Lvl: " + pet.getLevel();
+		String hpTxt = "HP: " + pet.getMaxHealth();
 		
-		g.drawString(lvlTxt, x + 20, statsY + 70);
-		g.drawString(atkTxt, x + 20, statsY + 90);
+		g.drawString(lvlTxt, x + 25, statsY + 20);
+		g.setColor(Color.GREEN);
+		g.drawString(hpTxt, x + 25, statsY + 40);
+		
+		g.setColor(Color.RED);
+		String atkTxt = "Atk: " + pet.getAttackPower();
+		g.drawString(atkTxt, x + 120, statsY + 30);
 	}
 
 	public String handleMouseClick(int mx, int my) {
