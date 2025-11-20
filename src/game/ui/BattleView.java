@@ -117,7 +117,7 @@ public class BattleView {
 		int enemyHp = 3 + playerUser.getWorldLevel(); 
 		int enemyAtk = 2 * (1 + (playerUser.getWorldLevel() / 2)); 
 
-		this.currentEnemy = new Enemy("Dungeon Worm", enemyHp, playerUser.getWorldLevel(), enemyAtk, "enemies/enemies/worm");
+		this.currentEnemy = new Enemy("Lava Worm", enemyHp, playerUser.getWorldLevel(), enemyAtk, "enemies/enemies/worm");
 		
 		// 4. Preload Assets
 		System.out.println("[Battle] Preloading assets...");
