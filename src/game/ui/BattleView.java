@@ -34,6 +34,9 @@ public class BattleView {
 	private boolean battleOver = false;
 	private boolean playerWon = false;
 	private boolean exitRequested = false;
+	
+	// Logic for carrying over incomplete words to next level
+	private boolean shouldCarryOverWord = false;
 
 	// Rewards
 	private int goldReward = 0;
@@ -45,7 +48,7 @@ public class BattleView {
 	// Animation Timers & States
 	private long actionStartTime = 0;
 	private boolean isAnimatingAction = false;
-	private final int ACTION_DURATION = 1700; // 3 Seconds for Attack/Damage
+	private final int ACTION_DURATION = 1700; // 1.7 Seconds for Attack/Damage
 
 	private boolean isDeathAnimating = false;
 	private long deathStartTime = 0;
@@ -107,7 +110,6 @@ public class BattleView {
 
 	private void initBattle() {
 		// Reset Round State
-		this.guessedLetters.clear();
 		this.battleOver = false;
 		this.playerWon = false;
 		this.rewardsClaimed = false;
@@ -121,32 +123,53 @@ public class BattleView {
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
 		this.playerPet.setCurrentHealth(this.playerPet.getMaxHealth());
 
-		// 1. Pick Word
-		WordBank.WordData data = WordBank.getRandomWord(playerUser.getWorldLevel());
-		this.secretWord = data.word.toUpperCase();
-		this.clue = data.clue;
+		// 1. Word Logic (New vs Carry Over)
+		if (!shouldCarryOverWord) {
+			generateNewWord();
+		} else {
+			// If true, we KEEP the secretWord and guessedLetters from the previous round
+			System.out.println("[Battle] Carrying over word: " + secretWord);
+			shouldCarryOverWord = false; // Reset flag
+		}
 
-		// 2. Pick Random Background
-		int[] validBgIndices = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22 };
-		int bgIndex = random.nextInt(validBgIndices.length);
-		int bgNum = validBgIndices[bgIndex];
-		String bgPath = GameConstants.BG_DIR + "battle_bg/bg" + bgNum + ".gif";
-		this.bgImage = AssetLoader.loadImage(bgPath, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
-
-		// 3. Determine Enemy Logic (Normal vs Boss)
+		// 2. Determine Enemy Logic (Normal vs Boss) & Background
 		int currentWorld = playerUser.getWorldLevel();
 		int currentProg = playerUser.getProgressLevel();
 		
-		// Base Stats
-		int enemyHp = 3 + currentWorld;
-		int enemyAtk = 2 * (1 + (currentWorld / 2));
-		
 		String enemyName;
 		String enemyPath;
+		
+		// --- SCALING STATS ---
+		// Normal: HP = 10 + (World-1)*5  | ATK = World
+		// Boss:   HP = Normal + 5        | ATK = Normal + 1
+		// Ex: W1 Normal: 10 HP, 1 Atk
+		// Ex: W1 Boss:   15 HP, 2 Atk
+		
+		int baseHp = 10 + ((currentWorld - 1) * 5);
+		int baseAtk = currentWorld;
+		
+		int enemyHp = baseHp;
+		int enemyAtk = baseAtk;
 
 		if (currentProg == 5) {
 			// --- BOSS FIGHT ---
-			int bossIndex = ((currentWorld - 1) % 3) + 1; 
+			
+			// Boss Stats
+			enemyHp = baseHp + 5;
+			enemyAtk = baseAtk + 1;
+			
+			// Boss Background (Randomized every time you enter)
+			int bossBgNum = random.nextInt(2) + 1; // 1 or 2
+			String bgPath = GameConstants.BG_DIR + "battle_bg/boss_bg" + bossBgNum + ".gif";
+			this.bgImage = AssetLoader.loadImage(bgPath, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
+			
+			// Boss Selection (Deterministic per World Level so it doesn't change on retry)
+			// We seed with username + world level
+			long seed = playerUser.getUsername().hashCode() + currentWorld;
+			Random bossRandom = new Random(seed);
+			
+			// Currently 3 boss types available
+			int bossIndex = bossRandom.nextInt(3) + 1; 
 			
 			switch (bossIndex) {
 				case 1:
@@ -167,14 +190,18 @@ public class BattleView {
 					break;
 			}
 			
-			// Bosses are tougher
-			enemyHp = enemyHp * 3; 
-			enemyAtk = enemyAtk + 2;
-			
-			System.out.println("[Battle] Boss Encounter Initiated: " + enemyName);
+			System.out.println("[Battle] Boss Encounter: " + enemyName + " (HP: " + enemyHp + ", ATK: " + enemyAtk + ")");
 			
 		} else {
 			// --- NORMAL FIGHT ---
+			
+			// Normal Background (From general pool 1-22)
+			int[] validBgIndices = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22 };
+			int bgIndex = random.nextInt(validBgIndices.length);
+			int bgNum = validBgIndices[bgIndex];
+			String bgPath = GameConstants.BG_DIR + "battle_bg/bg" + bgNum + ".gif";
+			this.bgImage = AssetLoader.loadImage(bgPath, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
+			
 			String[][] availableEnemies = { 
 					{ "Lava Worm", "enemies/enemies/worm" },
 					{ "Evil Eye", "enemies/enemies/evil_eye" }, 
@@ -186,6 +213,8 @@ public class BattleView {
 			int idx = random.nextInt(availableEnemies.length);
 			enemyName = availableEnemies[idx][0];
 			enemyPath = availableEnemies[idx][1];
+			
+			System.out.println("[Battle] Encounter: " + enemyName + " (HP: " + enemyHp + ", ATK: " + enemyAtk + ")");
 		}
 
 		this.currentEnemy = new Enemy(enemyName, enemyHp, currentWorld, enemyAtk, enemyPath);
@@ -197,12 +226,31 @@ public class BattleView {
 		// Initialize button bounds (Top Right)
 		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, 50, 50);
 	}
+	
+	// Helper to generate a fresh word
+	private void generateNewWord() {
+		this.guessedLetters.clear();
+		WordBank.WordData data = WordBank.getRandomWord(playerUser.getWorldLevel());
+		this.secretWord = data.word.toUpperCase();
+		this.clue = data.clue;
+		System.out.println("[Battle] New Word Generated: " + secretWord);
+	}
+	
+	// Helper to check if word is fully guessed
+	private boolean isWordCompleted() {
+		for (char c : secretWord.toCharArray()) {
+			if (c != ' ' && !guessedLetters.contains(c)) {
+				return false;
+			}
+		}
+		return true;
+	}
 
 	public void update() {
 		if (isSettingsOpen)
 			return;
 
-		// --- 1. Handle Standard Attack/Damage Animation (3 Seconds) ---
+		// --- 1. Handle Standard Attack/Damage Animation (1.7 Seconds) ---
 		if (isAnimatingAction) {
 			if (System.currentTimeMillis() - actionStartTime > ACTION_DURATION) {
 				isAnimatingAction = false;
@@ -258,8 +306,14 @@ public class BattleView {
 		battleOver = true;
 		playerWon = true;
 		
-		// Enemy is already in DEATH state from startDeathSequence, no need to set again
-
+		// --- LOGIC TO CARRY OVER WORD ---
+		// If we won, but the word isn't finished, we set the flag.
+		if (!isWordCompleted()) {
+			shouldCarryOverWord = true;
+		} else {
+			shouldCarryOverWord = false;
+		}
+		
 		if (!rewardsClaimed) {
 			// Base Reward logic
 			goldReward = 50 + (playerUser.getWorldLevel() * 10);
@@ -357,25 +411,40 @@ public class BattleView {
 				isCorrect = true;
 		}
 
-		// Start Action Animation (3 Seconds)
+		// Start Action Animation (1.7 Seconds)
 		actionStartTime = System.currentTimeMillis();
 		isAnimatingAction = true;
-
-		int playerDmg = 1 + (playerUser.getWorldLevel() / 2);
-		int enemyDmg = 2 * playerDmg;
 
 		if (isCorrect) {
 			message = "Correct! Hit!";
 			messageColor = Color.GREEN;
 			playerPet.setAnimationState(Hangpie.AnimState.ATTACK);
 			currentEnemy.setAnimationState(Enemy.AnimState.DAMAGE);
-			currentEnemy.takeDamage(playerDmg);
+			
+			// Player damage logic (Attack Value from Pet)
+			int dmg = playerPet.getAttackPower();
+			currentEnemy.takeDamage(dmg);
+			
+			// --- NEW: Check for Word Completion IMMEDIATELY ---
+			if (isWordCompleted()) {
+				// If word is done but enemy is still alive, generate a NEW word
+				if (currentEnemy.isAlive()) {
+					message = "Word Cleared! New Word!";
+					messageColor = Color.CYAN;
+					generateNewWord();
+				}
+				// If enemy is dead, the `checkRoundResult` later will handle the Win.
+			}
+			
 		} else {
 			message = "Wrong! Ouch!";
 			messageColor = Color.RED;
 			currentEnemy.setAnimationState(Enemy.AnimState.ATTACK);
 			playerPet.setAnimationState(Hangpie.AnimState.DAMAGE);
-			playerPet.takeDamage(enemyDmg);
+			
+			// Enemy damage logic (Attack Value from Enemy)
+			int dmg = currentEnemy.getAttackPower();
+			playerPet.takeDamage(dmg);
 		}
 	}
 
@@ -459,7 +528,10 @@ public class BattleView {
 		}
 
 		// --- Character Rendering ---
-		int groundY = height - 50;
+		
+		// [ADJUSTED] Lowered characters slightly horizontally (Lower Y = Higher, Higher Y = Lower on screen)
+		// Previous was height - 40, now height - 20 pushes them down closer to bottom edge.
+		int groundY = height - 20; 
 		int scaleFactor = 4;
 
 		// Render Enemy
@@ -551,8 +623,8 @@ public class BattleView {
 		drawHearts(g, playerPet, pFrameX + 40, heartsY, observer);
 
 		g.setFont(levelFont);
-		int playerDmg = 1 + (playerUser.getWorldLevel() / 2);
-		String pStats = "HP " + playerPet.getCurrentHealth() + "/" + playerPet.getMaxHealth() + " | ATK " + playerDmg;
+		// Updated to use real stats
+		String pStats = "HP " + playerPet.getCurrentHealth() + "/" + playerPet.getMaxHealth() + " | ATK " + playerPet.getAttackPower();
 		g.drawString(pStats, pFrameX + (frameW - g.getFontMetrics().stringWidth(pStats)) / 2, heartsY + 30);
 
 		// --- ENEMY UI ---
@@ -572,8 +644,7 @@ public class BattleView {
 		drawHearts(g, currentEnemy, eFrameX + 40, heartsY, observer);
 		
 		g.setFont(levelFont);
-		int enemyDmg = 2 * playerDmg;
-		String eStats = "HP " + currentEnemy.getCurrentHealth() + "/" + currentEnemy.getMaxHealth() + " | ATK " + enemyDmg;
+		String eStats = "HP " + currentEnemy.getCurrentHealth() + "/" + currentEnemy.getMaxHealth() + " | ATK " + currentEnemy.getAttackPower();
 		g.drawString(eStats, eFrameX + (frameW - g.getFontMetrics().stringWidth(eStats)) / 2, heartsY + 30);
 	}
 
