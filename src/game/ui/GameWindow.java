@@ -21,32 +21,37 @@ public class GameWindow extends Frame implements Runnable {
 	private Canvas gameCanvas;
 	private Thread gameThread;
 
-// State Management
+	// State Management
 	public enum GameState {
 		MENU, INVENTORY, PLAYING
 	}
 
 	private GameState currentState;
 
-// Views
+	// Views
 	private InventoryView inventoryView;
 	private BattleView battleView;
 
-// Game Data
+	// Game Data
 	private Hangpie equippedHangpie = null;
 
-// Assets
+	// Assets
 	private Image background;
 	private Image titleImage;
 	private Image titleCoverImage;
+	
+	// UI Assets
+	private Image modalImg;
+	private Image frameImg;
+	private Image nameFrameImg;
 
-// Dimensions
+	// Dimensions
 	private final int COVER_WIDTH = 980;
 	private final int COVER_HEIGHT = 140;
 	private final int TITLE_WIDTH = 900;
 	private final int TITLE_HEIGHT = 100;
 
-// Menu State
+	// Menu State
 	private String[] options = { "Play Game", "Inventory", "Exit Game" };
 	private volatile int selectedOption = -1;
 	private Rectangle[] menuBounds;
@@ -214,6 +219,11 @@ public class GameWindow extends Frame implements Runnable {
 
 		String titleCoverPath = GameConstants.BG_DIR + GameConstants.TITLE_COVER_IMG;
 		titleCoverImage = AssetLoader.loadImage(titleCoverPath, COVER_WIDTH, COVER_HEIGHT);
+		
+		// Load UI
+		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, 400, 300);
+		frameImg = AssetLoader.loadImage(GameConstants.FRAME_IMG, 600, 60);
+		nameFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 250, 50);
 	}
 
 	private synchronized void start() {
@@ -286,10 +296,12 @@ public class GameWindow extends Frame implements Runnable {
 	}
 
 	private void renderMenu(Graphics2D g) {
+		// 1. Draw Background
 		if (background != null) {
 			g.drawImage(background, 0, 0, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
 		}
 
+		// 2. Draw Title Banner
 		int bannerY = 100;
 		if (titleCoverImage != null) {
 			int coverX = (gameCanvas.getWidth() - COVER_WIDTH) / 2;
@@ -302,30 +314,51 @@ public class GameWindow extends Frame implements Runnable {
 			g.drawImage(titleImage, textX, textY, TITLE_WIDTH, TITLE_HEIGHT, null);
 		}
 
-		g.setFont(GameConstants.SUBTITLE_FONT);
-		g.setColor(GameConstants.TEXT_COLOR);
-		FontMetrics fm = g.getFontMetrics();
-		String subtitle = GameConstants.SUBTITLE_TEXT;
-		int subWidth = fm.stringWidth(subtitle);
-		int subX = (gameCanvas.getWidth() - subWidth) / 2;
-		int subY = bannerY + COVER_HEIGHT + 25;
-		g.drawString(subtitle, subX, subY);
-
-		// Draw Equipped Status
-		if (equippedHangpie != null) {
-			String equipText = "Equipped: " + equippedHangpie.getName() + " (Lvl " + equippedHangpie.getLevel() + ")";
-			g.setColor(Color.GREEN);
-			g.setFont(GameConstants.BUTTON_FONT);
-			int eqWidth = g.getFontMetrics().stringWidth(equipText);
-			g.drawString(equipText, (gameCanvas.getWidth() - eqWidth) / 2, subY + 30);
-		} else {
-			String equipText = "No Hangpie Equipped! Please go to Inventory.";
-			g.setColor(Color.RED);
-			g.setFont(GameConstants.BUTTON_FONT);
-			int eqWidth = g.getFontMetrics().stringWidth(equipText);
-			g.drawString(equipText, (gameCanvas.getWidth() - eqWidth) / 2, subY + 30);
+		// 3. Draw Subtitle with Frame Placeholder (Overlapping below title)
+		int subCenterY = 260; 
+		
+		if (frameImg != null) {
+			int frameW = 600;
+			int frameH = 50;
+			int frameX = (gameCanvas.getWidth() - frameW) / 2;
+			g.drawImage(frameImg, frameX, subCenterY, frameW, frameH, null);
+			
+			// Draw Text Centered in Frame
+			g.setFont(GameConstants.SUBTITLE_FONT);
+			g.setColor(GameConstants.TEXT_COLOR);
+			FontMetrics fm = g.getFontMetrics();
+			String subtitle = GameConstants.SUBTITLE_TEXT;
+			int subWidth = fm.stringWidth(subtitle);
+			int subX = (gameCanvas.getWidth() - subWidth) / 2;
+			// Center vertically in the 50px height frame
+			int textY = subCenterY + ((frameH - fm.getHeight()) / 2) + fm.getAscent();
+			g.drawString(subtitle, subX, textY);
 		}
 
+		// 4. Draw Equipped Status (Name Frame)
+		// Positioned below the subtitle frame
+		int equipY = subCenterY + 70; 
+		
+		if (nameFrameImg != null) {
+			int nfW = 250;
+			int nfH = 50;
+			int nfX = (gameCanvas.getWidth() - nfW) / 2;
+			g.drawImage(nameFrameImg, nfX, equipY, nfW, nfH, null);
+			
+			// Text
+			g.setFont(GameConstants.BUTTON_FONT);
+			FontMetrics fm = g.getFontMetrics();
+			String nameText = (equippedHangpie != null) ? equippedHangpie.getName() : "No Hangpie";
+			g.setColor(Color.WHITE);
+			if (equippedHangpie == null) g.setColor(Color.GRAY);
+			
+			int nameW = fm.stringWidth(nameText);
+			int nameX = (gameCanvas.getWidth() - nameW) / 2;
+			int nameY = equipY + ((nfH - fm.getHeight()) / 2) + fm.getAscent();
+			g.drawString(nameText, nameX, nameY);
+		}
+		
+		// 5. Draw Menu Options (Original position, no modal)
 		drawMenuOptions(g);
 	}
 

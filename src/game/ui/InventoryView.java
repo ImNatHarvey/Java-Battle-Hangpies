@@ -9,9 +9,7 @@ import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.image.ImageObserver;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import game.GameConstants;
 import models.Hangpie;
@@ -21,7 +19,6 @@ import utils.AssetLoader;
 public class InventoryView {
 	private User user;
 	private Image background;
-	private Image cardBackground;
 	private Rectangle backButtonBounds;
 
 	// New UI Assets
@@ -36,24 +33,23 @@ public class InventoryView {
 	// Layout Constants
 	private final int CARD_WIDTH = 220;
 	private final int CARD_HEIGHT = 320;
-	private final int GAP = 40;
-	private final int START_X = 100;
-	private final int START_Y = 150;
-
-	private Map<String, Image> petImageCache;
+	
+	// Split Gap into X and Y to fit 4 items per row
+	private final int GAP_X = 70; 
+	private final int GAP_Y = 160; 
+	
+	// Adjusted Start X to center the grid of 4 items
+	private final int START_X = 85;
+	private final int START_Y = 180; 
 
 	public InventoryView(User user) {
 		this.user = user;
-		this.petImageCache = new HashMap<>();
 		loadAssets();
 	}
 
 	private void loadAssets() {
 		String path = GameConstants.BG_DIR + GameConstants.INVENTORY_BG;
 		background = AssetLoader.loadImage(path, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
-
-		String cardPath = GameConstants.BG_DIR + GameConstants.TITLE_COVER_IMG;
-		cardBackground = AssetLoader.loadImage(cardPath, 300, 400);
 		
 		// Load UI Elements
 		nameFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 200, 50);
@@ -87,14 +83,17 @@ public class InventoryView {
 			int y = START_Y - scrollY;
 
 			for (Hangpie pet : inventory) {
-				if (y + CARD_HEIGHT > 0 && y < height) {
+				// Draw if within visible bounds (using GAP_Y for vertical spacing check)
+				if (y + CARD_HEIGHT + GAP_Y > 0 && y - 100 < height) {
 					drawPetCard(g, pet, x, y, CARD_WIDTH, CARD_HEIGHT, observer);
 				}
 
-				x += CARD_WIDTH + GAP;
-				if (x + CARD_WIDTH > width - 50) {
+				x += CARD_WIDTH + GAP_X;
+				
+				// Check if we need to wrap to the next row
+				if (x + CARD_WIDTH > width - 20) {
 					x = START_X;
-					y += CARD_HEIGHT + GAP;
+					y += CARD_HEIGHT + GAP_Y;
 				}
 			}
 		}
@@ -141,12 +140,17 @@ public class InventoryView {
 	}
 
 	private void drawPetCard(Graphics2D g, Hangpie pet, int x, int y, int w, int h, ImageObserver observer) {
-		// Draw Background
-		if (cardBackground != null) {
-			g.drawImage(cardBackground, x, y, w, h, null);
+		// --- Draw Background (Specific Tarot Card) ---
+		String tarotPath = GameConstants.HANGPIE_DIR + pet.getImageName() + "/tarot.png";
+		Image tarotCard = AssetLoader.loadImage(tarotPath, w, h);
+		
+		if (tarotCard != null) {
+			g.drawImage(tarotCard, x, y, w, h, null);
 		} else {
 			g.setColor(new Color(0, 0, 0, 150));
 			g.fillRect(x, y, w, h);
+			g.setColor(Color.RED);
+			g.drawString("No Tarot", x + 80, y + 150);
 		}
 
 		// Draw Selection Border
@@ -160,14 +164,16 @@ public class InventoryView {
 			g.setFont(new Font("Monospaced", Font.BOLD, 14));
 			g.drawString("EQUIPPED", x + 10, y + 30);
 		} else {
-			g.setColor(Color.WHITE);
+			g.setColor(new Color(255, 255, 255, 50)); // Subtle border
 			g.drawRect(x, y, w, h);
 		}
 		
-		// --- Draw Name Frame (Top) ---
+		// --- Draw Name Frame (ABOVE Card) ---
+		int nameFrameY = y - 55;
 		int nameFrameH = 40;
+		
 		if (nameFrameImg != null) {
-			g.drawImage(nameFrameImg, x + 10, y + 35, w - 20, nameFrameH, observer);
+			g.drawImage(nameFrameImg, x + 10, nameFrameY, w - 20, nameFrameH, observer);
 		}
 		
 		g.setColor(Color.WHITE);
@@ -176,59 +182,36 @@ public class InventoryView {
 		String name = pet.getName();
 		if (name.length() > 15) name = name.substring(0, 12) + "...";
 		int nameX = x + (w - fm.stringWidth(name)) / 2;
-		g.drawString(name, nameX, y + 35 + 25);
+		g.drawString(name, nameX, nameFrameY + 25);
 
-		// --- Draw Character Image (Centered and Scaled Up) ---
-		String imageName = pet.getImageName();
-		String imgPath;
+		// --- Draw Stats Section (BELOW Card) ---
+		int statsY = y + h + 10; 
+		int statsH = 60;
 		
-		if (imageName != null && (imageName.contains(".png") || imageName.contains(".gif") || imageName.contains(".jpg"))) {
-			imgPath = GameConstants.HANGPIE_DIR + imageName;
-		} else {
-			imgPath = GameConstants.HANGPIE_DIR + imageName + "/idle.gif";
-		}
-
-		Image petImg = petImageCache.get(imgPath);
-		if (petImg == null) {
-			// Load strictly for width/height ref or scaled preview
-			petImg = AssetLoader.loadImage(imgPath, -1, -1); // Load original to scale manually
-			if (petImg != null)
-				petImageCache.put(imgPath, petImg);
-		}
-
-		if (petImg != null) {
-			int maxImgW = 170; // Increased Size (Max width before hitting card borders)
-			int maxImgH = 170; // Increased Size
-			
-			// Center logic
-			int imgX = x + (w - maxImgW) / 2;
-			int imgY = y + 75; // Push down below name
-			
-			g.drawImage(petImg, imgX, imgY, maxImgW, maxImgH, observer);
-		}
-
-		// --- Draw Stats Section (Frame + Text Only) ---
-		// Moved to the absolute bottom of the card
-		int statsY = y + 250; 
-		
-		// Draw Frame for Stats
 		if (frameImg != null) {
-			g.drawImage(frameImg, x + 10, statsY, w - 20, 50, observer);
+			g.drawImage(frameImg, x + 10, statsY, w - 20, statsH, observer);
 		}
 		
-		// Text Stats
+		// 1. Centered Level (Top Row)
 		g.setColor(Color.WHITE);
-		g.setFont(new Font("Monospaced", Font.PLAIN, 13));
+		g.setFont(new Font("Monospaced", Font.BOLD, 16));
 		String lvlTxt = "Lvl: " + pet.getLevel();
-		String hpTxt = "HP: " + pet.getMaxHealth();
+		int lvlWidth = g.getFontMetrics().stringWidth(lvlTxt);
+		g.drawString(lvlTxt, x + (w - lvlWidth) / 2, statsY + 25);
+
+		// 2. Horizontal HP and Atk (Bottom Row)
+		g.setFont(new Font("Monospaced", Font.BOLD, 14));
 		
-		g.drawString(lvlTxt, x + 25, statsY + 20);
+		// Left Aligned HP
 		g.setColor(Color.GREEN);
-		g.drawString(hpTxt, x + 25, statsY + 40);
+		String hpTxt = "HP: " + pet.getMaxHealth();
+		g.drawString(hpTxt, x + 30, statsY + 48);
 		
+		// Right Aligned Atk
 		g.setColor(Color.RED);
 		String atkTxt = "Atk: " + pet.getAttackPower();
-		g.drawString(atkTxt, x + 120, statsY + 30);
+		int atkWidth = g.getFontMetrics().stringWidth(atkTxt);
+		g.drawString(atkTxt, x + w - 30 - atkWidth, statsY + 48);
 	}
 
 	public String handleMouseClick(int mx, int my) {
@@ -250,10 +233,10 @@ public class InventoryView {
 				return "SELECT";
 			}
 
-			x += CARD_WIDTH + GAP;
-			if (x + CARD_WIDTH > width - 50) {
+			x += CARD_WIDTH + GAP_X;
+			if (x + CARD_WIDTH > width - 20) {
 				x = START_X;
-				y += CARD_HEIGHT + GAP;
+				y += CARD_HEIGHT + GAP_Y;
 			}
 		}
 
@@ -271,7 +254,7 @@ public class InventoryView {
 		scrollY += units * scrollSpeed;
 
 		int totalRows = (int) Math.ceil((double) user.getInventory().size() / 4.0);
-		int totalContentHeight = (totalRows * (CARD_HEIGHT + GAP));
+		int totalContentHeight = (totalRows * (CARD_HEIGHT + GAP_Y));
 		int maxScroll = Math.max(0, totalContentHeight - (GameConstants.WINDOW_HEIGHT - 200));
 
 		if (scrollY < 0)
