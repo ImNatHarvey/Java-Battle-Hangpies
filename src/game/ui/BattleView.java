@@ -42,16 +42,23 @@ public class BattleView {
 	private String message = "";
 	private Color messageColor = Color.YELLOW; // Default color
 
-	// Animation Timers
+	// Animation Timers & States
 	private long actionStartTime = 0;
 	private boolean isAnimatingAction = false;
-	private final int ANIMATION_DURATION = 1000;
+	private final int ACTION_DURATION = 1700; // 3 Seconds for Attack/Damage
+
+	private boolean isDeathAnimating = false;
+	private long deathStartTime = 0;
+	private final int DEATH_DURATION = 4000; // 4 Seconds for Death Animation
 
 	// Assets
 	private Image bgImage;
 	private Image nameFrameImg;
 	private Image settingsImg;
 	private Image modalImg;
+	
+	// Frame used for the Level Indicator
+	private Image levelFrameImg; 
 
 	// Heart Assets
 	private Image heartImg;
@@ -70,6 +77,10 @@ public class BattleView {
 	private Rectangle modalMenuBounds;
 	private Rectangle modalExitBounds;
 
+	// Layout Constants
+	private final int TOP_BAR_Y = 20;
+	private final int TOP_BAR_HEIGHT = 50;
+
 	public BattleView(User user, Hangpie pet) {
 		this.playerUser = user;
 		this.playerPet = pet;
@@ -84,6 +95,7 @@ public class BattleView {
 
 	private void loadAssets() {
 		nameFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 200, 50);
+		levelFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 150, 50);
 		settingsImg = AssetLoader.loadImage(GameConstants.SETTINGS_BTN_IMG, 50, 50);
 		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, 400, 300);
 
@@ -101,8 +113,12 @@ public class BattleView {
 		this.rewardsClaimed = false;
 		this.message = "";
 		this.messageColor = Color.YELLOW;
+		
+		// Reset Animation States
+		this.isAnimatingAction = false;
+		this.isDeathAnimating = false;
+		
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
-
 		this.playerPet.setCurrentHealth(this.playerPet.getMaxHealth());
 
 		// 1. Pick Word
@@ -110,55 +126,98 @@ public class BattleView {
 		this.secretWord = data.word.toUpperCase();
 		this.clue = data.clue;
 
-		// 2. Pick Random Background (Updated for range 1-22, skipping missing 19)
+		// 2. Pick Random Background
 		int[] validBgIndices = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22 };
-
 		int bgIndex = random.nextInt(validBgIndices.length);
 		int bgNum = validBgIndices[bgIndex];
-
 		String bgPath = GameConstants.BG_DIR + "battle_bg/bg" + bgNum + ".gif";
 		this.bgImage = AssetLoader.loadImage(bgPath, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
 
-		// 3. Spawn Random Enemy
-		int enemyHp = 3 + playerUser.getWorldLevel();
-		int enemyAtk = 2 * (1 + (playerUser.getWorldLevel() / 2));
+		// 3. Determine Enemy Logic (Normal vs Boss)
+		int currentWorld = playerUser.getWorldLevel();
+		int currentProg = playerUser.getProgressLevel();
+		
+		// Base Stats
+		int enemyHp = 3 + currentWorld;
+		int enemyAtk = 2 * (1 + (currentWorld / 2));
+		
+		String enemyName;
+		String enemyPath;
 
-		// Define the available enemy types and their folder paths
-		String[][] availableEnemies = { { "Lava Worm", "enemies/enemies/worm" },
-				{ "Evil Eye", "enemies/enemies/evil_eye" }, { "Goblin", "enemies/enemies/goblin" },
-				{ "Mushroom", "enemies/enemies/mushroom" }, { "Skeleton", "enemies/enemies/skeleton" } };
+		if (currentProg == 5) {
+			// --- BOSS FIGHT ---
+			int bossIndex = ((currentWorld - 1) % 3) + 1; 
+			
+			switch (bossIndex) {
+				case 1:
+					enemyName = "Baal";
+					enemyPath = "enemies/boss/boss1";
+					break;
+				case 2:
+					enemyName = "Abaddon";
+					enemyPath = "enemies/boss/boss2";
+					break;
+				case 3:
+					enemyName = "Beelzebub";
+					enemyPath = "enemies/boss/boss3";
+					break;
+				default:
+					enemyName = "Baal";
+					enemyPath = "enemies/boss/boss1";
+					break;
+			}
+			
+			// Bosses are tougher
+			enemyHp = enemyHp * 3; 
+			enemyAtk = enemyAtk + 2;
+			
+			System.out.println("[Battle] Boss Encounter Initiated: " + enemyName);
+			
+		} else {
+			// --- NORMAL FIGHT ---
+			String[][] availableEnemies = { 
+					{ "Lava Worm", "enemies/enemies/worm" },
+					{ "Evil Eye", "enemies/enemies/evil_eye" }, 
+					{ "Goblin", "enemies/enemies/goblin" },
+					{ "Mushroom", "enemies/enemies/mushroom" }, 
+					{ "Skeleton", "enemies/enemies/skeleton" } 
+			};
 
-		// Select a random enemy from the list
-		int idx = random.nextInt(availableEnemies.length);
-		String eName = availableEnemies[idx][0];
-		String ePath = availableEnemies[idx][1];
+			int idx = random.nextInt(availableEnemies.length);
+			enemyName = availableEnemies[idx][0];
+			enemyPath = availableEnemies[idx][1];
+		}
 
-		this.currentEnemy = new Enemy(eName, enemyHp, playerUser.getWorldLevel(), enemyAtk, ePath);
+		this.currentEnemy = new Enemy(enemyName, enemyHp, currentWorld, enemyAtk, enemyPath);
 
 		// 4. Preload Assets
-		System.out.println("[Battle] Preloading assets...");
 		this.playerPet.preloadAssets();
 		this.currentEnemy.preloadAssets();
 
-		// Initialize button bounds
-		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, 20, 50, 50);
+		// Initialize button bounds (Top Right)
+		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, 50, 50);
 	}
 
 	public void update() {
 		if (isSettingsOpen)
 			return;
 
+		// --- 1. Handle Standard Attack/Damage Animation (3 Seconds) ---
 		if (isAnimatingAction) {
-			if (System.currentTimeMillis() - actionStartTime > ANIMATION_DURATION) {
+			if (System.currentTimeMillis() - actionStartTime > ACTION_DURATION) {
 				isAnimatingAction = false;
 
-				// Reset idle states if still alive
-				if (playerPet.isAlive())
-					playerPet.setAnimationState(Hangpie.AnimState.IDLE);
-				if (currentEnemy.isAlive())
-					currentEnemy.setAnimationState(Enemy.AnimState.IDLE);
-
-				// Check deaths
+				// Check results after animation finishes
+				checkRoundResult();
+			}
+		}
+		
+		// --- 2. Handle Death Animation (4 Seconds) ---
+		if (isDeathAnimating) {
+			if (System.currentTimeMillis() - deathStartTime > DEATH_DURATION) {
+				isDeathAnimating = false;
+				
+				// Finalize battle state (Show End Screen)
 				if (!currentEnemy.isAlive()) {
 					handleWin();
 				} else if (!playerPet.isAlive()) {
@@ -168,18 +227,56 @@ public class BattleView {
 		}
 	}
 
+	private void checkRoundResult() {
+		// Logic to check if someone died after the attack animation
+		if (!currentEnemy.isAlive()) {
+			startDeathSequence(currentEnemy);
+		} else if (!playerPet.isAlive()) {
+			startDeathSequence(playerPet);
+		} else {
+			// No one died, return to IDLE to allow next guess
+			playerPet.setAnimationState(Hangpie.AnimState.IDLE);
+			currentEnemy.setAnimationState(Enemy.AnimState.IDLE);
+		}
+	}
+
+	private void startDeathSequence(Character victim) {
+		isDeathAnimating = true;
+		deathStartTime = System.currentTimeMillis();
+
+		// Set specific death animation
+		if (victim instanceof Enemy) {
+			((Enemy) victim).setAnimationState(Enemy.AnimState.DEATH);
+			playerPet.setAnimationState(Hangpie.AnimState.IDLE); // Winner stands idle
+		} else if (victim instanceof Hangpie) {
+			((Hangpie) victim).setAnimationState(Hangpie.AnimState.DEATH);
+			currentEnemy.setAnimationState(Enemy.AnimState.IDLE); // Winner stands idle
+		}
+	}
+
 	private void handleWin() {
 		battleOver = true;
 		playerWon = true;
-		currentEnemy.setAnimationState(Enemy.AnimState.DEATH);
+		
+		// Enemy is already in DEATH state from startDeathSequence, no need to set again
 
 		if (!rewardsClaimed) {
+			// Base Reward logic
 			goldReward = 50 + (playerUser.getWorldLevel() * 10);
+			
+			// Bonus for Boss
+			if (playerUser.getProgressLevel() == 5) {
+				goldReward *= 2;
+			}
+			
 			playerUser.addGold(goldReward);
-			playerUser.setProgressLevel(playerUser.getProgressLevel() + 1);
-
-			if (playerUser.getProgressLevel() % 5 == 0) {
+			
+			// Progression Logic
+			if (playerUser.getProgressLevel() >= 5) {
+				playerUser.setProgressLevel(1);
 				playerUser.setWorldLevel(playerUser.getWorldLevel() + 1);
+			} else {
+				playerUser.setProgressLevel(playerUser.getProgressLevel() + 1);
 			}
 
 			Main.userManager.updateUser(playerUser);
@@ -190,10 +287,10 @@ public class BattleView {
 	private void handleLoss() {
 		battleOver = true;
 		playerWon = false;
-		playerPet.setAnimationState(Hangpie.AnimState.DEATH);
+		// Pet is already in DEATH state
 	}
 
-// --- Input Handling ---
+	// --- Input Handling ---
 
 	public String handleMouseClick(int x, int y) {
 		if (isSettingsOpen) {
@@ -238,7 +335,8 @@ public class BattleView {
 			return;
 		}
 
-		if (isAnimatingAction)
+		// Block input if any animation (Action or Death) is playing
+		if (isAnimatingAction || isDeathAnimating)
 			return;
 
 		char guess = java.lang.Character.toUpperCase(keyChar);
@@ -259,6 +357,7 @@ public class BattleView {
 				isCorrect = true;
 		}
 
+		// Start Action Animation (3 Seconds)
 		actionStartTime = System.currentTimeMillis();
 		isAnimatingAction = true;
 
@@ -308,44 +407,47 @@ public class BattleView {
 		g.setColor(new Color(0, 0, 0, 180));
 		g.fillRect(0, 0, width, backdropH);
 
-		// Define the shared Top Y for all Frames (Name Frames AND Message Frame)
-		int framesTopY = backdropH + 10;
-
-		// Draw Player and Enemy UI (Using the shared Top Y)
-		drawCharacterUI(g, width, framesTopY, observer);
-
-		// Draw Settings Button
+		// --- HUD ELEMENTS ---
+		
+		// 1. Level Indicator (Top Left)
+		drawLevelIndicator(g, 30, TOP_BAR_Y, observer);
+		
+		// 2. Settings Button (Top Right)
 		if (settingsImg != null && settingsBtnBounds != null) {
 			g.drawImage(settingsImg, settingsBtnBounds.x, settingsBtnBounds.y, settingsBtnBounds.width,
 					settingsBtnBounds.height, observer);
 		}
+		
+		// 3. Word Puzzle & Clue (Center)
+		drawWordPuzzle(g, width, height, observer);
 
-		// Draw Message (Damage/Indicator) - Aligned with Character Frames
+		int framesTopY = backdropH + 10;
+
+		// Draw Player and Enemy UI
+		drawCharacterUI(g, width, framesTopY, observer);
+
+		// Draw Message Indicator (Centered below Clue)
 		if (!message.isEmpty()) {
-			g.setFont(GameConstants.UI_FONT); // Same font size as Clue
+			g.setFont(GameConstants.UI_FONT);
 			FontMetrics fm = g.getFontMetrics();
 			int msgW = fm.stringWidth(message);
 
-			// Dynamic Background Calculation
-			int bgW = msgW + 60; // Padding
-			int bgH = 50;        // Fixed Height to match Name Frames roughly
+			int bgW = msgW + 60; 
+			int bgH = 50;        
 			int bgX = (width - bgW) / 2;
-			int bgY = framesTopY; // ALIGN TOP EDGE WITH NAME FRAMES
+			int bgY = framesTopY; 
 
 			if (nameFrameImg != null) {
 				g.drawImage(nameFrameImg, bgX, bgY, bgW, bgH, observer);
 			}
 
 			g.setColor(messageColor);
-			
-			// Updated Vertical Centering: Lifted by 4 pixels
 			int textX = (width - msgW) / 2;
-			int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 7; // MANUAL LIFT -4
+			int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 7;
 			g.drawString(message, textX, textY);
 		}
 
-		// --- Character Rendering (Scaled & Centered) ---
-		// Lowered groundY to height - 100 to match the yellow line visual
+		// --- Character Rendering ---
 		int groundY = height - 50;
 		int scaleFactor = 4;
 
@@ -379,8 +481,6 @@ public class BattleView {
 			}
 		}
 
-		drawWordPuzzle(g, width, height, observer);
-
 		if (isSettingsOpen) {
 			drawSettingsModal(g, width, height);
 		} else if (battleOver) {
@@ -388,102 +488,83 @@ public class BattleView {
 		}
 	}
 
-	private void drawCharacterUI(Graphics2D g, int width, int topY, ImageObserver observer) {
-		// Revert to original margin startX
-		int startX = 30;
+	private void drawLevelIndicator(Graphics2D g, int x, int y, ImageObserver observer) {
+		int w = 150;
+		int h = TOP_BAR_HEIGHT;
 		
-		// Expanded Frame Dimensions
+		if (levelFrameImg != null) {
+			g.drawImage(levelFrameImg, x, y, w, h, observer);
+		}
+		
+		g.setColor(new Color(231, 76, 60)); 
+		g.setFont(new Font("Monospaced", Font.BOLD, 28));
+		
+		String levelTxt = playerUser.getWorldLevel() + " - " + playerUser.getProgressLevel();
+		FontMetrics fm = g.getFontMetrics();
+		int textX = x + (w - fm.stringWidth(levelTxt)) / 2;
+		int textY = y + (h - fm.getAscent()) / 2 + fm.getAscent() - 5;
+		
+		g.drawString(levelTxt, textX, textY);
+	}
+
+	private void drawCharacterUI(Graphics2D g, int width, int topY, ImageObserver observer) {
+		int startX = 30;
 		int frameW = 220;
 		int frameH = 70;
-		
-		// Revert Positions (Far Left / Far Right)
 		int pFrameX = startX;
 		int eFrameX = width - startX - frameW;
 
-		// Fonts
 		Font levelFont = new Font("Monospaced", Font.BOLD, 12);
 		Font nameFont = new Font("Monospaced", Font.BOLD, 16);
 
-		// --- PLAYER UI (LEFT) ---
-
-		// Name Frame
+		// --- PLAYER UI ---
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, pFrameX, topY, frameW, frameH, null);
 		}
 
 		g.setColor(Color.WHITE);
-
-		// 1. Player Level (Top)
 		g.setFont(levelFont);
-		String pLevel = "LEVEL " + playerUser.getWorldLevel();
+		String pLevel = "LEVEL " + playerPet.getLevel();
 		FontMetrics fm = g.getFontMetrics();
-		int pLevelX = pFrameX + (frameW - fm.stringWidth(pLevel)) / 2;
-		int pLevelY = topY + 28; 
-		g.drawString(pLevel, pLevelX, pLevelY);
+		g.drawString(pLevel, pFrameX + (frameW - fm.stringWidth(pLevel)) / 2, topY + 28);
 
-		// 2. Player Name (Bottom)
 		g.setFont(nameFont);
-		fm = g.getFontMetrics();
 		String pName = playerPet.getName();
-		int pNameX = pFrameX + (frameW - fm.stringWidth(pName)) / 2;
-		int pNameY = topY + 46; 
-		g.drawString(pName, pNameX, pNameY);
+		g.drawString(pName, pFrameX + (frameW - g.getFontMetrics().stringWidth(pName)) / 2, topY + 46);
 
-		// Heart Display (Below Frame)
 		int heartsY = topY + frameH + 5;
 		drawHearts(g, playerPet, pFrameX + 10, heartsY, observer);
 
-		// 3. Player Stats (HP | ATK) - Below Hearts
-		g.setFont(levelFont); // Size 12, same as Level
+		g.setFont(levelFont);
 		int playerDmg = 1 + (playerUser.getWorldLevel() / 2);
 		String pStats = "HP " + playerPet.getCurrentHealth() + "/" + playerPet.getMaxHealth() + " | ATK " + playerDmg;
-		fm = g.getFontMetrics();
-		int pStatsX = pFrameX + (frameW - fm.stringWidth(pStats)) / 2;
-		// Hearts height is ~15 (heartSize). Text below that.
-		int statsY = heartsY + 15 + 15; 
-		g.drawString(pStats, pStatsX, statsY);
+		g.drawString(pStats, pFrameX + (frameW - g.getFontMetrics().stringWidth(pStats)) / 2, heartsY + 30);
 
-
-		// --- ENEMY UI (RIGHT) ---
-
-		// Name Frame
+		// --- ENEMY UI ---
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, eFrameX, topY, frameW, frameH, null);
 		}
 
 		g.setColor(Color.WHITE);
-
-		// 1. Enemy Level
 		g.setFont(levelFont);
-		String eLevel = "LEVEL " + playerUser.getWorldLevel();
-		fm = g.getFontMetrics();
-		int eLevelX = eFrameX + (frameW - fm.stringWidth(eLevel)) / 2;
-		g.drawString(eLevel, eLevelX, pLevelY);
+		String eLevel = "LEVEL " + currentEnemy.getLevel();
+		g.drawString(eLevel, eFrameX + (frameW - g.getFontMetrics().stringWidth(eLevel)) / 2, topY + 28);
 
-		// 2. Enemy Name
 		g.setFont(nameFont);
-		fm = g.getFontMetrics();
 		String eName = currentEnemy.getName();
-		int eNameX = eFrameX + (frameW - fm.stringWidth(eName)) / 2;
-		g.drawString(eName, eNameX, pNameY);
+		g.drawString(eName, eFrameX + (frameW - g.getFontMetrics().stringWidth(eName)) / 2, topY + 46);
 
-		// Heart Display (Below Name)
 		drawHearts(g, currentEnemy, eFrameX + 10, heartsY, observer);
 		
-		// 3. Enemy Stats (HP | ATK) - Below Hearts
 		g.setFont(levelFont);
-		// Calculate enemy damage consistent with handleKeyPress logic
 		int enemyDmg = 2 * playerDmg;
 		String eStats = "HP " + currentEnemy.getCurrentHealth() + "/" + currentEnemy.getMaxHealth() + " | ATK " + enemyDmg;
-		fm = g.getFontMetrics();
-		int eStatsX = eFrameX + (frameW - fm.stringWidth(eStats)) / 2;
-		g.drawString(eStats, eStatsX, statsY);
+		g.drawString(eStats, eFrameX + (frameW - g.getFontMetrics().stringWidth(eStats)) / 2, heartsY + 30);
 	}
 
 	private void drawHearts(Graphics2D g, Character character, int x, int y, ImageObserver observer) {
 		int maxHp = character.getMaxHealth();
 		int currentHp = character.getCurrentHealth();
-
 		int totalHearts = (maxHp + 1) / 2;
 		int heartSize = 15;
 		int spacing = 3;
@@ -493,7 +574,6 @@ public class BattleView {
 			int hpThresholdForHalf = hpThresholdForFull - 1;
 
 			Image imgToDraw;
-
 			if (currentHp >= hpThresholdForFull) {
 				imgToDraw = heartImg;
 			} else if (currentHp >= hpThresholdForHalf) {
@@ -509,34 +589,29 @@ public class BattleView {
 	}
 
 	private void drawWordPuzzle(Graphics2D g, int width, int height, ImageObserver obs) {
-		int spacing = 60;
-
-		int clueCenterY = 50;
-		int lettersY = 130; 
-
-		// Use same font as Message for consistency
+		// Clue Frame Logic
 		g.setFont(GameConstants.UI_FONT); 
 		String clueText = "CLUE: " + clue;
 		FontMetrics fm = g.getFontMetrics();
 		int textW = fm.stringWidth(clueText);
 
-		// Draw Clue Background (Scaled NameFrame)
 		int bgW = textW + 60; 
-		int bgH = 50; 
+		int bgH = TOP_BAR_HEIGHT; 
 		int bgX = (width - bgW) / 2;
-		int bgY = clueCenterY - (bgH / 2); 
+		int bgY = TOP_BAR_Y; 
 
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, bgX, bgY, bgW, bgH, obs);
 		}
 
 		g.setColor(Color.WHITE); 
-
-		// Updated Vertical Centering: Lifted by 4 pixels
 		int textX = (width - textW) / 2;
-		int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 7; // MANUAL LIFT -4
+		int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 5;
 		g.drawString(clueText, textX, textY);
 
+		// Letters
+		int spacing = 60;
+		int lettersY = 130; 
 		int totalWidth = secretWord.length() * spacing;
 		int startX = (width - totalWidth) / 2;
 		int currentX = startX;
@@ -585,25 +660,21 @@ public class BattleView {
 		String title = "PAUSED";
 		g.drawString(title, mX + (mW - g.getFontMetrics().stringWidth(title)) / 2, mY + 60);
 
-		// Buttons
 		g.setFont(GameConstants.BUTTON_FONT);
 		int btnH = 40;
 		int btnGap = 15;
 		int startBtnY = mY + 100;
 
-		// Save
 		String saveTxt = "SAVE GAME";
 		int saveW = g.getFontMetrics().stringWidth(saveTxt);
 		modalSaveBounds = new Rectangle(mX + (mW - saveW) / 2 - 10, startBtnY, saveW + 20, btnH);
 		g.drawString(saveTxt, mX + (mW - saveW) / 2, startBtnY + 25);
 
-		// Menu
 		String menuTxt = "MAIN MENU";
 		int menuW = g.getFontMetrics().stringWidth(menuTxt);
 		modalMenuBounds = new Rectangle(mX + (mW - menuW) / 2 - 10, startBtnY + btnH + btnGap, menuW + 20, btnH);
 		g.drawString(menuTxt, mX + (mW - menuW) / 2, startBtnY + btnH + btnGap + 25);
 
-		// Exit
 		String exitTxt = "EXIT GAME";
 		if (isExitConfirmation)
 			exitTxt = "CONFIRM EXIT?";
@@ -614,7 +685,6 @@ public class BattleView {
 				btnH);
 		g.drawString(exitTxt, mX + (mW - exitW) / 2, startBtnY + (2 * (btnH + btnGap)) + 25);
 
-		// Warning text for Exit
 		if (isExitConfirmation) {
 			g.setFont(new Font("Monospaced", Font.PLAIN, 12));
 			String warn = "Unsaved progress will be lost!";
@@ -637,6 +707,9 @@ public class BattleView {
 			g.setFont(GameConstants.UI_FONT);
 			g.setColor(Color.YELLOW);
 			String rewardMsg = "You earned " + goldReward + " Gold!";
+			if (playerUser.getProgressLevel() == 1 && playerUser.getWorldLevel() > 1) {
+				rewardMsg += " BOSS DEFEATED!";
+			}
 			g.drawString(rewardMsg, (width - g.getFontMetrics().stringWidth(rewardMsg)) / 2, height / 2);
 
 			g.setColor(Color.WHITE);
