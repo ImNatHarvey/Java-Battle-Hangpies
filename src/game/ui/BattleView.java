@@ -27,7 +27,7 @@ public class BattleView {
 	private Hangpie playerPet;
 	private Enemy currentEnemy;
 
-// Battle State
+	// Battle State
 	private String secretWord;
 	private String clue;
 	private Set<java.lang.Character> guessedLetters;
@@ -35,35 +35,35 @@ public class BattleView {
 	private boolean playerWon = false;
 	private boolean exitRequested = false;
 
-// Rewards
+	// Rewards
 	private int goldReward = 0;
 	private boolean rewardsClaimed = false;
 
 	private String message = "";
 
-// Animation Timers
+	// Animation Timers
 	private long actionStartTime = 0;
 	private boolean isAnimatingAction = false;
 	private final int ANIMATION_DURATION = 1000;
 
-// Assets
+	// Assets
 	private Image bgImage;
 	private Image nameFrameImg;
 	private Image settingsImg;
 	private Image modalImg;
 
-// Heart Assets
+	// Heart Assets
 	private Image heartImg;
 	private Image halfHeartImg;
 	private Image emptyHeartImg;
 
 	private Random random = new Random();
 
-// Settings Modal State
+	// Settings Modal State
 	private boolean isSettingsOpen = false;
 	private boolean isExitConfirmation = false;
 
-// UI Buttons (Clickable Areas)
+	// UI Buttons (Clickable Areas)
 	private Rectangle settingsBtnBounds;
 	private Rectangle modalSaveBounds;
 	private Rectangle modalMenuBounds;
@@ -108,8 +108,13 @@ public class BattleView {
 		this.secretWord = data.word.toUpperCase();
 		this.clue = data.clue;
 
-		// 2. Pick Random Background
-		int bgNum = random.nextInt(19) + 1;
+		// 2. Pick Random Background (Updated for range 1-22, skipping missing 19)
+		// Available BGs: 1-18, 20-22. (19 is missing from assets)
+		int[] validBgIndices = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22 };
+
+		int bgIndex = random.nextInt(validBgIndices.length);
+		int bgNum = validBgIndices[bgIndex];
+
 		String bgPath = GameConstants.BG_DIR + "battle_bg/bg" + bgNum + ".gif";
 		this.bgImage = AssetLoader.loadImage(bgPath, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
 
@@ -294,7 +299,8 @@ public class BattleView {
 		}
 
 		// --- Top Backdrop (HUD Area) ---
-		int backdropH = 130;
+		// Increased Height to prevent overlap between Clue and Letters
+		int backdropH = 160;
 		g.setColor(new Color(0, 0, 0, 180));
 		g.fillRect(0, 0, width, backdropH);
 
@@ -307,13 +313,27 @@ public class BattleView {
 					settingsBtnBounds.height, observer);
 		}
 
-		// Draw Message (Correct/Wrong) - Positioned just below the backdrop
-		g.setColor(Color.WHITE);
-		g.setFont(GameConstants.UI_FONT);
+		// Draw Message (Correct/Wrong) - Positioned just below the backdrop with NameFrame Background
 		if (!message.isEmpty()) {
+			g.setFont(GameConstants.UI_FONT);
+			FontMetrics fm = g.getFontMetrics();
+			int msgW = fm.stringWidth(message);
+
+			// Dynamic Background Calculation
+			int bgW = msgW + 60; // Padding
+			int bgH = 50;
+			int bgX = (width - bgW) / 2;
+			int bgY = backdropH + 15; // Position below backdrop
+
+			if (nameFrameImg != null) {
+				g.drawImage(nameFrameImg, bgX, bgY, bgW, bgH, observer);
+			}
+
 			g.setColor(Color.YELLOW);
-			int msgW = g.getFontMetrics().stringWidth(message);
-			g.drawString(message, (width - msgW) / 2, backdropH + 40);
+			// Precise Vertical Centering
+			int textX = (width - msgW) / 2;
+			int textY = bgY + ((bgH - fm.getHeight()) / 2) + fm.getAscent();
+			g.drawString(message, textX, textY);
 		}
 
 		// --- Character Rendering (Scaled & Centered) ---
@@ -370,47 +390,76 @@ public class BattleView {
 
 	private void drawCharacterUI(Graphics2D g, int width, int backdropBottomY, ImageObserver observer) {
 		// Positioned immediately BELOW the backdrop
-		int topY = backdropBottomY + 20;
+		int topY = backdropBottomY + 10;
+		
+		// Revert to original margin startX
 		int startX = 30;
-		int frameW = 200;
-		int frameH = 50;
+		
+		// Expanded Frame Dimensions
+		int frameW = 220;
+		int frameH = 70;
+		
+		// Revert Positions (Far Left / Far Right)
+		int pFrameX = startX;
+		int eFrameX = width - startX - frameW;
+
+		// Fonts
+		Font levelFont = new Font("Monospaced", Font.BOLD, 12);
+		Font nameFont = new Font("Monospaced", Font.BOLD, 16);
 
 		// --- PLAYER UI (LEFT) ---
 
 		// Name Frame
 		if (nameFrameImg != null) {
-			g.drawImage(nameFrameImg, startX, topY, frameW, frameH, null);
+			g.drawImage(nameFrameImg, pFrameX, topY, frameW, frameH, null);
 		}
 
-		// Centered Name Text
 		g.setColor(Color.WHITE);
-		g.setFont(new Font("Monospaced", Font.BOLD, 18));
-		FontMetrics fm = g.getFontMetrics();
-		String pName = playerPet.getName();
-		int pNameX = startX + (frameW - fm.stringWidth(pName)) / 2;
-		g.drawString(pName, pNameX, topY + 32);
 
-		// Heart Display (Below Name)
-		drawHearts(g, playerPet, startX, topY + 60, observer);
+		// 1. Player Level (Top) - Pushed down slightly
+		g.setFont(levelFont);
+		String pLevel = "LEVEL " + playerUser.getWorldLevel();
+		FontMetrics fm = g.getFontMetrics();
+		int pLevelX = pFrameX + (frameW - fm.stringWidth(pLevel)) / 2;
+		int pLevelY = topY + 28; // Moved down for tighter spacing
+		g.drawString(pLevel, pLevelX, pLevelY);
+
+		// 2. Player Name (Bottom) - Pulled up slightly
+		g.setFont(nameFont);
+		fm = g.getFontMetrics();
+		String pName = playerPet.getName();
+		int pNameX = pFrameX + (frameW - fm.stringWidth(pName)) / 2;
+		int pNameY = topY + 46; // Reduced gap between level and name
+		g.drawString(pName, pNameX, pNameY);
+
+		// Heart Display (Below Frame)
+		drawHearts(g, playerPet, pFrameX + 10, topY + frameH + 5, observer);
 
 		// --- ENEMY UI (RIGHT) ---
-		int enemyX = width - 250;
 
 		// Name Frame
 		if (nameFrameImg != null) {
-			g.drawImage(nameFrameImg, enemyX, topY, frameW, frameH, null);
+			g.drawImage(nameFrameImg, eFrameX, topY, frameW, frameH, null);
 		}
 
-		// Centered Name Text
 		g.setColor(Color.WHITE);
-		g.setFont(new Font("Monospaced", Font.BOLD, 18));
-		fm = g.getFontMetrics(); // Refresh metrics just in case font changed
-		String eName = currentEnemy.getName();
-		int eNameX = enemyX + (frameW - fm.stringWidth(eName)) / 2;
-		g.drawString(eName, eNameX, topY + 32);
 
-		// Heart Display (Below Name, right aligned visually)
-		drawHearts(g, currentEnemy, enemyX, topY + 60, observer);
+		// 1. Enemy Level
+		g.setFont(levelFont);
+		String eLevel = "LEVEL " + playerUser.getWorldLevel();
+		fm = g.getFontMetrics();
+		int eLevelX = eFrameX + (frameW - fm.stringWidth(eLevel)) / 2;
+		g.drawString(eLevel, eLevelX, pLevelY);
+
+		// 2. Enemy Name
+		g.setFont(nameFont);
+		fm = g.getFontMetrics();
+		String eName = currentEnemy.getName();
+		int eNameX = eFrameX + (frameW - fm.stringWidth(eName)) / 2;
+		g.drawString(eName, eNameX, pNameY);
+
+		// Heart Display (Below Name)
+		drawHearts(g, currentEnemy, eFrameX + 10, topY + frameH + 5, observer);
 	}
 
 	private void drawHearts(Graphics2D g, Character character, int x, int y, ImageObserver observer) {
@@ -448,15 +497,34 @@ public class BattleView {
 
 	private void drawWordPuzzle(Graphics2D g, int width, int height, ImageObserver obs) {
 		int spacing = 60;
-		// Moved Up inside the backdrop
-		int clueY = 50;
-		int lettersY = 95;
 
-		g.setColor(Color.CYAN);
+		// Adjusted positions to avoid overlap
+		// Clue Center Y approx 50
+		// Letters Baseline approx 130
+		int clueCenterY = 50;
+		int lettersY = 130; // Moved down from 95
+
 		g.setFont(GameConstants.SUBTITLE_FONT);
 		String clueText = "CLUE: " + clue;
-		int clueW = g.getFontMetrics().stringWidth(clueText);
-		g.drawString(clueText, (width - clueW) / 2, clueY);
+		FontMetrics fm = g.getFontMetrics();
+		int textW = fm.stringWidth(clueText);
+
+		// Draw Clue Background (Scaled NameFrame)
+		int bgW = textW + 60; // Extra width for padding
+		int bgH = 50; // Fixed height
+		int bgX = (width - bgW) / 2;
+		int bgY = clueCenterY - (bgH / 2); // Centered on clueCenterY
+
+		if (nameFrameImg != null) {
+			g.drawImage(nameFrameImg, bgX, bgY, bgW, bgH, obs);
+		}
+
+		g.setColor(Color.CYAN);
+
+		// Precise Vertical Centering for Clue Text
+		int textX = (width - textW) / 2;
+		int textY = bgY + ((bgH - fm.getHeight()) / 2) + fm.getAscent();
+		g.drawString(clueText, textX, textY);
 
 		int totalWidth = secretWord.length() * spacing;
 		int startX = (width - totalWidth) / 2;
