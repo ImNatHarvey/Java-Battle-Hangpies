@@ -398,12 +398,24 @@ public class BattleView {
 	}
 
 	public void render(Graphics2D g, int width, int height, ImageObserver observer) {
+		// --- [ADJUSTABLE COORDINATES] ---------------------------------------------
+		// 1. Player X Position: Higher value = Moves further right
+		int playerCenterX = 280; 
+		
+		// 2. Enemy X Position: Lower value = Moves further left
+		int enemyCenterX = width - 280;
+
+		// 3. Stats/Name UI Y Position: 
+		//    140 aligns this with the new backdrop height (130 + 10)
+		int statsUiY = 140; 
+		// --------------------------------------------------------------------------
+		
 		if (bgImage != null) {
 			g.drawImage(bgImage, 0, 0, width, height, observer);
 		}
 
 		// --- Top Backdrop (HUD Area) ---
-		int backdropH = 160;
+		int backdropH = 130;
 		g.setColor(new Color(0, 0, 0, 180));
 		g.fillRect(0, 0, width, backdropH);
 
@@ -421,12 +433,11 @@ public class BattleView {
 		// 3. Word Puzzle & Clue (Center)
 		drawWordPuzzle(g, width, height, observer);
 
+		// 4. Draw Player and Enemy UI (Stats/Name)
+		drawCharacterUI(g, width, statsUiY, playerCenterX, enemyCenterX, observer);
+
+		// 5. Draw Message Indicator (Centered below Clue)
 		int framesTopY = backdropH + 10;
-
-		// Draw Player and Enemy UI
-		drawCharacterUI(g, width, framesTopY, observer);
-
-		// Draw Message Indicator (Centered below Clue)
 		if (!message.isEmpty()) {
 			g.setFont(GameConstants.UI_FONT);
 			FontMetrics fm = g.getFontMetrics();
@@ -460,7 +471,8 @@ public class BattleView {
 			if (eW > 0 && eH > 0) {
 				int drawW = eW * scaleFactor;
 				int drawH = eH * scaleFactor;
-				int drawX = (width - 150) - (drawW / 2);
+				// Calculated based on CENTER position
+				int drawX = enemyCenterX - (drawW / 2);
 				int drawY = groundY - drawH;
 				g.drawImage(enemyImg, drawX, drawY, drawW, drawH, observer);
 			}
@@ -475,7 +487,8 @@ public class BattleView {
 			if (pW > 0 && pH > 0) {
 				int drawW = pW * scaleFactor;
 				int drawH = pH * scaleFactor;
-				int drawX = 130 - (drawW / 2);
+				// Calculated based on CENTER position
+				int drawX = playerCenterX - (drawW / 2);
 				int drawY = groundY - drawH;
 				g.drawImage(playerImg, drawX, drawY, drawW, drawH, observer);
 			}
@@ -507,12 +520,13 @@ public class BattleView {
 		g.drawString(levelTxt, textX, textY);
 	}
 
-	private void drawCharacterUI(Graphics2D g, int width, int topY, ImageObserver observer) {
-		int startX = 30;
+	private void drawCharacterUI(Graphics2D g, int width, int topY, int playerCenterX, int enemyCenterX, ImageObserver observer) {
 		int frameW = 220;
 		int frameH = 70;
-		int pFrameX = startX;
-		int eFrameX = width - startX - frameW;
+		
+		// Align frames so their CENTER matches the Character CENTER (Horizontal Alignment)
+		int pFrameX = playerCenterX - (frameW / 2);
+		int eFrameX = enemyCenterX - (frameW / 2);
 
 		Font levelFont = new Font("Monospaced", Font.BOLD, 12);
 		Font nameFont = new Font("Monospaced", Font.BOLD, 16);
@@ -533,7 +547,8 @@ public class BattleView {
 		g.drawString(pName, pFrameX + (frameW - g.getFontMetrics().stringWidth(pName)) / 2, topY + 46);
 
 		int heartsY = topY + frameH + 5;
-		drawHearts(g, playerPet, pFrameX + 10, heartsY, observer);
+		// Center the hearts within the frame width
+		drawHearts(g, playerPet, pFrameX + 40, heartsY, observer);
 
 		g.setFont(levelFont);
 		int playerDmg = 1 + (playerUser.getWorldLevel() / 2);
@@ -554,7 +569,7 @@ public class BattleView {
 		String eName = currentEnemy.getName();
 		g.drawString(eName, eFrameX + (frameW - g.getFontMetrics().stringWidth(eName)) / 2, topY + 46);
 
-		drawHearts(g, currentEnemy, eFrameX + 10, heartsY, observer);
+		drawHearts(g, currentEnemy, eFrameX + 40, heartsY, observer);
 		
 		g.setFont(levelFont);
 		int enemyDmg = 2 * playerDmg;
@@ -611,7 +626,8 @@ public class BattleView {
 
 		// Letters
 		int spacing = 60;
-		int lettersY = 130; 
+		// Moved to 110 to center vertically between clue and backdrop bottom
+		int lettersY = 110; 
 		int totalWidth = secretWord.length() * spacing;
 		int startX = (width - totalWidth) / 2;
 		int currentX = startX;
