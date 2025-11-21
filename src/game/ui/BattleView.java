@@ -856,7 +856,7 @@ public class BattleView {
 			g.setFont(new Font("Monospaced", Font.PLAIN, 12));
 			g.setColor(Color.RED);
 			String warn = "Unsaved progress will be lost!";
-			g.drawString(warn, mX + (mW - g.getFontMetrics().stringWidth(warn)) / 2, mY + mH - 15);
+			g.drawString(warn, mX + (mW - g.getFontMetrics().stringWidth(warn)) / 2, mY + mH - 35);
 		}
 	}
 
