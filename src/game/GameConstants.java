@@ -18,6 +18,11 @@ public class GameConstants {
 	public static final Color BACKGROUND_COLOR = new Color(30, 30, 30);
 	public static final Color TEXT_COLOR = Color.WHITE;
 	public static final Color SELECTION_COLOR = Color.YELLOW;
+	public static final Color TIMER_PANIC_COLOR = new Color(231, 76, 60); // Red color for panic mode
+
+	// Game Logic Constants
+	public static final int GUESS_TIME_LIMIT_SECONDS = 30;
+	public static final int PANIC_THRESHOLD_SECONDS = 5;
 
 	// Fonts
 	public static final Font HEADER_FONT = new Font("Monospaced", Font.BOLD, 40);

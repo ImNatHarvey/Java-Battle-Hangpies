@@ -56,6 +56,12 @@ public class BattleView {
 	private long deathStartTime = 0;
 	private final int DEATH_DURATION = 3000; // 3 Seconds for Death Animation
 
+	// --- TIMER LOGIC (NEW) ---
+	private long lastGuessTime;
+	private long currentTimeRemaining;
+	private int timerX, timerY, timerW, timerH;
+	private int panicAlpha = 0;
+
 	// Assets
 	private Image bgImage;
 	private Image nameFrameImg;
@@ -101,6 +107,7 @@ public class BattleView {
 		this.playerUser = user;
 		this.playerPet = pet;
 		this.guessedLetters = new HashSet<>();
+		this.lastGuessTime = System.currentTimeMillis(); // Initialize timer
 
 		// Reset animations
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
@@ -138,6 +145,10 @@ public class BattleView {
 
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
 
+		// Reset Timer
+		this.lastGuessTime = System.currentTimeMillis();
+		this.panicAlpha = 0;
+
 		// Load Game Logic
 		if (Main.saveManager.hasSave(playerUser.getUsername()) && !shouldCarryOverWord) {
 			System.out.println("[Battle] Found save file. Loading...");
@@ -163,6 +174,12 @@ public class BattleView {
 		this.currentEnemy.preloadAssets();
 
 		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, 50, 50);
+
+		// Set Timer UI position to the bottom center (White Box area)
+		timerW = 250; 
+		timerH = 50;  
+		timerX = (GameConstants.WINDOW_WIDTH - timerW) / 2;
+		timerY = GameConstants.WINDOW_HEIGHT - 120; // Near the bottom edge
 	}
 
 	private void loadGame() {
@@ -190,6 +207,16 @@ public class BattleView {
 		this.playerPet.preloadAssets();
 		this.currentEnemy.preloadAssets();
 		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, 50, 50);
+
+		// Set Timer UI position to the bottom center (White Box area)
+		timerW = 250; 
+		timerH = 50;  
+		timerX = (GameConstants.WINDOW_WIDTH - timerW) / 2;
+		timerY = GameConstants.WINDOW_HEIGHT - 120; 
+
+		// Reset Timer on load
+		this.lastGuessTime = System.currentTimeMillis();
+		this.panicAlpha = 0;
 
 		message = "Game Loaded!";
 		messageColor = Color.GREEN;
@@ -301,7 +328,7 @@ public class BattleView {
 	}
 
 	public void update() {
-		if (isSettingsOpen)
+		if (isSettingsOpen || battleOver)
 			return;
 
 		if (isAnimatingAction) {
@@ -321,6 +348,47 @@ public class BattleView {
 				}
 			}
 		}
+		
+		// --- TIMER UPDATE LOGIC ---
+		if (!isAnimatingAction && !isDeathAnimating) {
+			long elapsedTime = System.currentTimeMillis() - lastGuessTime;
+			long maxTimeMillis = GameConstants.GUESS_TIME_LIMIT_SECONDS * 1000;
+			currentTimeRemaining = maxTimeMillis - elapsedTime;
+			
+			// Panic Mode Visuals
+			int secondsRemaining = (int) (currentTimeRemaining / 1000);
+			if (secondsRemaining <= GameConstants.PANIC_THRESHOLD_SECONDS) {
+				// Fade in/out effect by modulating alpha
+				double pulse = (System.currentTimeMillis() % 500) / 500.0; // 0 to 1 over 0.5s
+				panicAlpha = (int) (150 * pulse);
+			} else {
+				panicAlpha = 0;
+			}
+			
+			// Timer Expired Logic
+			if (currentTimeRemaining <= 0) {
+				currentTimeRemaining = 0; // Clamp
+				
+				// Time is up! Enemy attacks.
+				handleTimeOutAttack();
+			}
+		}
+	}
+
+	private void handleTimeOutAttack() {
+		message = "Time Out! Ouch!";
+		messageColor = Color.RED;
+		
+		lastGuessTime = System.currentTimeMillis(); // Reset timer for next guess
+		
+		actionStartTime = System.currentTimeMillis();
+		isAnimatingAction = true;
+		
+		currentEnemy.setAnimationState(Enemy.AnimState.ATTACK);
+		playerPet.setAnimationState(Hangpie.AnimState.DAMAGE);
+		
+		int dmg = currentEnemy.getAttackPower();
+		playerPet.takeDamage(dmg);
 	}
 
 	private void checkRoundResult() {
@@ -493,6 +561,9 @@ public class BattleView {
 
 		if (isAnimatingAction || isDeathAnimating)
 			return;
+		
+		// Don't process input if the timer has just run out (wait for attack animation)
+		if (currentTimeRemaining <= 0) return;
 
 		char guess = java.lang.Character.toUpperCase(keyChar);
 		if (guess < 'A' || guess > 'Z')
@@ -505,6 +576,10 @@ public class BattleView {
 		}
 
 		guessedLetters.add(guess);
+
+		// --- RESET TIMER ON VALID GUESS ---
+		lastGuessTime = System.currentTimeMillis();
+		panicAlpha = 0;
 
 		boolean isCorrect = false;
 		for (char c : secretWord.toCharArray()) {
@@ -582,8 +657,11 @@ public class BattleView {
 		}
 
 		drawWordPuzzle(g, width, height, observer);
-		drawCharacterUI(g, width, statsUiY, playerCenterX, enemyCenterX, observer);
-
+		
+		// --- DRAW TIMER UI ---
+		drawTimer(g, observer);
+		
+		// --- DRAW MESSAGE UI (CENTERED) ---
 		int framesTopY = backdropH + 10;
 		if (!message.isEmpty()) {
 			g.setFont(GameConstants.UI_FONT);
@@ -592,7 +670,7 @@ public class BattleView {
 
 			int bgW = msgW + 60;
 			int bgH = 50;
-			int bgX = (width - bgW) / 2;
+			int bgX = (width - bgW) / 2; // Center it
 			int bgY = framesTopY;
 
 			if (nameFrameImg != null) {
@@ -604,6 +682,9 @@ public class BattleView {
 			int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 7;
 			g.drawString(message, textX, textY);
 		}
+
+		drawCharacterUI(g, width, statsUiY, playerCenterX, enemyCenterX, observer);
+
 
 		int groundY = height - 20;
 		int scaleFactor = 4;
@@ -642,6 +723,47 @@ public class BattleView {
 			drawEndScreen(g, width, height);
 		}
 	}
+	
+	private void drawTimer(Graphics2D g, ImageObserver observer) {
+		
+		// Draw the timer background frame (Yellow Box Drawn)
+		// We'll use the Name Frame image as the timer's background
+		if (nameFrameImg != null) {
+			g.drawImage(nameFrameImg, timerX, timerY, timerW, timerH, observer);
+		}
+
+		// Draw Panic Flash Effect (Yellow/Red Box Drawn)
+		if (panicAlpha > 0) {
+			// Creates the "flash" effect when time is low
+			Color panicColor = new Color(GameConstants.TIMER_PANIC_COLOR.getRed(), 
+										 GameConstants.TIMER_PANIC_COLOR.getGreen(), 
+										 GameConstants.TIMER_PANIC_COLOR.getBlue(), 
+										 panicAlpha);
+			g.setColor(panicColor);
+			g.fillRect(timerX + 2, timerY + 2, timerW - 4, timerH - 4);
+		}
+
+		// Calculate text
+		int secondsRemaining = (int) Math.max(0, currentTimeRemaining / 1000) + 1;
+		String timerText = String.format("TIME: %d", secondsRemaining);
+		
+		// Change text color to Red during panic
+		if (secondsRemaining <= GameConstants.PANIC_THRESHOLD_SECONDS) {
+			g.setColor(GameConstants.TIMER_PANIC_COLOR);
+		} else {
+			g.setColor(Color.BLACK); // Draw black text over the light brown frame
+		}
+		
+		g.setFont(GameConstants.UI_FONT);
+		FontMetrics fm = g.getFontMetrics();
+
+		// Center the text
+		int textX = timerX + (timerW - fm.stringWidth(timerText)) / 2;
+		int textY = timerY + (timerH - fm.getAscent()) / 2 + fm.getAscent() - 5;
+		
+		g.drawString(timerText, textX, textY);
+	}
+
 
 	private void drawLevelIndicator(Graphics2D g, int x, int y, ImageObserver observer) {
 		int w = 150;
@@ -804,13 +926,15 @@ public class BattleView {
 
 	private void drawWordPuzzle(Graphics2D g, int width, int height, ImageObserver obs) {
 		g.setFont(GameConstants.UI_FONT);
+		
+		// --- CLUE (CENTERED) ---
 		String clueText = "CLUE: " + clue;
 		FontMetrics fm = g.getFontMetrics();
 		int textW = fm.stringWidth(clueText);
 
 		int bgW = textW + 60;
 		int bgH = TOP_BAR_HEIGHT;
-		int bgX = (width - bgW) / 2;
+		int bgX = (width - bgW) / 2; // Center it
 		int bgY = TOP_BAR_Y;
 
 		if (nameFrameImg != null) {
@@ -818,14 +942,17 @@ public class BattleView {
 		}
 
 		g.setColor(Color.WHITE);
-		int textX = (width - textW) / 2;
+		int textX = (width - textW) / 2; // Center it
 		int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 5;
 		g.drawString(clueText, textX, textY);
-
+		
+		// --- GUESS LETTERS (CENTERED) ---
 		int spacing = 60;
 		int lettersY = 110;
 		int totalWidth = secretWord.length() * spacing;
-		int startX = (width - totalWidth) / 2;
+		
+		// Calculate starting X to center the entire word puzzle structure
+		int startX = (width - totalWidth) / 2; 
 		int currentX = startX;
 
 		for (char c : secretWord.toCharArray()) {
