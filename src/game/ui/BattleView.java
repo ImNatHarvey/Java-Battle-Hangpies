@@ -241,19 +241,19 @@ public class BattleView {
 
 			switch (bossIndex) {
 			case 1:
-				enemyName = "Scourge of Obliviion";
+				enemyName = "Mehrunes Dagon";
 				enemyPath = "enemies/boss/boss1";
 				break;
 			case 2:
-				enemyName = "The Stalhrim Colossus";
+				enemyName = "Molag Bal";
 				enemyPath = "enemies/boss/boss2";
 				break;
 			case 3:
-				enemyName = "Scion of Apocrypha";
+				enemyName = "Hermaeus Mora";
 				enemyPath = "enemies/boss/boss3";
 				break;
 			default:
-				enemyName = "Scourge of Obliviion";
+				enemyName = "Mehrunes Dagon";
 				enemyPath = "enemies/boss/boss1";
 				break;
 			}
