@@ -1,1 +1,2 @@
 // FORMAT: username|secretWord|clue|guessedLetters|enemyName|enemyHp|enemyMaxHp|enemyAtk|enemyImageFolder|enemyLevel|playerPetId|playerPetHp
+player123|GIRAFFE|The tallest land animal||Lava Wrym|4|10|1|enemies/enemies/worm|1|b7ff5e05-bd74-4e80-bcbd-e7266f94f718|10

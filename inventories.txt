@@ -1,4 +1,2 @@
 // uniqueId|ownerUsername|productId|customName|level
-63b084ef-30a8-452f-b865-bbb43a0f1df0|player123|HP-001|Evil Wizard|1
-23fb1f0b-438a-4563-9e7a-e6c994a5e9f1|player123|HP-002|King|1
-c8e53271-c3b6-4a00-8291-4942e4fbba80|player123|HP-003|Warrior|1
+b7ff5e05-bd74-4e80-bcbd-e7266f94f718|player123|HP-001|Evil Wizard|1
