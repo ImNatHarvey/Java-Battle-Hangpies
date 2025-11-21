@@ -119,6 +119,12 @@ public class BattleView {
 	private final int DAMAGE_INDICATOR_DURATION = 1500; // 1.5 seconds
 	private final int DAMAGE_INDICATOR_VERTICAL_TRAVEL = 50; // Pixels
 
+	// NEW: Rabbit flash logic
+	private Image rabbitImg;
+	private long rabbitFlashStartTime = 0;
+	private final int RABBIT_FLASH_DURATION = 500; // 0.5 seconds
+	private boolean hasFlashedThisGuess = false; // To ensure it only flashes once per cycle at 5s mark
+
 	// Assets
 	private Image bgImage;
 	private Image nameFrameImg;
@@ -186,6 +192,10 @@ public class BattleView {
 		heartImg = AssetLoader.loadImage(GameConstants.HEART_IMG, 15, 15);
 		attackImg = AssetLoader.loadImage(GameConstants.ATTACK_IMG, 15, 15);
 		coinImg = AssetLoader.loadImage(GameConstants.COIN_IMG, 20, 20);
+
+		// UPDATED: Load Rabbit Image at full window resolution
+		rabbitImg = AssetLoader.loadImage(GameConstants.RABBIT_IMG, GameConstants.WINDOW_WIDTH,
+				GameConstants.WINDOW_HEIGHT);
 	}
 
 	private void initBattle() {
@@ -222,6 +232,10 @@ public class BattleView {
 		this.damageIndicatorPlayer = 0;
 		this.damageIndicatorEnemy = 0;
 		this.damageIndicatorStartTime = 0;
+
+		// NEW: Reset Rabbit Flash
+		this.rabbitFlashStartTime = 0;
+		this.hasFlashedThisGuess = false;
 
 		// Load Game Logic
 		if (Main.saveManager.hasSave(playerUser.getUsername()) && !shouldCarryOverWord) {
@@ -310,6 +324,10 @@ public class BattleView {
 		this.damageIndicatorPlayer = 0;
 		this.damageIndicatorEnemy = 0;
 		this.damageIndicatorStartTime = 0;
+
+		// NEW: Reset Rabbit Flash
+		this.rabbitFlashStartTime = 0;
+		this.hasFlashedThisGuess = false;
 
 		message = "Game Loaded!";
 		messageColor = Color.GREEN;
@@ -504,6 +522,17 @@ public class BattleView {
 
 			int secondsRemaining = (int) (currentTimeRemaining / 1000) + 1;
 			boolean isPanicking = secondsRemaining <= GameConstants.PANIC_THRESHOLD_SECONDS && secondsRemaining > 0;
+
+			// NEW: RABBIT FLASH TRIGGER LOGIC
+			if (secondsRemaining == GameConstants.PANIC_THRESHOLD_SECONDS && !hasFlashedThisGuess) {
+				rabbitFlashStartTime = System.currentTimeMillis();
+				hasFlashedThisGuess = true;
+			}
+
+			// Reset flash flag after a guess or if game is reset.
+			if (secondsRemaining > GameConstants.PANIC_THRESHOLD_SECONDS) {
+				hasFlashedThisGuess = false;
+			}
 
 			if (isPanicking) {
 				// --- Time Shake Logic (every 100ms) ---
@@ -797,6 +826,7 @@ public class BattleView {
 		redPulseAlpha = 0;
 		panicAlpha = 0;
 		lastSecondChecked = -1;
+		this.hasFlashedThisGuess = false; // Reset flash flag on a successful guess
 
 		boolean isCorrect = false;
 		// NEW: Calculate multiplier (letter count)
@@ -953,6 +983,34 @@ public class BattleView {
 		if (currentDamagePulseAlpha > 0) {
 			g.setColor(new Color(255, 0, 0, currentDamagePulseAlpha));
 			g.fillRect(0, 0, width, height);
+		}
+
+		// NEW: Draw Rabbit Flash
+		if (rabbitFlashStartTime > 0 && rabbitImg != null) {
+			long timeElapsed = System.currentTimeMillis() - rabbitFlashStartTime;
+			if (timeElapsed < RABBIT_FLASH_DURATION) {
+
+				// Fade from 1.0 down to 0.0 over 500ms
+				float alpha = 1.0f - (float) timeElapsed / RABBIT_FLASH_DURATION;
+				alpha = Math.max(0.0f, Math.min(1.0f, alpha));
+
+				g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+
+				int rX = 0; // Start at 0, 0 for full screen
+				int rY = 0;
+
+				// Apply time shake to rabbit image if panic mode is active
+				if (currentTimeRemaining <= GameConstants.PANIC_THRESHOLD_SECONDS * 1000) {
+					rX += timeShakeX;
+					rY += timeShakeY;
+				}
+
+				// Draw using the full canvas dimensions
+				g.drawImage(rabbitImg, rX, rY, width, height, observer);
+				g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); // Reset alpha
+			} else {
+				rabbitFlashStartTime = 0; // End animation
+			}
 		}
 
 		// Backdrop is generally static, but we'll apply UI shake
