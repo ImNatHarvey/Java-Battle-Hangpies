@@ -29,6 +29,17 @@ public class BattleView {
 	private Hangpie playerPet;
 	private Enemy currentEnemy;
 
+	// NEW: Fixed list of non-boss enemies for stages 1-4.
+	private final String[][] REGULAR_ENEMIES = {
+			// Index 0 (Stage 1) - Goblin
+			{ "Riekling Scout", "enemies/enemies/goblin" },
+			// Index 1 (Stage 2) - Evil Eye
+			{ "Seeker's Gaze", "enemies/enemies/evil_eye" },
+			// Index 2 (Stage 3) - Mushroom
+			{ "Spriggan", "enemies/enemies/mushroom" },
+			// Index 3 (Stage 4) - Skeleton
+			{ "Draugr", "enemies/enemies/skeleton" } };
+
 	// Battle State
 	private String secretWord;
 	private String clue;
@@ -211,13 +222,14 @@ public class BattleView {
 
 		// Word Logic (New vs Carry Over)
 		if (!shouldCarryOverWord) {
-			generateNewWord();
+			// UPDATED: Pass both worldLevel and progressLevel
+			generateNewWord(playerUser.getWorldLevel(), playerUser.getProgressLevel());
 		} else {
 			System.out.println("[Battle] Carrying over word: " + secretWord);
 			shouldCarryOverWord = false;
 		}
 
-		// Generate Enemy
+		// Generate Enemy (Determined by progressLevel)
 		generateEnemy();
 
 		// Preload Assets
@@ -253,7 +265,8 @@ public class BattleView {
 		this.playerPet.setCurrentHealth(save.getPlayerPetHp());
 
 		// Load Background (Random standard BG)
-		generateBackground(false);
+		boolean isBoss = (playerUser.getProgressLevel() == 5);
+		generateBackground(isBoss); // Re-generate background as it's not saved
 
 		this.playerPet.preloadAssets();
 		this.currentEnemy.preloadAssets();
@@ -349,12 +362,10 @@ public class BattleView {
 				break;
 			}
 		} else {
-			String[][] availableEnemies = { { "Lava Wrym", "enemies/enemies/worm" },
-					{ "Seeker's Gaze", "enemies/enemies/evil_eye" }, { "Riekling Scout", "enemies/enemies/goblin" },
-					{ "Spriggan", "enemies/enemies/mushroom" }, { "Draugr", "enemies/enemies/skeleton" } };
-			int idx = random.nextInt(availableEnemies.length);
-			enemyName = availableEnemies[idx][0];
-			enemyPath = availableEnemies[idx][1];
+			// NEW: Non-Repeating Enemy Selection for stages 1-4
+			int enemyIndex = (currentProg - 1) % REGULAR_ENEMIES.length; // 0, 1, 2, 3
+			enemyName = REGULAR_ENEMIES[enemyIndex][0];
+			enemyPath = REGULAR_ENEMIES[enemyIndex][1];
 		}
 
 		this.currentEnemy = new Enemy(enemyName, enemyHp, currentWorld, enemyAtk, enemyPath);
@@ -374,9 +385,10 @@ public class BattleView {
 		}
 	}
 
-	private void generateNewWord() {
+	// UPDATED: New signature to support progressive difficulty
+	private void generateNewWord(int worldLevel, int progressLevel) {
 		this.guessedLetters.clear();
-		WordBank.WordData data = WordBank.getRandomWord(playerUser.getWorldLevel());
+		WordBank.WordData data = WordBank.getRandomWord(worldLevel, progressLevel);
 		this.secretWord = data.word.toUpperCase();
 		this.clue = data.clue;
 	}
@@ -784,7 +796,8 @@ public class BattleView {
 				if (currentEnemy.isAlive()) {
 					message = "Word Cleared! New Word!";
 					messageColor = Color.CYAN;
-					generateNewWord();
+					// UPDATED: Pass worldLevel and progressLevel for new word
+					generateNewWord(playerUser.getWorldLevel(), playerUser.getProgressLevel());
 				}
 			}
 
@@ -959,10 +972,10 @@ public class BattleView {
 			drawEnemySprite1(g, enemyImg, eDrawX, groundY, scaleFactor, currentEAlpha, targetShakeX, targetShakeY,
 					isEnemyDamaged, observer);
 			drawPlayerSprite1(g, playerImg, pDrawX, groundY, scaleFactor, currentPAlpha, 0, 0, false, observer); // Player
-																												// sprite
-																												// does
-																												// not
-																												// damage-shake
+																													// sprite
+																													// does
+																													// not
+																													// damage-shake
 		} else {
 			// Enemy is Attacker (Drawn Last/On Top)
 			drawPlayerSprite1(g, playerImg, pDrawX, groundY, scaleFactor, currentPAlpha, targetShakeX, targetShakeY,
