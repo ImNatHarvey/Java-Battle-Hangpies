@@ -28,7 +28,7 @@ public class BattleView {
 	private Hangpie playerPet;
 	private Enemy currentEnemy;
 
-// Battle State
+	// Battle State
 	private String secretWord;
 	private String clue;
 	private Set<java.lang.Character> guessedLetters;
@@ -36,17 +36,18 @@ public class BattleView {
 	private boolean playerWon = false;
 	private boolean exitRequested = false;
 
-// Logic for carrying over incomplete words to next level
+	// Logic for carrying over incomplete words to next level
 	private boolean shouldCarryOverWord = false;
 
-// Rewards
+	// Rewards
 	private int goldReward = 0;
+	private int expReward = 0;
 	private boolean rewardsClaimed = false;
 
 	private String message = "";
 	private Color messageColor = Color.YELLOW; // Default color
 
-// Animation Timers & States
+	// Animation Timers & States
 	private long actionStartTime = 0;
 	private boolean isAnimatingAction = false;
 	private final int ACTION_DURATION = 1700; // 1.7 Seconds for Attack/Damage
@@ -55,41 +56,44 @@ public class BattleView {
 	private long deathStartTime = 0;
 	private final int DEATH_DURATION = 3000; // 3 Seconds for Death Animation
 
-// Assets
+	// Assets
 	private Image bgImage;
 	private Image nameFrameImg;
 	private Image settingsImg;
 	private Image modalImg;
 
-// Frame used for the Level Indicator
+	// Frame used for the Level Indicator
 	private Image levelFrameImg;
 
-// Heart Assets
+	// Heart Assets
 	private Image heartImg;
 	private Image halfHeartImg;
 	private Image emptyHeartImg;
 
+	// Icon Assets
+	private Image coinImg;
+
 	private Random random = new Random();
 
-// Settings Modal State
+	// Settings Modal State
 	private boolean isSettingsOpen = false;
 	private boolean isExitConfirmation = false;
 	private boolean isMenuConfirmation = false;
 
-// UI Buttons
+	// UI Buttons
 	private Rectangle settingsBtnBounds;
 
-// Modal Buttons
+	// Modal Buttons
 	private Rectangle modalContinueBounds;
 	private Rectangle modalSaveBounds;
 	private Rectangle modalMenuBounds;
 	private Rectangle modalExitBounds;
 
-// Hover State for Modal
-// Continue, Save, Menu, Exit, None
+	// Hover State for Modal
+	// Continue, Save, Menu, Exit, None
 	private int selectedModalOption = -1;
 
-// Layout Constants
+	// Layout Constants
 	private final int TOP_BAR_Y = 20;
 	private final int TOP_BAR_HEIGHT = 50;
 
@@ -114,6 +118,8 @@ public class BattleView {
 		heartImg = AssetLoader.loadImage(GameConstants.HEART_IMG, 20, 20);
 		halfHeartImg = AssetLoader.loadImage(GameConstants.HALF_HEART_IMG, 20, 20);
 		emptyHeartImg = AssetLoader.loadImage(GameConstants.EMPTY_HEART_IMG, 20, 20);
+
+		coinImg = AssetLoader.loadImage(GameConstants.COIN_IMG, 20, 20);
 	}
 
 	private void initBattle() {
@@ -134,7 +140,7 @@ public class BattleView {
 		if (Main.saveManager.hasSave(playerUser.getUsername()) && !shouldCarryOverWord) {
 			System.out.println("[Battle] Found save file. Loading...");
 			loadGame();
-			return; 
+			return;
 		}
 
 		this.playerPet.setCurrentHealth(this.playerPet.getMaxHealth());
@@ -210,8 +216,13 @@ public class BattleView {
 		String enemyName;
 		String enemyPath;
 
+		// --- SCALING LOGIC ---
+		// Base Stats for World 1: 10 HP, 1 ATK
+		// Increase per World: +5 HP, +1 ATK
+
 		int baseHp = 10 + ((currentWorld - 1) * 5);
-		int baseAtk = currentWorld;
+		int baseAtk = 1 + ((currentWorld - 1) * 1);
+
 		int enemyHp = baseHp;
 		int enemyAtk = baseAtk;
 
@@ -219,7 +230,7 @@ public class BattleView {
 		generateBackground(isBoss);
 
 		if (isBoss) {
-			// Boss Stats
+			// Boss Stats: +5 HP, +1 ATK relative to normal
 			enemyHp = baseHp + 5;
 			enemyAtk = baseAtk + 1;
 
@@ -348,18 +359,38 @@ public class BattleView {
 		}
 
 		if (!rewardsClaimed) {
-			goldReward = 50 + (playerUser.getWorldLevel() * 10);
-			if (playerUser.getProgressLevel() == 5) {
-				goldReward *= 2;
+			boolean isBoss = (playerUser.getProgressLevel() == 5);
+
+			// Calculate Rewards
+			if (isBoss) {
+				goldReward = 10;
+				expReward = 5;
+			} else {
+				goldReward = 5;
+				expReward = 1;
 			}
 
-			playerUser.addGold(goldReward);
-
-			if (playerUser.getProgressLevel() >= 5) {
+			// Handle Progression
+			if (isBoss) {
+				// Beat the Boss -> Advance World
 				playerUser.setProgressLevel(1);
 				playerUser.setWorldLevel(playerUser.getWorldLevel() + 1);
 			} else {
+				// Normal Stage -> Advance Stage
 				playerUser.setProgressLevel(playerUser.getProgressLevel() + 1);
+			}
+
+			// Apply Rewards (After World Level update to lift level cap if boss)
+			playerUser.addGold(goldReward);
+			boolean leveledUp = playerPet.gainExp(expReward, playerUser.getWorldLevel());
+
+			if (leveledUp) {
+				message = "LEVEL UP!";
+				messageColor = Color.CYAN;
+			} else if (playerPet.getLevel() >= playerUser.getWorldLevel()
+					&& playerPet.getCurrentExp() >= playerPet.getMaxExpForCurrentLevel()) {
+				message = "EXP MAX (Defeat Boss!)";
+				messageColor = Color.ORANGE;
 			}
 
 			Main.userManager.updateUser(playerUser);
@@ -370,6 +401,11 @@ public class BattleView {
 	private void handleLoss() {
 		battleOver = true;
 		playerWon = false;
+
+		// Death Penalty: Reset to Stage 1 of Current World
+		playerUser.setProgressLevel(1);
+		Main.userManager.updateUser(playerUser);
+
 		// Delete Save on Loss
 		Main.saveManager.deleteSave(playerUser.getUsername());
 	}
@@ -659,6 +695,28 @@ public class BattleView {
 				+ playerPet.getAttackPower();
 		g.drawString(pStats, pFrameX + (frameW - g.getFontMetrics().stringWidth(pStats)) / 2, heartsY + 30);
 
+		// EXP BAR (New)
+		int expBarY = heartsY + 45;
+		int expBarW = 180;
+		int expBarH = 8;
+		int expBarX = pFrameX + (frameW - expBarW) / 2;
+
+		g.setColor(Color.DARK_GRAY);
+		g.fillRect(expBarX, expBarY, expBarW, expBarH);
+
+		float expPercent = (float) playerPet.getCurrentExp() / (float) playerPet.getMaxExpForCurrentLevel();
+		if (expPercent > 1.0f)
+			expPercent = 1.0f;
+
+		g.setColor(Color.CYAN);
+		g.fillRect(expBarX, expBarY, (int) (expBarW * expPercent), expBarH);
+		g.setColor(Color.WHITE);
+		g.drawRect(expBarX, expBarY, expBarW, expBarH);
+
+		String expTxt = "EXP " + playerPet.getCurrentExp() + "/" + playerPet.getMaxExpForCurrentLevel();
+		g.setFont(new Font("Monospaced", Font.PLAIN, 10));
+		g.drawString(expTxt, expBarX + (expBarW - g.getFontMetrics().stringWidth(expTxt)) / 2, expBarY - 2);
+
 		// ENEMY UI
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, eFrameX, topY, frameW, frameH, null);
@@ -866,9 +924,9 @@ public class BattleView {
 
 			g.setFont(GameConstants.UI_FONT);
 			g.setColor(Color.YELLOW);
-			String rewardMsg = "You earned " + goldReward + " Gold!";
+			String rewardMsg = "REWARD: " + goldReward + "G | " + expReward + " EXP";
 			if (playerUser.getProgressLevel() == 1 && playerUser.getWorldLevel() > 1) {
-				rewardMsg += " BOSS DEFEATED!";
+				rewardMsg += " (BOSS DEFEATED!)";
 			}
 			g.drawString(rewardMsg, (width - g.getFontMetrics().stringWidth(rewardMsg)) / 2, height / 2);
 
@@ -886,6 +944,10 @@ public class BattleView {
 
 			g.setFont(GameConstants.UI_FONT);
 			g.setColor(Color.WHITE);
+
+			String subMsg = "Progress Reset to Stage 1";
+			g.drawString(subMsg, (width - g.getFontMetrics().stringWidth(subMsg)) / 2, height / 2);
+
 			String opt = "Press [ENTER] or [ESC] to Return";
 			g.drawString(opt, (width - g.getFontMetrics().stringWidth(opt)) / 2, height / 2 + 50);
 		}

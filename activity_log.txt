@@ -2,3 +2,7 @@
 [2025-11-21 18:57:32] | player123 | Logged in successfully.
 [2025-11-21 18:57:50] | player123 | Logged in successfully.
 [2025-11-21 18:58:10] | player123 | Bought Evil Wizard from the Shop for 300.0G.
+[2025-11-21 20:43:00] | admin | Logged in successfully.
+[2025-11-21 20:45:37] | player123 | Logged in successfully.
+[2025-11-21 20:46:17] | player123 | Logged in successfully.
+[2025-11-21 20:46:57] | player123 | Bought Warrior from the Shop for 300.0G.

@@ -1,2 +1,2 @@
-// uniqueId|ownerUsername|productId|customName|level
-b7ff5e05-bd74-4e80-bcbd-e7266f94f718|player123|HP-001|Evil Wizard|1
+// uniqueId|ownerUsername|productId|customName|level|currentExp
+b190643a-590b-4e6f-8484-711d540fbef5|player123|HP-003|Warrior|1|3
