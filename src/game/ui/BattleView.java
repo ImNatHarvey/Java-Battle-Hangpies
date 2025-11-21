@@ -112,6 +112,13 @@ public class BattleView {
 	private boolean isPlayerDamaged = false;
 	private boolean isEnemyDamaged = false;
 
+	// NEW: Damage Indicator variables
+	private int damageIndicatorPlayer = 0;
+	private int damageIndicatorEnemy = 0;
+	private long damageIndicatorStartTime = 0;
+	private final int DAMAGE_INDICATOR_DURATION = 1500; // 1.5 seconds
+	private final int DAMAGE_INDICATOR_VERTICAL_TRAVEL = 50; // Pixels
+
 	// Assets
 	private Image bgImage;
 	private Image nameFrameImg;
@@ -211,6 +218,11 @@ public class BattleView {
 		this.isPlayerDamaged = false;
 		this.isEnemyDamaged = false;
 
+		// NEW: Reset Damage Indicators
+		this.damageIndicatorPlayer = 0;
+		this.damageIndicatorEnemy = 0;
+		this.damageIndicatorStartTime = 0;
+
 		// Load Game Logic
 		if (Main.saveManager.hasSave(playerUser.getUsername()) && !shouldCarryOverWord) {
 			System.out.println("[Battle] Found save file. Loading...");
@@ -293,6 +305,11 @@ public class BattleView {
 		this.playerAlpha = 1.0f;
 		this.enemyAlpha = 1.0f;
 		this.currentAnimTime = 0;
+
+		// NEW: Reset Damage Indicators
+		this.damageIndicatorPlayer = 0;
+		this.damageIndicatorEnemy = 0;
+		this.damageIndicatorStartTime = 0;
 
 		message = "Game Loaded!";
 		messageColor = Color.GREEN;
@@ -469,6 +486,16 @@ public class BattleView {
 		// --- DAMAGE VISUALS UPDATE (RUNS IN PARALLEL TO ANIMATING ACTION) ---
 		updateDamageVisuals();
 
+		// --- DAMAGE INDICATOR ANIMATION UPDATE ---
+		if (damageIndicatorStartTime > 0) {
+			long timeElapsed = System.currentTimeMillis() - damageIndicatorStartTime;
+			if (timeElapsed > DAMAGE_INDICATOR_DURATION) {
+				damageIndicatorPlayer = 0;
+				damageIndicatorEnemy = 0;
+				damageIndicatorStartTime = 0;
+			}
+		}
+
 		// --- TIMER AND PANIC UPDATE LOGIC ---
 		if (!isAnimatingAction && !isDeathAnimating) {
 			long elapsedTime = System.currentTimeMillis() - lastGuessTime;
@@ -549,8 +576,6 @@ public class BattleView {
 	}
 
 	private void handleTimeOutAttack() {
-		message = "Time Out! Ouch!";
-		messageColor = Color.RED;
 
 		lastGuessTime = System.currentTimeMillis(); // Reset timer for next guess
 
@@ -563,6 +588,15 @@ public class BattleView {
 
 		int dmg = currentEnemy.getAttackPower();
 		playerPet.takeDamage(dmg);
+
+		// NEW: Set damage indicator for player (damage received)
+		damageIndicatorPlayer = -dmg;
+		damageIndicatorEnemy = 0;
+		damageIndicatorStartTime = System.currentTimeMillis();
+
+		// UPDATED MESSAGE
+		message = "Time Out! Ouch! " + damageIndicatorPlayer + " HP";
+		messageColor = Color.RED;
 
 		// --- DAMAGE VISUALS TRIGGER ---
 		isPlayerDamaged = true;
@@ -765,9 +799,13 @@ public class BattleView {
 		lastSecondChecked = -1;
 
 		boolean isCorrect = false;
+		// NEW: Calculate multiplier (letter count)
+		int letterCount = 0;
 		for (char c : secretWord.toCharArray()) {
-			if (c == guess)
+			if (c == guess) {
 				isCorrect = true;
+				letterCount++;
+			}
 		}
 
 		actionStartTime = System.currentTimeMillis();
@@ -778,15 +816,24 @@ public class BattleView {
 		isEnemyDamaged = false;
 
 		if (isCorrect) {
-			message = "Correct! Hit!";
-			messageColor = Color.GREEN;
 			isPlayerAttacking = true; // Player is attacking
 
 			playerPet.setAnimationState(Hangpie.AnimState.ATTACK);
 			currentEnemy.setAnimationState(Enemy.AnimState.DAMAGE);
 
-			int dmg = playerPet.getAttackPower();
-			currentEnemy.takeDamage(dmg);
+			int baseDmg = playerPet.getAttackPower();
+			int finalDmg = baseDmg * letterCount; // Apply multiplier
+
+			currentEnemy.takeDamage(finalDmg); // Use calculated damage
+
+			// NEW: Set damage indicator for enemy (damage dealt)
+			damageIndicatorEnemy = finalDmg;
+			damageIndicatorPlayer = 0; // Clear other indicator
+			damageIndicatorStartTime = System.currentTimeMillis();
+
+			// UPDATED MESSAGE: Include damage dealt
+			message = "Correct! Hit! +" + finalDmg + " DMG";
+			messageColor = Color.GREEN;
 
 			// --- DAMAGE VISUALS TRIGGER: ENEMY HIT ---
 			isEnemyDamaged = true;
@@ -802,8 +849,6 @@ public class BattleView {
 			}
 
 		} else {
-			message = "Wrong! Ouch!";
-			messageColor = Color.RED;
 			isPlayerAttacking = false; // Enemy is attacking
 
 			currentEnemy.setAnimationState(Enemy.AnimState.ATTACK);
@@ -811,6 +856,15 @@ public class BattleView {
 
 			int dmg = currentEnemy.getAttackPower();
 			playerPet.takeDamage(dmg);
+
+			// NEW: Set damage indicator for player (damage received)
+			damageIndicatorPlayer = -dmg;
+			damageIndicatorEnemy = 0; // Clear other indicator
+			damageIndicatorStartTime = System.currentTimeMillis();
+
+			// UPDATED MESSAGE: Include damage received
+			message = "Wrong! Ouch! " + damageIndicatorPlayer + " HP";
+			messageColor = Color.RED;
 
 			// --- DAMAGE VISUALS TRIGGER: PLAYER HIT ---
 			isPlayerDamaged = true;
@@ -987,11 +1041,60 @@ public class BattleView {
 																												// damage-shake
 		}
 
+		// --- DRAW DAMAGE INDICATORS ---
+		drawDamageIndicators(g, width, height);
+
 		if (isSettingsOpen) {
 			drawSettingsModal(g, width, height);
 		} else if (battleOver) {
 			drawEndScreen(g, width, height);
 		}
+	}
+
+	// NEW: Method to draw floating damage numbers
+	private void drawDamageIndicators(Graphics2D g, int width, int height) {
+		if (damageIndicatorStartTime == 0)
+			return;
+
+		long timeElapsed = System.currentTimeMillis() - damageIndicatorStartTime;
+		if (timeElapsed > DAMAGE_INDICATOR_DURATION)
+			return;
+
+		float progress = (float) timeElapsed / DAMAGE_INDICATOR_DURATION;
+
+		// Vertical position calculation (floats up)
+		int verticalOffset = (int) (progress * DAMAGE_INDICATOR_VERTICAL_TRAVEL);
+		float alpha = 1.0f - progress; // Fade out
+
+		if (alpha < 0)
+			alpha = 0;
+
+		g.setFont(new Font("Monospaced", Font.BOLD, 30));
+		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+
+		int groundY = height - 20;
+
+		// Player Damage (e.g., -2)
+		if (damageIndicatorPlayer != 0) {
+			String dmgText = String.valueOf(damageIndicatorPlayer);
+			g.setColor(Color.RED);
+			// Position near the player's head (approx. 200px from the ground)
+			int x = PLAYER_HOME_X - 60;
+			int y = groundY - 200 - verticalOffset;
+			g.drawString(dmgText, x, y);
+		}
+
+		// Enemy Damage (e.g., 3)
+		if (damageIndicatorEnemy != 0) {
+			String dmgText = String.valueOf(damageIndicatorEnemy);
+			g.setColor(Color.YELLOW);
+			// Position near the enemy's head
+			int x = ENEMY_HOME_X - 60;
+			int y = groundY - 200 - verticalOffset;
+			g.drawString(dmgText, x, y);
+		}
+
+		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
 	}
 
 	/**
