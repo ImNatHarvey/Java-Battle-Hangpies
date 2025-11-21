@@ -39,7 +39,7 @@ public class GameWindow extends Frame implements Runnable {
 	private Image background;
 	private Image titleImage;
 	private Image titleCoverImage;
-	
+
 	// UI Assets
 	private Image modalImg;
 	private Image frameImg;
@@ -105,7 +105,8 @@ public class GameWindow extends Frame implements Runnable {
 				} else if (currentState == GameState.INVENTORY) {
 					inventoryView.handleMouseMove(e.getX(), e.getY());
 				} else if (currentState == GameState.PLAYING && battleView != null) {
-					// Optional: handle hover effects in battle view
+					// Update: handle hover effects in battle view
+					battleView.handleMouseMove(e.getX(), e.getY());
 				}
 			}
 
@@ -219,7 +220,7 @@ public class GameWindow extends Frame implements Runnable {
 
 		String titleCoverPath = GameConstants.BG_DIR + GameConstants.TITLE_COVER_IMG;
 		titleCoverImage = AssetLoader.loadImage(titleCoverPath, COVER_WIDTH, COVER_HEIGHT);
-		
+
 		// Load UI
 		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, 400, 300);
 		frameImg = AssetLoader.loadImage(GameConstants.FRAME_IMG, 600, 60);
@@ -315,14 +316,14 @@ public class GameWindow extends Frame implements Runnable {
 		}
 
 		// 3. Draw Subtitle with Frame Placeholder (Overlapping below title)
-		int subCenterY = 260; 
-		
+		int subCenterY = 260;
+
 		if (frameImg != null) {
 			int frameW = 600;
 			int frameH = 50;
 			int frameX = (gameCanvas.getWidth() - frameW) / 2;
 			g.drawImage(frameImg, frameX, subCenterY, frameW, frameH, null);
-			
+
 			// Draw Text Centered in Frame
 			g.setFont(GameConstants.SUBTITLE_FONT);
 			g.setColor(GameConstants.TEXT_COLOR);
@@ -337,27 +338,28 @@ public class GameWindow extends Frame implements Runnable {
 
 		// 4. Draw Equipped Status (Name Frame)
 		// Positioned below the subtitle frame
-		int equipY = subCenterY + 70; 
-		
+		int equipY = subCenterY + 70;
+
 		if (nameFrameImg != null) {
 			int nfW = 250;
 			int nfH = 50;
 			int nfX = (gameCanvas.getWidth() - nfW) / 2;
 			g.drawImage(nameFrameImg, nfX, equipY, nfW, nfH, null);
-			
+
 			// Text
 			g.setFont(GameConstants.BUTTON_FONT);
 			FontMetrics fm = g.getFontMetrics();
 			String nameText = (equippedHangpie != null) ? equippedHangpie.getName() : "No Hangpie";
 			g.setColor(Color.WHITE);
-			if (equippedHangpie == null) g.setColor(Color.GRAY);
-			
+			if (equippedHangpie == null)
+				g.setColor(Color.GRAY);
+
 			int nameW = fm.stringWidth(nameText);
 			int nameX = (gameCanvas.getWidth() - nameW) / 2;
 			int nameY = equipY + ((nfH - fm.getHeight()) / 2) + fm.getAscent();
 			g.drawString(nameText, nameX, nameY);
 		}
-		
+
 		// 5. Draw Menu Options (Original position, no modal)
 		drawMenuOptions(g);
 	}

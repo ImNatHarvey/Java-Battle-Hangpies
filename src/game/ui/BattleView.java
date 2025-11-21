@@ -76,9 +76,16 @@ public class BattleView {
 
 	// UI Buttons (Clickable Areas)
 	private Rectangle settingsBtnBounds;
+	
+	// Modal Buttons
+	private Rectangle modalContinueBounds;
 	private Rectangle modalSaveBounds;
 	private Rectangle modalMenuBounds;
 	private Rectangle modalExitBounds;
+	
+	// Hover State for Modal
+	// 0: Continue, 1: Save, 2: Menu, 3: Exit, -1: None
+	private int selectedModalOption = -1; 
 
 	// Layout Constants
 	private final int TOP_BAR_Y = 20;
@@ -345,15 +352,34 @@ public class BattleView {
 	}
 
 	// --- Input Handling ---
+	
+	public void handleMouseMove(int x, int y) {
+		if (isSettingsOpen) {
+			// Check hover for modal buttons
+			selectedModalOption = -1;
+			if (modalContinueBounds != null && modalContinueBounds.contains(x, y)) {
+				selectedModalOption = 0;
+			} else if (modalSaveBounds != null && modalSaveBounds.contains(x, y)) {
+				selectedModalOption = 1;
+			} else if (modalMenuBounds != null && modalMenuBounds.contains(x, y)) {
+				selectedModalOption = 2;
+			} else if (modalExitBounds != null && modalExitBounds.contains(x, y)) {
+				selectedModalOption = 3;
+			}
+		}
+	}
 
 	public String handleMouseClick(int x, int y) {
 		if (isSettingsOpen) {
-			if (modalSaveBounds != null && modalSaveBounds.contains(x, y)) {
+			if (modalContinueBounds != null && modalContinueBounds.contains(x, y)) {
+				isSettingsOpen = false; // Resume Game
+				isExitConfirmation = false;
+				return "NONE";
+			} else if (modalSaveBounds != null && modalSaveBounds.contains(x, y)) {
 				Main.userManager.updateUser(playerUser);
 				message = "Game Saved!";
 				messageColor = Color.YELLOW;
-				isSettingsOpen = false;
-				isExitConfirmation = false;
+				// isSettingsOpen = false; // Optional: keep open or close
 				return "NONE";
 			} else if (modalMenuBounds != null && modalMenuBounds.contains(x, y)) {
 				return "MENU";
@@ -369,6 +395,7 @@ public class BattleView {
 			if (settingsBtnBounds != null && settingsBtnBounds.contains(x, y)) {
 				isSettingsOpen = true;
 				isExitConfirmation = false;
+				selectedModalOption = -1; // Reset selection on open
 				return "NONE";
 			}
 		}
@@ -765,37 +792,73 @@ public class BattleView {
 		g.setColor(Color.BLACK);
 		g.setFont(GameConstants.HEADER_FONT);
 		String title = "PAUSED";
-		g.drawString(title, mX + (mW - g.getFontMetrics().stringWidth(title)) / 2, mY + 60);
+		g.drawString(title, mX + (mW - g.getFontMetrics().stringWidth(title)) / 2, mY + 50);
 
 		g.setFont(GameConstants.BUTTON_FONT);
-		int btnH = 40;
+		FontMetrics fm = g.getFontMetrics();
+		int btnH = 30;
 		int btnGap = 15;
-		int startBtnY = mY + 100;
+		int startBtnY = mY + 80;
 
+		// --- 1. CONTINUE ---
+		String contTxt = "CONTINUE";
+		if (selectedModalOption == 0) {
+			g.setColor(Color.YELLOW); // Hover Color
+			contTxt = "> " + contTxt + " <";
+		} else {
+			g.setColor(Color.BLACK);
+		}
+		int contW = fm.stringWidth(contTxt);
+		modalContinueBounds = new Rectangle(mX + (mW - contW) / 2 - 10, startBtnY, contW + 20, btnH);
+		g.drawString(contTxt, mX + (mW - contW) / 2, startBtnY + 25);
+		
+		// --- 2. SAVE GAME ---
+		int nextY = startBtnY + btnH + btnGap;
 		String saveTxt = "SAVE GAME";
-		int saveW = g.getFontMetrics().stringWidth(saveTxt);
-		modalSaveBounds = new Rectangle(mX + (mW - saveW) / 2 - 10, startBtnY, saveW + 20, btnH);
-		g.drawString(saveTxt, mX + (mW - saveW) / 2, startBtnY + 25);
+		if (selectedModalOption == 1) {
+			g.setColor(Color.YELLOW);
+			saveTxt = "> " + saveTxt + " <";
+		} else {
+			g.setColor(Color.BLACK);
+		}
+		int saveW = fm.stringWidth(saveTxt);
+		modalSaveBounds = new Rectangle(mX + (mW - saveW) / 2 - 10, nextY, saveW + 20, btnH);
+		g.drawString(saveTxt, mX + (mW - saveW) / 2, nextY + 25);
 
+		// --- 3. MAIN MENU ---
+		nextY += btnH + btnGap;
 		String menuTxt = "MAIN MENU";
-		int menuW = g.getFontMetrics().stringWidth(menuTxt);
-		modalMenuBounds = new Rectangle(mX + (mW - menuW) / 2 - 10, startBtnY + btnH + btnGap, menuW + 20, btnH);
-		g.drawString(menuTxt, mX + (mW - menuW) / 2, startBtnY + btnH + btnGap + 25);
+		if (selectedModalOption == 2) {
+			g.setColor(Color.YELLOW);
+			menuTxt = "> " + menuTxt + " <";
+		} else {
+			g.setColor(Color.BLACK);
+		}
+		int menuW = fm.stringWidth(menuTxt);
+		modalMenuBounds = new Rectangle(mX + (mW - menuW) / 2 - 10, nextY, menuW + 20, btnH);
+		g.drawString(menuTxt, mX + (mW - menuW) / 2, nextY + 25);
 
+		// --- 4. EXIT GAME ---
+		nextY += btnH + btnGap;
 		String exitTxt = "EXIT GAME";
-		if (isExitConfirmation)
-			exitTxt = "CONFIRM EXIT?";
-		int exitW = g.getFontMetrics().stringWidth(exitTxt);
-
-		g.setColor(isExitConfirmation ? Color.RED : Color.BLACK);
-		modalExitBounds = new Rectangle(mX + (mW - exitW) / 2 - 10, startBtnY + (2 * (btnH + btnGap)), exitW + 20,
-				btnH);
-		g.drawString(exitTxt, mX + (mW - exitW) / 2, startBtnY + (2 * (btnH + btnGap)) + 25);
+		if (isExitConfirmation) exitTxt = "CONFIRM EXIT?";
+		
+		if (selectedModalOption == 3) {
+			g.setColor(isExitConfirmation ? Color.RED : Color.YELLOW);
+			exitTxt = "> " + exitTxt + " <";
+		} else {
+			g.setColor(isExitConfirmation ? Color.RED : Color.BLACK);
+		}
+		
+		int exitW = fm.stringWidth(exitTxt);
+		modalExitBounds = new Rectangle(mX + (mW - exitW) / 2 - 10, nextY, exitW + 20, btnH);
+		g.drawString(exitTxt, mX + (mW - exitW) / 2, nextY + 25);
 
 		if (isExitConfirmation) {
 			g.setFont(new Font("Monospaced", Font.PLAIN, 12));
+			g.setColor(Color.RED);
 			String warn = "Unsaved progress will be lost!";
-			g.drawString(warn, mX + (mW - g.getFontMetrics().stringWidth(warn)) / 2, mY + mH - 20);
+			g.drawString(warn, mX + (mW - g.getFontMetrics().stringWidth(warn)) / 2, mY + mH - 15);
 		}
 	}
 
