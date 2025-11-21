@@ -56,11 +56,21 @@ public class BattleView {
 	private long deathStartTime = 0;
 	private final int DEATH_DURATION = 3000; // 3 Seconds for Death Animation
 
-	// --- TIMER LOGIC (NEW) ---
+	// --- TIMER LOGIC ---
 	private long lastGuessTime;
 	private long currentTimeRemaining;
 	private int timerX, timerY, timerW, timerH;
-	private int panicAlpha = 0;
+	
+	// --- PANIC VISUALS (NEW) ---
+	private int panicAlpha = 0; // Alpha for the timer box flicker
+	private int currentShakeX = 0;
+	private int currentShakeY = 0;
+	private long lastShakeTime = 0;
+	private int redPulseAlpha = 0; // Alpha for the full screen red pulse
+	private int lastSecondChecked = -1; // For tracking the per-second pulse
+	private final int SHAKE_MAGNITUDE = 3; // Max shake displacement in pixels
+	private final int MAX_RED_ALPHA = 80; // Max opacity for red pulse (0-255)
+
 
 	// Assets
 	private Image bgImage;
@@ -145,9 +155,14 @@ public class BattleView {
 
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
 
-		// Reset Timer
+		// Reset Timer and Panic Visuals
 		this.lastGuessTime = System.currentTimeMillis();
 		this.panicAlpha = 0;
+		this.currentShakeX = 0;
+		this.currentShakeY = 0;
+		this.redPulseAlpha = 0;
+		this.lastSecondChecked = -1;
+
 
 		// Load Game Logic
 		if (Main.saveManager.hasSave(playerUser.getUsername()) && !shouldCarryOverWord) {
@@ -208,15 +223,19 @@ public class BattleView {
 		this.currentEnemy.preloadAssets();
 		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, 50, 50);
 
-		// Set Timer UI position to the bottom center (White Box area)
+		// Set Timer UI position
 		timerW = 250; 
 		timerH = 50;  
 		timerX = (GameConstants.WINDOW_WIDTH - timerW) / 2;
-		timerY = GameConstants.WINDOW_HEIGHT - 120; 
+		timerY = GameConstants.WINDOW_HEIGHT - 120;
 
-		// Reset Timer on load
+		// Reset Timer and Panic Visuals
 		this.lastGuessTime = System.currentTimeMillis();
 		this.panicAlpha = 0;
+		this.currentShakeX = 0;
+		this.currentShakeY = 0;
+		this.redPulseAlpha = 0;
+		this.lastSecondChecked = -1;
 
 		message = "Game Loaded!";
 		messageColor = Color.GREEN;
@@ -349,20 +368,58 @@ public class BattleView {
 			}
 		}
 		
-		// --- TIMER UPDATE LOGIC ---
+		// --- TIMER AND PANIC UPDATE LOGIC ---
 		if (!isAnimatingAction && !isDeathAnimating) {
 			long elapsedTime = System.currentTimeMillis() - lastGuessTime;
 			long maxTimeMillis = GameConstants.GUESS_TIME_LIMIT_SECONDS * 1000;
 			currentTimeRemaining = maxTimeMillis - elapsedTime;
 			
-			// Panic Mode Visuals
-			int secondsRemaining = (int) (currentTimeRemaining / 1000);
-			if (secondsRemaining <= GameConstants.PANIC_THRESHOLD_SECONDS) {
-				// Fade in/out effect by modulating alpha
-				double pulse = (System.currentTimeMillis() % 500) / 500.0; // 0 to 1 over 0.5s
-				panicAlpha = (int) (150 * pulse);
+			// +1 is used to display the current second rather than the next second
+			int secondsRemaining = (int) (currentTimeRemaining / 1000) + 1; 
+			boolean isPanicking = secondsRemaining <= GameConstants.PANIC_THRESHOLD_SECONDS && secondsRemaining > 0;
+
+			if (isPanicking) {
+				// --- Screen Shake Logic (every 100ms) ---
+				if (System.currentTimeMillis() - lastShakeTime > 100) {
+					// Generate random shake offsets
+					currentShakeX = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
+					currentShakeY = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
+					lastShakeTime = System.currentTimeMillis();
+				}
+				
+				// --- Red Pulse Logic (Per visual second) ---
+				if (secondsRemaining != lastSecondChecked) {
+					redPulseAlpha = MAX_RED_ALPHA; // Max opacity at the start of the second
+					lastSecondChecked = secondsRemaining;
+				}
+
+				// Fade out Red Pulse Alpha (fades over a fixed period like 500ms)
+				// Use the time since the last second change to calculate fade amount
+				long timeSincePulse = System.currentTimeMillis() % 1000; 
+				if (timeSincePulse < 500) {
+					// Linear fade from MAX_RED_ALPHA to 0 over 500ms
+					redPulseAlpha = (int) (MAX_RED_ALPHA * (1.0 - (timeSincePulse / 500.0)));
+				} else {
+					redPulseAlpha = 0;
+				}
+				redPulseAlpha = Math.max(0, redPulseAlpha);
+				
+				// --- Panic Alpha for Timer Box (Flicker) ---
+				// Simple flicker for the timer box visual feedback
+				long pulseTime = System.currentTimeMillis() % 1000;
+				if (pulseTime < 500) {
+					panicAlpha = 80;
+				} else {
+					panicAlpha = 0;
+				}
+				
 			} else {
+				// Reset shake and pulse outside of panic mode
+				currentShakeX = 0;
+				currentShakeY = 0;
+				redPulseAlpha = 0;
 				panicAlpha = 0;
+				lastSecondChecked = -1;
 			}
 			
 			// Timer Expired Logic
@@ -579,7 +636,11 @@ public class BattleView {
 
 		// --- RESET TIMER ON VALID GUESS ---
 		lastGuessTime = System.currentTimeMillis();
+		currentShakeX = 0;
+		currentShakeY = 0;
+		redPulseAlpha = 0;
 		panicAlpha = 0;
+		lastSecondChecked = -1;
 
 		boolean isCorrect = false;
 		for (char c : secretWord.toCharArray()) {
@@ -637,6 +698,9 @@ public class BattleView {
 	}
 
 	public void render(Graphics2D g, int width, int height, ImageObserver observer) {
+		int offsetX = currentShakeX;
+		int offsetY = currentShakeY;
+		
 		int playerCenterX = 280;
 		int enemyCenterX = width - 280;
 		int statsUiY = 140;
@@ -644,24 +708,35 @@ public class BattleView {
 		if (bgImage != null) {
 			g.drawImage(bgImage, 0, 0, width, height, observer);
 		}
+		
+		// --- DRAW RED PULSE OVERLAY (FULL SCREEN) ---
+		if (redPulseAlpha > 0) {
+			g.setColor(new Color(255, 0, 0, redPulseAlpha));
+			g.fillRect(0, 0, width, height);
+		}
 
+		// Backdrop is generally static, but we'll apply shake for consistency of the background frame itself
 		int backdropH = 130;
 		g.setColor(new Color(0, 0, 0, 180));
 		g.fillRect(0, 0, width, backdropH);
 
-		drawLevelIndicator(g, 30, TOP_BAR_Y, observer);
+		// --- APPLY OFFSETS TO UI COMPONENTS ---
 
+		drawLevelIndicator(g, 30 + offsetX, TOP_BAR_Y + offsetY, observer);
+
+		// Settings Button (Offset)
 		if (settingsImg != null && settingsBtnBounds != null) {
-			g.drawImage(settingsImg, settingsBtnBounds.x, settingsBtnBounds.y, settingsBtnBounds.width,
-					settingsBtnBounds.height, observer);
+			g.drawImage(settingsImg, settingsBtnBounds.x + offsetX, settingsBtnBounds.y + offsetY,
+					settingsBtnBounds.width, settingsBtnBounds.height, observer);
 		}
 
-		drawWordPuzzle(g, width, height, observer);
+		// Word Puzzle (Offset)
+		drawWordPuzzle(g, width, height, observer, offsetX, offsetY);
+
+		// Timer UI (Offset)
+		drawTimer(g, observer, offsetX, offsetY);
 		
-		// --- DRAW TIMER UI ---
-		drawTimer(g, observer);
-		
-		// --- DRAW MESSAGE UI (CENTERED) ---
+		// Message Box (Offset)
 		int framesTopY = backdropH + 10;
 		if (!message.isEmpty()) {
 			g.setFont(GameConstants.UI_FONT);
@@ -670,25 +745,27 @@ public class BattleView {
 
 			int bgW = msgW + 60;
 			int bgH = 50;
-			int bgX = (width - bgW) / 2; // Center it
-			int bgY = framesTopY;
+			int bgX = (width - bgW) / 2 + offsetX; // Apply Offset
+			int bgY = framesTopY + offsetY;        // Apply Offset
 
 			if (nameFrameImg != null) {
 				g.drawImage(nameFrameImg, bgX, bgY, bgW, bgH, observer);
 			}
 
 			g.setColor(messageColor);
-			int textX = (width - msgW) / 2;
+			int textX = (width - msgW) / 2 + offsetX; // Apply Offset
 			int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 7;
 			g.drawString(message, textX, textY);
 		}
 
-		drawCharacterUI(g, width, statsUiY, playerCenterX, enemyCenterX, observer);
+		// Character UI (Offset is applied to the frame/stat boxes)
+		drawCharacterUI(g, width, statsUiY + offsetY, playerCenterX + offsetX, enemyCenterX + offsetX, observer);
 
 
 		int groundY = height - 20;
 		int scaleFactor = 4;
 
+		// Characters (NO OFFSET)
 		Image enemyImg = currentEnemy.getCurrentImage();
 		if (enemyImg != null) {
 			int eW = enemyImg.getWidth(observer);
@@ -724,15 +801,17 @@ public class BattleView {
 		}
 	}
 	
-	private void drawTimer(Graphics2D g, ImageObserver observer) {
+	private void drawTimer(Graphics2D g, ImageObserver observer, int offsetX, int offsetY) {
 		
-		// Draw the timer background frame (Yellow Box Drawn)
-		// We'll use the Name Frame image as the timer's background
+		int drawX = timerX + offsetX; // Apply Offset
+		int drawY = timerY + offsetY; // Apply Offset
+
+		// Draw the timer background frame
 		if (nameFrameImg != null) {
-			g.drawImage(nameFrameImg, timerX, timerY, timerW, timerH, observer);
+			g.drawImage(nameFrameImg, drawX, drawY, timerW, timerH, observer);
 		}
 
-		// Draw Panic Flash Effect (Yellow/Red Box Drawn)
+		// Draw Panic Flash Effect (Timer Box Flicker)
 		if (panicAlpha > 0) {
 			// Creates the "flash" effect when time is low
 			Color panicColor = new Color(GameConstants.TIMER_PANIC_COLOR.getRed(), 
@@ -740,10 +819,11 @@ public class BattleView {
 										 GameConstants.TIMER_PANIC_COLOR.getBlue(), 
 										 panicAlpha);
 			g.setColor(panicColor);
-			g.fillRect(timerX + 2, timerY + 2, timerW - 4, timerH - 4);
+			g.fillRect(drawX + 2, drawY + 2, timerW - 4, timerH - 4);
 		}
 
 		// Calculate text
+		// Add +1 to seconds remaining because we want to show the current second we are in, not the full seconds passed.
 		int secondsRemaining = (int) Math.max(0, currentTimeRemaining / 1000) + 1;
 		String timerText = String.format("TIME: %d", secondsRemaining);
 		
@@ -758,8 +838,8 @@ public class BattleView {
 		FontMetrics fm = g.getFontMetrics();
 
 		// Center the text
-		int textX = timerX + (timerW - fm.stringWidth(timerText)) / 2;
-		int textY = timerY + (timerH - fm.getAscent()) / 2 + fm.getAscent() - 5;
+		int textX = drawX + (timerW - fm.stringWidth(timerText)) / 2;
+		int textY = drawY + (timerH - fm.getAscent()) / 2 + fm.getAscent() - 5;
 		
 		g.drawString(timerText, textX, textY);
 	}
@@ -769,6 +849,7 @@ public class BattleView {
 		int w = 150;
 		int h = TOP_BAR_HEIGHT;
 		if (levelFrameImg != null) {
+			// x and y already contain the offset
 			g.drawImage(levelFrameImg, x, y, w, h, observer);
 		}
 		g.setColor(new Color(231, 76, 60));
@@ -804,6 +885,7 @@ public class BattleView {
 		int statsFrameH = 80;
 
 		// 1. Stats Frame
+		// topY, playerCenterX, enemyCenterX all contain the offset
 		if (frameImg != null) {
 			g.drawImage(frameImg, pStatsX, statsFrameY, statsW, statsFrameH, null);
 		}
@@ -924,7 +1006,7 @@ public class BattleView {
 		g.drawString(atkTxt, currentX, centerY);
 	}
 
-	private void drawWordPuzzle(Graphics2D g, int width, int height, ImageObserver obs) {
+	private void drawWordPuzzle(Graphics2D g, int width, int height, ImageObserver obs, int offsetX, int offsetY) {
 		g.setFont(GameConstants.UI_FONT);
 		
 		// --- CLUE (CENTERED) ---
@@ -934,25 +1016,25 @@ public class BattleView {
 
 		int bgW = textW + 60;
 		int bgH = TOP_BAR_HEIGHT;
-		int bgX = (width - bgW) / 2; // Center it
-		int bgY = TOP_BAR_Y;
+		int bgX = (width - bgW) / 2 + offsetX; // Apply Offset
+		int bgY = TOP_BAR_Y + offsetY;         // Apply Offset
 
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, bgX, bgY, bgW, bgH, obs);
 		}
 
 		g.setColor(Color.WHITE);
-		int textX = (width - textW) / 2; // Center it
+		int textX = (width - textW) / 2 + offsetX; // Apply Offset
 		int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 5;
 		g.drawString(clueText, textX, textY);
 		
 		// --- GUESS LETTERS (CENTERED) ---
 		int spacing = 60;
-		int lettersY = 110;
+		int lettersY = 110 + offsetY; // Apply Offset to vertical position
 		int totalWidth = secretWord.length() * spacing;
 		
 		// Calculate starting X to center the entire word puzzle structure
-		int startX = (width - totalWidth) / 2; 
+		int startX = (width - totalWidth) / 2 + offsetX; // Apply Offset
 		int currentX = startX;
 
 		for (char c : secretWord.toCharArray()) {
