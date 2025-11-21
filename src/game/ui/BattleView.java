@@ -68,11 +68,10 @@ public class BattleView {
 
 	// Heart Assets
 	private Image heartImg;
-	private Image halfHeartImg;
-	private Image emptyHeartImg;
 
 	// Icon Assets
 	private Image coinImg;
+	private Image attackImg;
 
 	private Random random = new Random();
 
@@ -120,9 +119,7 @@ public class BattleView {
 		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, 400, 300);
 
 		heartImg = AssetLoader.loadImage(GameConstants.HEART_IMG, 20, 20);
-		halfHeartImg = AssetLoader.loadImage(GameConstants.HALF_HEART_IMG, 20, 20);
-		emptyHeartImg = AssetLoader.loadImage(GameConstants.EMPTY_HEART_IMG, 20, 20);
-
+		attackImg = AssetLoader.loadImage(GameConstants.ATTACK_IMG, 20, 20);
 		coinImg = AssetLoader.loadImage(GameConstants.COIN_IMG, 20, 20);
 	}
 
@@ -664,37 +661,36 @@ public class BattleView {
 			ImageObserver observer) {
 		// UPDATED: frameW is now 200 to match name frame
 		int frameW = 200;
-		int statsW = 190; // ADJUSTED: Reduced stats frame width to align with name frame edges
+		int statsW = 190;
 
 		int frameH = 70;
 		int pFrameX = playerCenterX - (frameW / 2);
 		int eFrameX = enemyCenterX - (frameW / 2);
 
-		// Calculate X for stats frame separately to center it
 		int pStatsX = playerCenterX - (statsW / 2);
 		int eStatsX = enemyCenterX - (statsW / 2);
 
-		Font levelFont = new Font("Monospaced", Font.BOLD, 12);
+		// Increased fonts slightly
+		Font levelFont = new Font("Monospaced", Font.BOLD, 14);
 		Font nameFont = new Font("Monospaced", Font.BOLD, 16);
+		Font statsFont = new Font("Monospaced", Font.BOLD, 18); // Bigger for stats
 
 		// --- PLAYER UI ---
 
-		// 1. Stats Frame (Draw First so it is BEHIND)
-		// Position it so it looks like it's hanging from the name frame
 		int statsFrameY = topY + 55;
 		int statsFrameH = 80;
 
+		// 1. Stats Frame
 		if (frameImg != null) {
-			// Use statsW and pStatsX
 			g.drawImage(frameImg, pStatsX, statsFrameY, statsW, statsFrameH, null);
 		}
 
-		// 2. Name Frame (Draw Second so it is ON TOP)
+		// 2. Name Frame
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, pFrameX, topY, frameW, frameH, null);
 		}
 
-		// 3. Draw Text & Icons
+		// 3. Name & Level
 		g.setColor(Color.WHITE);
 		g.setFont(levelFont);
 		String pLevel = "LEVEL " + playerPet.getLevel();
@@ -705,31 +701,17 @@ public class BattleView {
 		String pName = playerPet.getName();
 		g.drawString(pName, pFrameX + (frameW - g.getFontMetrics().stringWidth(pName)) / 2, topY + 46);
 
-		// Draw Hearts Inside Stats Frame
-		int heartsY = statsFrameY + 25;
-		int heartSize = 15;
-		int heartSpacing = 3;
+		// 4. NEW Stats Display (Icon HP | Icon ATK)
+		drawModernStats(g, playerPet, pStatsX, statsFrameY, statsW, statsFrameH, statsFont, observer);
 
-		int pMaxHp = playerPet.getMaxHealth();
-		int pTotalHearts = (pMaxHp + 1) / 2;
-		int pTotalWidth = (pTotalHearts * heartSize) + (Math.max(0, pTotalHearts - 1) * heartSpacing);
-		int pHeartsX = pFrameX + (frameW - pTotalWidth) / 2;
-		drawHearts(g, playerPet, pHeartsX, heartsY, observer);
-
-		// Draw Stats Text Inside Stats Frame (Below Hearts)
-		g.setFont(levelFont);
-		String pStats = "HP " + playerPet.getCurrentHealth() + "/" + playerPet.getMaxHealth() + " | ATK "
-				+ playerPet.getAttackPower();
-		g.drawString(pStats, pFrameX + (frameW - g.getFontMetrics().stringWidth(pStats)) / 2, heartsY + 30);
-
-		// 3. EXP BAR (Below Stats Frame)
-		int expBarY = statsFrameY + statsFrameH + 10; // 10px padding below the stats frame
-		int expBarW = 180;
-		int expBarH = 8;
-		int expBarX = pFrameX + (frameW - expBarW) / 2;
+		// 5. EXP BAR (Moved inside frame at bottom)
+		int expBarH = 6;
+		int expBarW = statsW - 30; // Padding inside frame
+		int expBarX = pStatsX + 15;
+		int expBarY = statsFrameY + statsFrameH - 15; // Near bottom
 
 		// Bar Background
-		g.setColor(Color.DARK_GRAY);
+		g.setColor(new Color(50, 50, 50));
 		g.fillRect(expBarX, expBarY, expBarW, expBarH);
 
 		// Bar Fill
@@ -741,29 +723,22 @@ public class BattleView {
 		g.fillRect(expBarX, expBarY, (int) (expBarW * expPercent), expBarH);
 
 		// Bar Border
-		g.setColor(Color.WHITE);
+		g.setColor(new Color(100, 100, 100));
 		g.drawRect(expBarX, expBarY, expBarW, expBarH);
 
-		// 4. EXP Text (Below Bar)
-		String expTxt = "EXP " + playerPet.getCurrentExp() + "/" + playerPet.getMaxExpForCurrentLevel();
-		g.setFont(new Font("Monospaced", Font.PLAIN, 10));
-		// Positioned below the bar
-		g.drawString(expTxt, expBarX + (expBarW - g.getFontMetrics().stringWidth(expTxt)) / 2, expBarY + expBarH + 15);
+		// --- ENEMY UI ---
 
-		// --- ENEMY UI (Mirrored Logic) ---
-
-		// 1. Stats Frame (Behind)
+		// 1. Stats Frame
 		if (frameImg != null) {
-			// Use statsW and eStatsX
 			g.drawImage(frameImg, eStatsX, statsFrameY, statsW, statsFrameH, null);
 		}
 
-		// 2. Name Frame (On Top)
+		// 2. Name Frame
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, eFrameX, topY, frameW, frameH, null);
 		}
 
-		// 3. Text & Icons
+		// 3. Name & Level
 		g.setColor(Color.WHITE);
 		g.setFont(levelFont);
 		String eLevel = "LEVEL " + currentEnemy.getLevel();
@@ -773,45 +748,54 @@ public class BattleView {
 		String eName = currentEnemy.getName();
 		g.drawString(eName, eFrameX + (frameW - g.getFontMetrics().stringWidth(eName)) / 2, topY + 46);
 
-		int eMaxHp = currentEnemy.getMaxHealth();
-		int eTotalHearts = (eMaxHp + 1) / 2;
-		int eTotalWidth = (eTotalHearts * heartSize) + (Math.max(0, eTotalHearts - 1) * heartSpacing);
-		int eHeartsX = eFrameX + (frameW - eTotalWidth) / 2;
-
-		// Hearts inside frame
-		drawHearts(g, currentEnemy, eHeartsX, heartsY, observer);
-
-		// Stats inside frame
-		g.setFont(levelFont);
-		String eStats = "HP " + currentEnemy.getCurrentHealth() + "/" + currentEnemy.getMaxHealth() + " | ATK "
-				+ currentEnemy.getAttackPower();
-		g.drawString(eStats, eFrameX + (frameW - g.getFontMetrics().stringWidth(eStats)) / 2, heartsY + 30);
+		// 4. New Stats Display
+		drawModernStats(g, currentEnemy, eStatsX, statsFrameY, statsW, statsFrameH, statsFont, observer);
 	}
 
-	private void drawHearts(Graphics2D g, Character character, int x, int y, ImageObserver observer) {
-		int maxHp = character.getMaxHealth();
-		int currentHp = character.getCurrentHealth();
-		int totalHearts = (maxHp + 1) / 2;
-		int heartSize = 15;
-		int spacing = 3;
+	// Helper method to draw the specific [Heart] HP | [Sword] ATK layout
+	private void drawModernStats(Graphics2D g, Character c, int x, int y, int w, int h, Font font, ImageObserver obs) {
+		g.setFont(font);
+		FontMetrics fm = g.getFontMetrics();
 
-		for (int i = 0; i < totalHearts; i++) {
-			int hpThresholdForFull = (i + 1) * 2;
-			int hpThresholdForHalf = hpThresholdForFull - 1;
+		String hpTxt = " " + c.getCurrentHealth() + "/" + c.getMaxHealth();
+		String atkTxt = " " + c.getAttackPower();
+		String sep = " | ";
 
-			Image imgToDraw;
-			if (currentHp >= hpThresholdForFull) {
-				imgToDraw = heartImg;
-			} else if (currentHp >= hpThresholdForHalf) {
-				imgToDraw = halfHeartImg;
-			} else {
-				imgToDraw = emptyHeartImg;
-			}
+		int iconSize = 20;
 
-			if (imgToDraw != null) {
-				g.drawImage(imgToDraw, x + (i * (heartSize + spacing)), y, heartSize, heartSize, observer);
-			}
+		// Calculate total width to center everything
+		int totalW = iconSize + fm.stringWidth(hpTxt) + fm.stringWidth(sep) + iconSize + fm.stringWidth(atkTxt);
+
+		int startX = x + (w - totalW) / 2;
+		int centerY = y + (h / 2) + 5; // Approximate vertical center of the stats frame
+
+		int currentX = startX;
+
+		// Draw Heart Icon
+		if (heartImg != null) {
+			g.drawImage(heartImg, currentX, centerY - 15, iconSize, iconSize, obs);
 		}
+		currentX += iconSize;
+
+		// Draw HP Text
+		g.setColor(Color.WHITE);
+		g.drawString(hpTxt, currentX, centerY);
+		currentX += fm.stringWidth(hpTxt);
+
+		// Draw Separator
+		g.setColor(Color.GRAY);
+		g.drawString(sep, currentX, centerY);
+		currentX += fm.stringWidth(sep);
+
+		// Draw Attack Icon
+		if (attackImg != null) {
+			g.drawImage(attackImg, currentX, centerY - 15, iconSize, iconSize, obs);
+		}
+		currentX += iconSize;
+
+		// Draw Atk Text
+		g.setColor(Color.WHITE);
+		g.drawString(atkTxt, currentX, centerY);
 	}
 
 	private void drawWordPuzzle(Graphics2D g, int width, int height, ImageObserver obs) {

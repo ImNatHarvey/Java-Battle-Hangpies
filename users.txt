@@ -1,3 +1,3 @@
 // FORMAT: username|password|isAdmin|firstName|lastName|contactNum|goldBalance|worldLvl|progressLvl
 admin|admin123|true|Admin|User|09123456789|0.0|1|1
-player123|password|false|King|Septim|09060585188|415.0|1|4
+player123|password|false|King|Septim|09060585188|420.0|1|5

@@ -1,2 +1,1 @@
 // FORMAT: username|secretWord|clue|guessedLetters|enemyName|enemyHp|enemyMaxHp|enemyAtk|enemyImageFolder|enemyLevel|playerPetId|playerPetHp
-player123|GUITAR|A musical instrument with strings|E|Lava Wrym|10|10|1|enemies/enemies/worm|1|b190643a-590b-4e6f-8484-711d540fbef5|4
