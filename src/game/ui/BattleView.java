@@ -619,8 +619,20 @@ public class BattleView {
 		g.drawString(pName, pFrameX + (frameW - g.getFontMetrics().stringWidth(pName)) / 2, topY + 46);
 
 		int heartsY = topY + frameH + 5;
-		// Center the hearts within the frame width
-		drawHearts(g, playerPet, pFrameX + 40, heartsY, observer);
+		
+		// --- Center Player Hearts ---
+		int heartSize = 15; // This must match the size drawn in drawHearts
+		int heartSpacing = 3;
+		
+		int pMaxHp = playerPet.getMaxHealth();
+		int pTotalHearts = (pMaxHp + 1) / 2;
+		// Total width = (NumHearts * Size) + (NumGaps * Spacing)
+		int pTotalWidth = (pTotalHearts * heartSize) + (Math.max(0, pTotalHearts - 1) * heartSpacing);
+		
+		// Calculate Start X to center it in frameW
+		int pHeartsX = pFrameX + (frameW - pTotalWidth) / 2;
+		
+		drawHearts(g, playerPet, pHeartsX, heartsY, observer);
 
 		g.setFont(levelFont);
 		// Updated to use real stats
@@ -641,7 +653,15 @@ public class BattleView {
 		String eName = currentEnemy.getName();
 		g.drawString(eName, eFrameX + (frameW - g.getFontMetrics().stringWidth(eName)) / 2, topY + 46);
 
-		drawHearts(g, currentEnemy, eFrameX + 40, heartsY, observer);
+		// --- Center Enemy Hearts ---
+		int eMaxHp = currentEnemy.getMaxHealth();
+		int eTotalHearts = (eMaxHp + 1) / 2;
+		int eTotalWidth = (eTotalHearts * heartSize) + (Math.max(0, eTotalHearts - 1) * heartSpacing);
+		
+		// Calculate Start X to center it in frameW
+		int eHeartsX = eFrameX + (frameW - eTotalWidth) / 2;
+		
+		drawHearts(g, currentEnemy, eHeartsX, heartsY, observer);
 		
 		g.setFont(levelFont);
 		String eStats = "HP " + currentEnemy.getCurrentHealth() + "/" + currentEnemy.getMaxHealth() + " | ATK " + currentEnemy.getAttackPower();
