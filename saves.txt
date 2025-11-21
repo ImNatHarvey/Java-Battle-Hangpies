@@ -1,1 +1,2 @@
 // FORMAT: username|secretWord|clue|guessedLetters|enemyName|enemyHp|enemyMaxHp|enemyAtk|enemyImageFolder|enemyLevel|playerPetId|playerPetHp
+player123|ADVENTURE|An exciting or unusual experience|ARDTEVN|Spriggan|15|15|2|enemies/enemies/mushroom|2|8dd41f2d-a9c3-44c0-aaa4-641746bcfce9|5

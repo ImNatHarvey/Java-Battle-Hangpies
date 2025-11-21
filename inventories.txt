@@ -1,3 +1,3 @@
 // uniqueId|ownerUsername|productId|customName|level|currentExp
-b190643a-590b-4e6f-8484-711d540fbef5|player123|HP-003|Warrior|1|7
-8dd41f2d-a9c3-44c0-aaa4-641746bcfce9|player123|HP-001|Evil Wizard|1|1
+b190643a-590b-4e6f-8484-711d540fbef5|player123|HP-003|Warrior|2|6
+8dd41f2d-a9c3-44c0-aaa4-641746bcfce9|player123|HP-001|Evil Wizard|1|2

@@ -38,7 +38,9 @@ public class BattleView {
 			// Index 2 (Stage 3) - Mushroom
 			{ "Spriggan", "enemies/enemies/mushroom" },
 			// Index 3 (Stage 4) - Skeleton
-			{ "Draugr", "enemies/enemies/skeleton" } };
+			{ "Draugr", "enemies/enemies/skeleton" },
+			// Index 4 (Stage 5) - Black
+			{ "Umbra", "enemies/enemies/black" } };
 
 	// Battle State
 	private String secretWord;
