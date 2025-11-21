@@ -5,18 +5,24 @@ import utils.AssetLoader;
 
 public class Enemy extends Character {
 
-	// Animation States - This definition is required for BattleView
+// Animation States - This definition is required for BattleView
 	public enum AnimState {
 		IDLE, ATTACK, DAMAGE, DEATH
 	}
 
-	private String assetFolder; 
+	private String assetFolder;
+	private String folderName; // Store the raw folder name for saving
 	private AnimState currentState;
 
 	public Enemy(String name, int maxHealth, int level, int attackPower, String folderName) {
 		super(name, maxHealth, level, attackPower);
-		this.assetFolder = "images/" + folderName; 
+		this.folderName = folderName;
+		this.assetFolder = "images/" + folderName;
 		this.currentState = AnimState.IDLE;
+	}
+
+	public String getFolderName() {
+		return folderName;
 	}
 
 	public void setAnimationState(AnimState state) {
