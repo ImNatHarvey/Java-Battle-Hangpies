@@ -59,6 +59,7 @@ public class BattleView {
 	// Assets
 	private Image bgImage;
 	private Image nameFrameImg;
+	private Image frameImg; // The general frame for stats
 	private Image settingsImg;
 	private Image modalImg;
 
@@ -111,6 +112,9 @@ public class BattleView {
 
 	private void loadAssets() {
 		nameFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 200, 50);
+		// UPDATED: Reduced width from 220 to 200 to match the name frame
+		frameImg = AssetLoader.loadImage(GameConstants.FRAME_IMG, 200, 80);
+
 		levelFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 150, 50);
 		settingsImg = AssetLoader.loadImage(GameConstants.SETTINGS_BTN_IMG, 50, 50);
 		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, 400, 300);
@@ -658,7 +662,8 @@ public class BattleView {
 
 	private void drawCharacterUI(Graphics2D g, int width, int topY, int playerCenterX, int enemyCenterX,
 			ImageObserver observer) {
-		int frameW = 220;
+		// UPDATED: frameW is now 200 to match name frame
+		int frameW = 200;
 		int frameH = 70;
 		int pFrameX = playerCenterX - (frameW / 2);
 		int eFrameX = enemyCenterX - (frameW / 2);
@@ -666,10 +671,23 @@ public class BattleView {
 		Font levelFont = new Font("Monospaced", Font.BOLD, 12);
 		Font nameFont = new Font("Monospaced", Font.BOLD, 16);
 
-		// PLAYER UI
+		// --- PLAYER UI ---
+
+		// 1. Stats Frame (Draw First so it is BEHIND)
+		// Position it so it looks like it's hanging from the name frame
+		int statsFrameY = topY + 55;
+		int statsFrameH = 80;
+
+		if (frameImg != null) {
+			g.drawImage(frameImg, pFrameX, statsFrameY, frameW, statsFrameH, null);
+		}
+
+		// 2. Name Frame (Draw Second so it is ON TOP)
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, pFrameX, topY, frameW, frameH, null);
 		}
+
+		// 3. Draw Text & Icons
 		g.setColor(Color.WHITE);
 		g.setFont(levelFont);
 		String pLevel = "LEVEL " + playerPet.getLevel();
@@ -680,7 +698,8 @@ public class BattleView {
 		String pName = playerPet.getName();
 		g.drawString(pName, pFrameX + (frameW - g.getFontMetrics().stringWidth(pName)) / 2, topY + 46);
 
-		int heartsY = topY + frameH + 5;
+		// Draw Hearts Inside Stats Frame
+		int heartsY = statsFrameY + 25;
 		int heartSize = 15;
 		int heartSpacing = 3;
 
@@ -690,37 +709,53 @@ public class BattleView {
 		int pHeartsX = pFrameX + (frameW - pTotalWidth) / 2;
 		drawHearts(g, playerPet, pHeartsX, heartsY, observer);
 
+		// Draw Stats Text Inside Stats Frame (Below Hearts)
 		g.setFont(levelFont);
 		String pStats = "HP " + playerPet.getCurrentHealth() + "/" + playerPet.getMaxHealth() + " | ATK "
 				+ playerPet.getAttackPower();
 		g.drawString(pStats, pFrameX + (frameW - g.getFontMetrics().stringWidth(pStats)) / 2, heartsY + 30);
 
-		// EXP BAR (New)
-		int expBarY = heartsY + 45;
+		// 3. EXP BAR (Below Stats Frame)
+		int expBarY = statsFrameY + statsFrameH + 10; // 10px padding below the stats frame
 		int expBarW = 180;
 		int expBarH = 8;
 		int expBarX = pFrameX + (frameW - expBarW) / 2;
 
+		// Bar Background
 		g.setColor(Color.DARK_GRAY);
 		g.fillRect(expBarX, expBarY, expBarW, expBarH);
 
+		// Bar Fill
 		float expPercent = (float) playerPet.getCurrentExp() / (float) playerPet.getMaxExpForCurrentLevel();
 		if (expPercent > 1.0f)
 			expPercent = 1.0f;
 
 		g.setColor(Color.CYAN);
 		g.fillRect(expBarX, expBarY, (int) (expBarW * expPercent), expBarH);
+
+		// Bar Border
 		g.setColor(Color.WHITE);
 		g.drawRect(expBarX, expBarY, expBarW, expBarH);
 
+		// 4. EXP Text (Below Bar)
 		String expTxt = "EXP " + playerPet.getCurrentExp() + "/" + playerPet.getMaxExpForCurrentLevel();
 		g.setFont(new Font("Monospaced", Font.PLAIN, 10));
-		g.drawString(expTxt, expBarX + (expBarW - g.getFontMetrics().stringWidth(expTxt)) / 2, expBarY - 2);
+		// Positioned below the bar
+		g.drawString(expTxt, expBarX + (expBarW - g.getFontMetrics().stringWidth(expTxt)) / 2, expBarY + expBarH + 15);
 
-		// ENEMY UI
+		// --- ENEMY UI (Mirrored Logic) ---
+
+		// 1. Stats Frame (Behind)
+		if (frameImg != null) {
+			g.drawImage(frameImg, eFrameX, statsFrameY, frameW, statsFrameH, null);
+		}
+
+		// 2. Name Frame (On Top)
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, eFrameX, topY, frameW, frameH, null);
 		}
+
+		// 3. Text & Icons
 		g.setColor(Color.WHITE);
 		g.setFont(levelFont);
 		String eLevel = "LEVEL " + currentEnemy.getLevel();
@@ -734,8 +769,11 @@ public class BattleView {
 		int eTotalHearts = (eMaxHp + 1) / 2;
 		int eTotalWidth = (eTotalHearts * heartSize) + (Math.max(0, eTotalHearts - 1) * heartSpacing);
 		int eHeartsX = eFrameX + (frameW - eTotalWidth) / 2;
+
+		// Hearts inside frame
 		drawHearts(g, currentEnemy, eHeartsX, heartsY, observer);
 
+		// Stats inside frame
 		g.setFont(levelFont);
 		String eStats = "HP " + currentEnemy.getCurrentHealth() + "/" + currentEnemy.getMaxHealth() + " | ATK "
 				+ currentEnemy.getAttackPower();
