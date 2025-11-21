@@ -196,7 +196,7 @@ public class BattleView {
 			// --- NORMAL FIGHT ---
 			
 			// Normal Background (From general pool 1-22)
-			int[] validBgIndices = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22 };
+			int[] validBgIndices = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21 };
 			int bgIndex = random.nextInt(validBgIndices.length);
 			int bgNum = validBgIndices[bgIndex];
 			String bgPath = GameConstants.BG_DIR + "battle_bg/bg" + bgNum + ".gif";
