@@ -29,17 +29,20 @@ public class BattleView {
 	private Hangpie playerPet;
 	private Enemy currentEnemy;
 
-	// NEW: Fixed list of non-boss enemies for stages 1-4.
+	// UPDATED: List expanded to include the "Umbra" enemy.
+	// All regular enemies in this list will be randomly selected for stages 1-4.
 	private final String[][] REGULAR_ENEMIES = {
-			// Index 0 (Stage 1) - Goblin
+			// Index 0
 			{ "Riekling Scout", "enemies/enemies/goblin" },
-			// Index 1 (Stage 2) - Evil Eye
+			// Index 1
 			{ "Seeker's Gaze", "enemies/enemies/evil_eye" },
-			// Index 2 (Stage 3) - Mushroom
+			// Index 2
 			{ "Spriggan", "enemies/enemies/mushroom" },
-			// Index 3 (Stage 4) - Skeleton
+			// Index 3
 			{ "Draugr", "enemies/enemies/skeleton" },
-			// Index 4 (Stage 5) - Black
+			// Index 4
+			{ "Sand Worm", "enemies/enemies/worm" },
+			// Index 5 (NEW ENEMY)
 			{ "Umbra", "enemies/enemies/black" } };
 
 	// Battle State
@@ -399,8 +402,10 @@ public class BattleView {
 				break;
 			}
 		} else {
-			// NEW: Non-Repeating Enemy Selection for stages 1-4
-			int enemyIndex = (currentProg - 1) % REGULAR_ENEMIES.length; // 0, 1, 2, 3
+			// UPDATED LOGIC: Select enemy randomly from all entries in REGULAR_ENEMIES.
+			// This allows all enemies to appear randomly on all non-boss stages (1-4).
+			int enemyIndex = random.nextInt(REGULAR_ENEMIES.length);
+
 			enemyName = REGULAR_ENEMIES[enemyIndex][0];
 			enemyPath = REGULAR_ENEMIES[enemyIndex][1];
 		}
