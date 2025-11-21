@@ -664,9 +664,15 @@ public class BattleView {
 			ImageObserver observer) {
 		// UPDATED: frameW is now 200 to match name frame
 		int frameW = 200;
+		int statsW = 190; // ADJUSTED: Reduced stats frame width to align with name frame edges
+
 		int frameH = 70;
 		int pFrameX = playerCenterX - (frameW / 2);
 		int eFrameX = enemyCenterX - (frameW / 2);
+
+		// Calculate X for stats frame separately to center it
+		int pStatsX = playerCenterX - (statsW / 2);
+		int eStatsX = enemyCenterX - (statsW / 2);
 
 		Font levelFont = new Font("Monospaced", Font.BOLD, 12);
 		Font nameFont = new Font("Monospaced", Font.BOLD, 16);
@@ -679,7 +685,8 @@ public class BattleView {
 		int statsFrameH = 80;
 
 		if (frameImg != null) {
-			g.drawImage(frameImg, pFrameX, statsFrameY, frameW, statsFrameH, null);
+			// Use statsW and pStatsX
+			g.drawImage(frameImg, pStatsX, statsFrameY, statsW, statsFrameH, null);
 		}
 
 		// 2. Name Frame (Draw Second so it is ON TOP)
@@ -747,7 +754,8 @@ public class BattleView {
 
 		// 1. Stats Frame (Behind)
 		if (frameImg != null) {
-			g.drawImage(frameImg, eFrameX, statsFrameY, frameW, statsFrameH, null);
+			// Use statsW and eStatsX
+			g.drawImage(frameImg, eStatsX, statsFrameY, statsW, statsFrameH, null);
 		}
 
 		// 2. Name Frame (On Top)
