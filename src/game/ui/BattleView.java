@@ -1,5 +1,6 @@
 package game.ui;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -50,18 +51,38 @@ public class BattleView {
 	// Animation Timers & States
 	private long actionStartTime = 0;
 	private boolean isAnimatingAction = false;
-	private final int ACTION_DURATION = 1700; // 1.7 Seconds for Attack/Damage
+	
+	// --- ATTACK ANIMATION TIMING ---
+	private final int ACTION_DURATION = 1700; // 1.7 Seconds total
+	private final int FADE_DURATION = 300; // ms
+	private final int TELEPORT_TO_TARGET_TIME = 300; // ms
+	private final int FADE_IN_TARGET_TIME = 600; // ms
+	private final int ATTACK_HOLD_TIME = 1100; // ms
+	private final int FADE_OUT_RETURN_TIME = 1400; // ms
+	private final int RETURN_HOME_TIME = 1700; // ms (End of animation)
+	
+	// Attack Animation Fields
+	private boolean isPlayerAttacking; // True if player initiates attack, false if enemy
+	private long currentAnimTime = 0;
+	private float playerAlpha = 1.0f; 
+	private float enemyAlpha = 1.0f;
+	
+	// Fixed Positions for rendering logic (No shaking applied to these base numbers)
+	private final int PLAYER_HOME_X = 280;
+	private final int ENEMY_HOME_X = GameConstants.WINDOW_WIDTH - 280;
+	private final int ATTACK_PLAYER_X = ENEMY_HOME_X - 100; // Player attack target X (in front of enemy)
+	private final int ATTACK_ENEMY_X = PLAYER_HOME_X + 100; // Enemy attack target X (in front of player)
 
 	private boolean isDeathAnimating = false;
 	private long deathStartTime = 0;
 	private final int DEATH_DURATION = 3000; // 3 Seconds for Death Animation
 
 	// --- TIMER LOGIC ---
-	private long lastGuessTime;
-	private long currentTimeRemaining;
-	private int timerX, timerY, timerW, timerH;
+	private long lastGuessTime = 0;
+	private long currentTimeRemaining = 0;
+	private int timerX = 0, timerY = 0, timerW = 0, timerH = 0;
 	
-	// --- PANIC VISUALS (NEW) ---
+	// --- PANIC VISUALS ---
 	private int panicAlpha = 0; // Alpha for the timer box flicker
 	private int currentShakeX = 0;
 	private int currentShakeY = 0;
@@ -152,6 +173,10 @@ public class BattleView {
 		// Reset Animation States
 		this.isAnimatingAction = false;
 		this.isDeathAnimating = false;
+		this.isPlayerAttacking = false;
+		this.playerAlpha = 1.0f;
+		this.enemyAlpha = 1.0f;
+		this.currentAnimTime = 0;
 
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
 
@@ -190,7 +215,7 @@ public class BattleView {
 
 		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, 50, 50);
 
-		// Set Timer UI position to the bottom center (White Box area)
+		// Set Timer UI position to the bottom center
 		timerW = 250; 
 		timerH = 50;  
 		timerX = (GameConstants.WINDOW_WIDTH - timerW) / 2;
@@ -236,6 +261,11 @@ public class BattleView {
 		this.currentShakeY = 0;
 		this.redPulseAlpha = 0;
 		this.lastSecondChecked = -1;
+		this.isPlayerAttacking = false;
+		this.playerAlpha = 1.0f;
+		this.enemyAlpha = 1.0f;
+		this.currentAnimTime = 0;
+
 
 		message = "Game Loaded!";
 		messageColor = Color.GREEN;
@@ -351,13 +381,55 @@ public class BattleView {
 			return;
 
 		if (isAnimatingAction) {
-			if (System.currentTimeMillis() - actionStartTime > ACTION_DURATION) {
-				isAnimatingAction = false;
-				checkRoundResult();
-			}
-		}
+			long timeElapsed = System.currentTimeMillis() - actionStartTime;
+			currentAnimTime = timeElapsed;
 
-		if (isDeathAnimating) {
+			// --- Attack Animation State Machine ---
+
+			if (timeElapsed > ACTION_DURATION) { // 1700ms
+				isAnimatingAction = false;
+				currentAnimTime = 0;
+				playerAlpha = 1.0f;
+				enemyAlpha = 1.0f;
+				checkRoundResult();
+			} else if (timeElapsed < FADE_DURATION) { // 0 - 300ms: Fade Out
+				float fade = (float) timeElapsed / FADE_DURATION;
+				playerAlpha = isPlayerAttacking ? 1.0f - fade : 1.0f;
+				enemyAlpha = isPlayerAttacking ? 1.0f : 1.0f - fade;
+			} else if (timeElapsed < TELEPORT_TO_TARGET_TIME) { // 300ms: Hidden at home position
+				playerAlpha = isPlayerAttacking ? 0.0f : 1.0f;
+				enemyAlpha = isPlayerAttacking ? 1.0f : 0.0f;
+			} else if (timeElapsed < FADE_IN_TARGET_TIME) { // 300 - 600ms: Fade In at target position
+				long fadeTime = timeElapsed - TELEPORT_TO_TARGET_TIME; // 0-300ms range
+				float fade = (float) fadeTime / FADE_DURATION;
+				
+				playerAlpha = isPlayerAttacking ? fade : 1.0f;
+				enemyAlpha = isPlayerAttacking ? 1.0f : fade;
+
+			} else if (timeElapsed < ATTACK_HOLD_TIME) { // 600 - 1100ms: Attack Hold (visible at target)
+				playerAlpha = 1.0f;
+				enemyAlpha = 1.0f;
+			} else if (timeElapsed < ATTACK_HOLD_TIME + FADE_DURATION) { // 1100 - 1400ms: Fade Out from target
+				long fadeTime = timeElapsed - ATTACK_HOLD_TIME; // 0-300ms range
+				float fade = (float) fadeTime / FADE_DURATION;
+
+				playerAlpha = isPlayerAttacking ? 1.0f - fade : 1.0f;
+				enemyAlpha = isPlayerAttacking ? 1.0f : 1.0f - fade;
+			} else if (timeElapsed < FADE_OUT_RETURN_TIME) { // 1400ms: Hidden, returning home
+				playerAlpha = isPlayerAttacking ? 0.0f : 1.0f;
+				enemyAlpha = isPlayerAttacking ? 1.0f : 0.0f;
+			} else if (timeElapsed < RETURN_HOME_TIME) { // 1400 - 1700ms: Fade In at home position
+				long fadeTime = timeElapsed - FADE_OUT_RETURN_TIME; // 0-300ms range
+				float fade = (float) fadeTime / FADE_DURATION;
+
+				playerAlpha = isPlayerAttacking ? fade : 1.0f;
+				enemyAlpha = isPlayerAttacking ? 1.0f : fade;
+			}
+			
+			playerAlpha = Math.max(0.0f, Math.min(1.0f, playerAlpha));
+			enemyAlpha = Math.max(0.0f, Math.min(1.0f, enemyAlpha));
+
+		} else if (isDeathAnimating) {
 			if (System.currentTimeMillis() - deathStartTime > DEATH_DURATION) {
 				isDeathAnimating = false;
 				if (!currentEnemy.isAlive()) {
@@ -374,14 +446,12 @@ public class BattleView {
 			long maxTimeMillis = GameConstants.GUESS_TIME_LIMIT_SECONDS * 1000;
 			currentTimeRemaining = maxTimeMillis - elapsedTime;
 			
-			// +1 is used to display the current second rather than the next second
 			int secondsRemaining = (int) (currentTimeRemaining / 1000) + 1; 
 			boolean isPanicking = secondsRemaining <= GameConstants.PANIC_THRESHOLD_SECONDS && secondsRemaining > 0;
 
 			if (isPanicking) {
 				// --- Screen Shake Logic (every 100ms) ---
 				if (System.currentTimeMillis() - lastShakeTime > 100) {
-					// Generate random shake offsets
 					currentShakeX = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
 					currentShakeY = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
 					lastShakeTime = System.currentTimeMillis();
@@ -389,15 +459,12 @@ public class BattleView {
 				
 				// --- Red Pulse Logic (Per visual second) ---
 				if (secondsRemaining != lastSecondChecked) {
-					redPulseAlpha = MAX_RED_ALPHA; // Max opacity at the start of the second
+					redPulseAlpha = MAX_RED_ALPHA; 
 					lastSecondChecked = secondsRemaining;
 				}
 
-				// Fade out Red Pulse Alpha (fades over a fixed period like 500ms)
-				// Use the time since the last second change to calculate fade amount
 				long timeSincePulse = System.currentTimeMillis() % 1000; 
 				if (timeSincePulse < 500) {
-					// Linear fade from MAX_RED_ALPHA to 0 over 500ms
 					redPulseAlpha = (int) (MAX_RED_ALPHA * (1.0 - (timeSincePulse / 500.0)));
 				} else {
 					redPulseAlpha = 0;
@@ -405,7 +472,6 @@ public class BattleView {
 				redPulseAlpha = Math.max(0, redPulseAlpha);
 				
 				// --- Panic Alpha for Timer Box (Flicker) ---
-				// Simple flicker for the timer box visual feedback
 				long pulseTime = System.currentTimeMillis() % 1000;
 				if (pulseTime < 500) {
 					panicAlpha = 80;
@@ -425,8 +491,6 @@ public class BattleView {
 			// Timer Expired Logic
 			if (currentTimeRemaining <= 0) {
 				currentTimeRemaining = 0; // Clamp
-				
-				// Time is up! Enemy attacks.
 				handleTimeOutAttack();
 			}
 		}
@@ -440,6 +504,7 @@ public class BattleView {
 		
 		actionStartTime = System.currentTimeMillis();
 		isAnimatingAction = true;
+		isPlayerAttacking = false; // Enemy is attacking
 		
 		currentEnemy.setAnimationState(Enemy.AnimState.ATTACK);
 		playerPet.setAnimationState(Hangpie.AnimState.DAMAGE);
@@ -654,6 +719,8 @@ public class BattleView {
 		if (isCorrect) {
 			message = "Correct! Hit!";
 			messageColor = Color.GREEN;
+			isPlayerAttacking = true; // Player is attacking
+			
 			playerPet.setAnimationState(Hangpie.AnimState.ATTACK);
 			currentEnemy.setAnimationState(Enemy.AnimState.DAMAGE);
 
@@ -671,6 +738,8 @@ public class BattleView {
 		} else {
 			message = "Wrong! Ouch!";
 			messageColor = Color.RED;
+			isPlayerAttacking = false; // Enemy is attacking
+			
 			currentEnemy.setAnimationState(Enemy.AnimState.ATTACK);
 			playerPet.setAnimationState(Hangpie.AnimState.DAMAGE);
 
@@ -701,9 +770,33 @@ public class BattleView {
 		int offsetX = currentShakeX;
 		int offsetY = currentShakeY;
 		
-		int playerCenterX = 280;
-		int enemyCenterX = width - 280;
-		int statsUiY = 140;
+		int groundY = height - 20;
+		int scaleFactor = 4;
+		
+		// --- Calculate Dynamic Character Positions ---
+		int pDrawX = PLAYER_HOME_X;
+		int eDrawX = ENEMY_HOME_X;
+		float currentPAlpha = playerAlpha;
+		float currentEAlpha = enemyAlpha;
+        
+        // **FIX**: Declare statsUiY locally
+        int statsUiY = 140; 
+        
+		// Check if we are in the Attack Phase (from TELEPORT_TO_TARGET to FADE_OUT_RETURN)
+		boolean isAttackPhase = isAnimatingAction && currentAnimTime >= TELEPORT_TO_TARGET_TIME && currentAnimTime < FADE_OUT_RETURN_TIME;
+		
+		if (isAttackPhase) {
+			if (isPlayerAttacking) {
+				// Player Attacking: Player moves to ATTACK_PLAYER_X (near enemy)
+				pDrawX = ATTACK_PLAYER_X;
+				currentEAlpha = 1.0f; // Enemy remains at 100% visibility/opacity
+			} else {
+				// Enemy Attacking: Enemy moves to ATTACK_ENEMY_X (near player)
+				eDrawX = ATTACK_ENEMY_X;
+				currentPAlpha = 1.0f; // Player remains at 100% visibility/opacity
+			}
+		}
+
 
 		if (bgImage != null) {
 			g.drawImage(bgImage, 0, 0, width, height, observer);
@@ -759,13 +852,12 @@ public class BattleView {
 		}
 
 		// Character UI (Offset is applied to the frame/stat boxes)
-		drawCharacterUI(g, width, statsUiY + offsetY, playerCenterX + offsetX, enemyCenterX + offsetX, observer);
+		int playerCenterX = PLAYER_HOME_X + offsetX;
+		int enemyCenterX = ENEMY_HOME_X + offsetX;
+		drawCharacterUI(g, width, statsUiY + offsetY, playerCenterX, enemyCenterX, observer);
 
 
-		int groundY = height - 20;
-		int scaleFactor = 4;
-
-		// Characters (NO OFFSET)
+		// --- DRAW ENEMY (NO SHAKE APPLIED TO DRAW POSITION) ---
 		Image enemyImg = currentEnemy.getCurrentImage();
 		if (enemyImg != null) {
 			int eW = enemyImg.getWidth(observer);
@@ -774,12 +866,18 @@ public class BattleView {
 			if (eW > 0 && eH > 0) {
 				int drawW = eW * scaleFactor;
 				int drawH = eH * scaleFactor;
-				int drawX = enemyCenterX - (drawW / 2);
+				// Use eDrawX (dynamic)
+				int drawX = eDrawX - (drawW / 2); 
 				int drawY = groundY - drawH;
+				
+				// Apply calculated transparency
+				g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, currentEAlpha));
 				g.drawImage(enemyImg, drawX, drawY, drawW, drawH, observer);
+				g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); // Reset alpha
 			}
 		}
 
+		// --- DRAW PLAYER (NO SHAKE APPLIED TO DRAW POSITION) ---
 		Image playerImg = playerPet.getCurrentImage();
 		if (playerImg != null) {
 			int pW = playerImg.getWidth(observer);
@@ -788,9 +886,14 @@ public class BattleView {
 			if (pW > 0 && pH > 0) {
 				int drawW = pW * scaleFactor;
 				int drawH = pH * scaleFactor;
-				int drawX = playerCenterX - (drawW / 2);
+				// Use pDrawX (dynamic)
+				int drawX = pDrawX - (drawW / 2);
 				int drawY = groundY - drawH;
+
+				// Apply calculated transparency
+				g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, currentPAlpha));
 				g.drawImage(playerImg, drawX, drawY, drawW, drawH, observer);
+				g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); // Reset alpha
 			}
 		}
 
