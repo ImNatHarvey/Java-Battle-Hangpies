@@ -1,1 +1,2 @@
 // FORMAT: username|secretWord|clue|guessedLetters|enemyName|enemyHp|enemyMaxHp|enemyAtk|enemyImageFolder|enemyLevel|playerPetId|playerPetHp
+player123|SOCCER|Most popular sport in the world||Riekling Scout|7|10|1|enemies/enemies/goblin|1|8dd41f2d-a9c3-44c0-aaa4-641746bcfce9|4

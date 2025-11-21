@@ -38,3 +38,7 @@
 [2025-11-21 23:11:23] | player123 | Logged in successfully.
 [2025-11-21 23:17:09] | player123 | Logged in successfully.
 [2025-11-21 23:25:13] | player123 | Logged in successfully.
+[2025-11-21 23:29:53] | player123 | Logged in successfully.
+[2025-11-21 23:32:20] | player123 | Logged in successfully.
+[2025-11-21 23:35:08] | player123 | Bought Evil Wizard from the Shop for 300.0G.
+[2025-11-21 23:46:05] | player123 | Logged in successfully.
