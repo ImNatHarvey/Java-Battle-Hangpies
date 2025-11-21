@@ -53,7 +53,7 @@ public class BattleView {
 
 	private boolean isDeathAnimating = false;
 	private long deathStartTime = 0;
-	private final int DEATH_DURATION = 3000; // 4 Seconds for Death Animation
+	private final int DEATH_DURATION = 3000; // 3 Seconds for Death Animation
 
 // Assets
 	private Image bgImage;
@@ -74,9 +74,9 @@ public class BattleView {
 // Settings Modal State
 	private boolean isSettingsOpen = false;
 	private boolean isExitConfirmation = false;
-	private boolean isMenuConfirmation = false; // NEW: For Main Menu confirm
+	private boolean isMenuConfirmation = false;
 
-// UI Buttons (Clickable Areas)
+// UI Buttons
 	private Rectangle settingsBtnBounds;
 
 // Modal Buttons
@@ -86,7 +86,7 @@ public class BattleView {
 	private Rectangle modalExitBounds;
 
 // Hover State for Modal
-// 0: Continue, 1: Save, 2: Menu, 3: Exit, -1: None
+// Continue, Save, Menu, Exit, None
 	private int selectedModalOption = -1;
 
 // Layout Constants
@@ -111,7 +111,6 @@ public class BattleView {
 		settingsImg = AssetLoader.loadImage(GameConstants.SETTINGS_BTN_IMG, 50, 50);
 		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, 400, 300);
 
-		// Load Hearts
 		heartImg = AssetLoader.loadImage(GameConstants.HEART_IMG, 20, 20);
 		halfHeartImg = AssetLoader.loadImage(GameConstants.HALF_HEART_IMG, 20, 20);
 		emptyHeartImg = AssetLoader.loadImage(GameConstants.EMPTY_HEART_IMG, 20, 20);
@@ -131,17 +130,16 @@ public class BattleView {
 
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
 
-		// --- LOAD GAME LOGIC ---
+		// Load Game Logic
 		if (Main.saveManager.hasSave(playerUser.getUsername()) && !shouldCarryOverWord) {
 			System.out.println("[Battle] Found save file. Loading...");
 			loadGame();
-			return; // Skip standard generation
+			return; 
 		}
 
-		// Standard Init
 		this.playerPet.setCurrentHealth(this.playerPet.getMaxHealth());
 
-		// 1. Word Logic (New vs Carry Over)
+		// Word Logic (New vs Carry Over)
 		if (!shouldCarryOverWord) {
 			generateNewWord();
 		} else {
@@ -149,14 +147,13 @@ public class BattleView {
 			shouldCarryOverWord = false;
 		}
 
-		// 2. Generate Enemy
+		// Generate Enemy
 		generateEnemy();
 
-		// 4. Preload Assets
+		// Preload Assets
 		this.playerPet.preloadAssets();
 		this.currentEnemy.preloadAssets();
 
-		// Initialize button bounds
 		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, 50, 50);
 	}
 
@@ -177,14 +174,9 @@ public class BattleView {
 		this.currentEnemy.setCurrentHealth(save.getEnemyHp());
 
 		// Restore Player HP
-		// Note: The specific pet instance is passed in constructor. We just set its HP.
-		// Ideally we check if IDs match, but for now we assume the user equipped the
-		// same pet or we enforce it.
-		// For robustness, we update the current pet's HP.
 		this.playerPet.setCurrentHealth(save.getPlayerPetHp());
 
-		// Load Background (Random standard BG for now to keep it simple, or could save
-		// BG ID too)
+		// Load Background (Random standard BG)
 		generateBackground(false);
 
 		this.playerPet.preloadAssets();
@@ -237,26 +229,26 @@ public class BattleView {
 
 			switch (bossIndex) {
 			case 1:
-				enemyName = "Baal";
+				enemyName = "Scourge of Obliviion";
 				enemyPath = "enemies/boss/boss1";
 				break;
 			case 2:
-				enemyName = "Abaddon";
+				enemyName = "The Stalhrim Colossus";
 				enemyPath = "enemies/boss/boss2";
 				break;
 			case 3:
-				enemyName = "Beelzebub";
+				enemyName = "Scion of Apocrypha";
 				enemyPath = "enemies/boss/boss3";
 				break;
 			default:
-				enemyName = "Baal";
+				enemyName = "Scourge of Obliviion";
 				enemyPath = "enemies/boss/boss1";
 				break;
 			}
 		} else {
-			String[][] availableEnemies = { { "Lava Worm", "enemies/enemies/worm" },
-					{ "Evil Eye", "enemies/enemies/evil_eye" }, { "Goblin", "enemies/enemies/goblin" },
-					{ "Mushroom", "enemies/enemies/mushroom" }, { "Skeleton", "enemies/enemies/skeleton" } };
+			String[][] availableEnemies = { { "Lava Wrym", "enemies/enemies/worm" },
+					{ "Seeker's Gaze", "enemies/enemies/evil_eye" }, { "Riekling Scout", "enemies/enemies/goblin" },
+					{ "Spriggan", "enemies/enemies/mushroom" }, { "Draugr", "enemies/enemies/skeleton" } };
 			int idx = random.nextInt(availableEnemies.length);
 			enemyName = availableEnemies[idx][0];
 			enemyPath = availableEnemies[idx][1];
