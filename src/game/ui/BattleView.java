@@ -118,8 +118,9 @@ public class BattleView {
 		settingsImg = AssetLoader.loadImage(GameConstants.SETTINGS_BTN_IMG, 50, 50);
 		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, 400, 300);
 
-		heartImg = AssetLoader.loadImage(GameConstants.HEART_IMG, 20, 20);
-		attackImg = AssetLoader.loadImage(GameConstants.ATTACK_IMG, 20, 20);
+		// Assuming user has locally updated to 15x15 icons
+		heartImg = AssetLoader.loadImage(GameConstants.HEART_IMG, 15, 15);
+		attackImg = AssetLoader.loadImage(GameConstants.ATTACK_IMG, 15, 15);
 		coinImg = AssetLoader.loadImage(GameConstants.COIN_IMG, 20, 20);
 	}
 
@@ -670,10 +671,10 @@ public class BattleView {
 		int pStatsX = playerCenterX - (statsW / 2);
 		int eStatsX = enemyCenterX - (statsW / 2);
 
-		// Increased fonts slightly
-		Font levelFont = new Font("Monospaced", Font.BOLD, 14);
+		// Changed: Unified level and stats font size to 16 to match name font size
+		Font levelFont = new Font("Monospaced", Font.BOLD, 16); 
 		Font nameFont = new Font("Monospaced", Font.BOLD, 16);
-		Font statsFont = new Font("Monospaced", Font.BOLD, 18); // Bigger for stats
+		Font statsFont = new Font("Monospaced", Font.BOLD, 16); // Now size 16
 
 		// --- PLAYER UI ---
 
@@ -761,19 +762,22 @@ public class BattleView {
 		String atkTxt = " " + c.getAttackPower();
 		String sep = " | ";
 
-		int iconSize = 20;
+		int iconSize = 15; // Assuming the user set this to 15 globally
 
 		// Calculate total width to center everything
 		int totalW = iconSize + fm.stringWidth(hpTxt) + fm.stringWidth(sep) + iconSize + fm.stringWidth(atkTxt);
 
 		int startX = x + (w - totalW) / 2;
 		int centerY = y + (h / 2) + 5; // Approximate vertical center of the stats frame
+		
+		// Icon vertical adjustment: Adjusted offset from 15 to 12 to center the 15px icon with the size 16 font text.
+		int iconTopY = centerY - 12;
 
 		int currentX = startX;
 
 		// Draw Heart Icon
 		if (heartImg != null) {
-			g.drawImage(heartImg, currentX, centerY - 15, iconSize, iconSize, obs);
+			g.drawImage(heartImg, currentX, iconTopY, iconSize, iconSize, obs);
 		}
 		currentX += iconSize;
 
@@ -789,7 +793,7 @@ public class BattleView {
 
 		// Draw Attack Icon
 		if (attackImg != null) {
-			g.drawImage(attackImg, currentX, centerY - 15, iconSize, iconSize, obs);
+			g.drawImage(attackImg, currentX, iconTopY, iconSize, iconSize, obs);
 		}
 		currentX += iconSize;
 
