@@ -1141,7 +1141,8 @@ public class BattleView {
 		g.setColor(Color.BLACK);
 
 		String[] instructions = GameConstants.INSTRUCTION_TEXT.split("\n");
-		int startY = mY + 110;
+		// Start Y adjusted to account for HEADER_FONT (40pt) height
+		int startY = mY + 95;
 		FontMetrics fmSmall = g.getFontMetrics();
 		int lineHeight = fmSmall.getHeight();
 		int indent = 30;
@@ -1151,26 +1152,29 @@ public class BattleView {
 			String trimmedLine = line.trim();
 			int lineW = fmSmall.stringWidth(line);
 
+			// Calculate vertical center of the text line
+			int textY = startY + fmSmall.getAscent();
+
 			if (trimmedLine.isEmpty()) {
-				startY += lineHeight / 2;
+				startY += lineHeight / 3; // Smaller gap for empty line
 				continue;
 			}
 
 			if (trimmedLine.endsWith(":")) {
 				// Header lines (e.g., "Correct Guess:") - aligned slightly to the left
-				g.drawString(line, mX + indent, startY);
+				g.drawString(line, mX + indent, textY);
 			} else if (trimmedLine.startsWith("Type")) {
 				// Main section headers (Type the letters...) - centered
-				g.drawString(line, mX + (mW - lineW) / 2, startY);
+				g.drawString(line, mX + (mW - lineW) / 2, textY);
 			} else if (trimmedLine.startsWith("Your Hangpie") || trimmedLine.startsWith("Your Hangpie takes")) {
 				// Details / bullet points - indented further
-				g.drawString(line, mX + indent + 20, startY);
+				g.drawString(line, mX + indent + 20, textY);
 			} else if (trimmedLine.startsWith("Objectives")) {
 				// Objectives header
-				g.drawString(line, mX + indent, startY);
+				g.drawString(line, mX + indent, textY);
 			} else if (trimmedLine.startsWith("Defeat enemy") || trimmedLine.startsWith("Win the World")) {
 				// Objectives list items
-				g.drawString(line, mX + indent + 20, startY);
+				g.drawString(line, mX + indent + 20, textY);
 			}
 
 			startY += lineHeight;
