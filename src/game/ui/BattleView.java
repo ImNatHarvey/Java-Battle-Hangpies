@@ -1112,7 +1112,7 @@ public class BattleView {
 		}
 	}
 
-	// NEW: Instruction Modal
+	// NEW: Instruction Modal (With Word Wrap and smaller font)
 	private void drawInstructionModal(Graphics2D g, int width, int height) {
 		g.setColor(new Color(0, 0, 0, 150));
 		g.fillRect(0, 0, width, height);
@@ -1136,48 +1136,110 @@ public class BattleView {
 		FontMetrics fm = g.getFontMetrics();
 		g.drawString(title, mX + (mW - fm.stringWidth(title)) / 2, mY + 50);
 
-		// Instructions Content: Using SUBTITLE_FONT (18pt) for better fit
-		g.setFont(GameConstants.SUBTITLE_FONT);
+		// Instructions Content: Using the new, smaller INSTRUCTION_FONT (16pt)
+		g.setFont(GameConstants.INSTRUCTION_FONT);
 		g.setColor(Color.BLACK);
 
-		String[] instructions = GameConstants.INSTRUCTION_TEXT.split("\n");
-		// Start Y adjusted to account for HEADER_FONT (40pt) height
-		int startY = mY + 95;
+		String content = GameConstants.INSTRUCTION_TEXT;
+		String[] lines = content.split("\n");
+
+		// Word Wrapping parameters
+		int wrapWidth = mW - 60; // Modal width (400) - 30px left padding - 30px right padding
+		int startX = mX + 30; // 30px from left edge of modal
+		int startY = mY + 95; // Y position after the title
 		FontMetrics fmSmall = g.getFontMetrics();
 		int lineHeight = fmSmall.getHeight();
-		int indent = 30;
+		int indent = 20;
 
-		for (String line : instructions) {
-
+		for (String line : lines) {
 			String trimmedLine = line.trim();
-			int lineW = fmSmall.stringWidth(line);
-
-			// Calculate vertical center of the text line
-			int textY = startY + fmSmall.getAscent();
 
 			if (trimmedLine.isEmpty()) {
-				startY += lineHeight / 3; // Smaller gap for empty line
+				startY += lineHeight / 3;
 				continue;
 			}
 
-			if (trimmedLine.endsWith(":")) {
-				// Header lines (e.g., "Correct Guess:") - aligned slightly to the left
-				g.drawString(line, mX + indent, textY);
-			} else if (trimmedLine.startsWith("Type")) {
-				// Main section headers (Type the letters...) - centered
-				g.drawString(line, mX + (mW - lineW) / 2, textY);
-			} else if (trimmedLine.startsWith("Your Hangpie") || trimmedLine.startsWith("Your Hangpie takes")) {
-				// Details / bullet points - indented further
-				g.drawString(line, mX + indent + 20, textY);
-			} else if (trimmedLine.startsWith("Objectives")) {
-				// Objectives header
-				g.drawString(line, mX + indent, textY);
-			} else if (trimmedLine.startsWith("Defeat enemy") || trimmedLine.startsWith("Win the World")) {
-				// Objectives list items
-				g.drawString(line, mX + indent + 20, textY);
+			// Special Handling for Headers/Non-wrapping lines
+			if (trimmedLine.endsWith(":") || trimmedLine.startsWith("Objectives")) {
+				// Print as-is, aligned to the left side
+				int lineW = fmSmall.stringWidth(line);
+				int textX = startX;
+				int textY = startY + fmSmall.getAscent();
+				g.drawString(line, textX, textY);
+				startY += lineHeight;
 			}
+			// UPDATED: Logic to treat the "Type the letters..." line as a normal wrapping
+			// line
+			else if (trimmedLine.startsWith("Type")) {
+				// Handle "Type the letters on your keyboard to guess the word."
+				String[] words = trimmedLine.split(" ");
+				StringBuilder currentLine = new StringBuilder();
+				int currentX = mX + (mW - wrapWidth) / 2; // Center alignment for the introductory line
 
-			startY += lineHeight;
+				for (String word : words) {
+					// Check if adding the next word (plus a space) exceeds the wrap width
+					if (fmSmall.stringWidth(currentLine.toString() + " " + word) > wrapWidth) {
+						// Draw the current line
+						int textY = startY + fmSmall.getAscent();
+						g.drawString(currentLine.toString().trim(), currentX, textY);
+
+						// Start a new line
+						startY += lineHeight;
+						currentLine = new StringBuilder();
+					}
+
+					// Append the word (with a space if not the very first word on a line)
+					if (currentLine.length() > 0) {
+						currentLine.append(" ");
+					}
+					currentLine.append(word);
+				}
+
+				// Draw the remaining part of the line
+				if (currentLine.length() > 0) {
+					int textY = startY + fmSmall.getAscent();
+					g.drawString(currentLine.toString().trim(), currentX, textY);
+					startY += lineHeight;
+				}
+			}
+			// Handle all other wrapping/bullet lines
+			else {
+				// Apply word wrap to instruction/list items
+				String[] words = trimmedLine.split(" ");
+				StringBuilder currentLine = new StringBuilder();
+				int currentX = startX + (trimmedLine.startsWith("Your") || trimmedLine.startsWith("Defeat")
+						|| trimmedLine.startsWith("Win") ? indent : 0);
+
+				for (String word : words) {
+					// Check if adding the next word (plus a space) exceeds the wrap width
+					if (fmSmall.stringWidth(currentLine.toString() + " " + word) > wrapWidth) {
+						// Draw the current line
+						int textY = startY + fmSmall.getAscent();
+						g.drawString(currentLine.toString().trim(), currentX, textY);
+
+						// Start a new line
+						startY += lineHeight;
+						currentLine = new StringBuilder();
+						currentX = startX + (trimmedLine.startsWith("Your") || trimmedLine.startsWith("Defeat")
+								|| trimmedLine.startsWith("Win") ? indent * 2 : indent); // Increase indent for wrapped
+																							// lines to preserve
+																							// bullet-style
+					}
+
+					// Append the word (with a space if not the very first word on a line)
+					if (currentLine.length() > 0) {
+						currentLine.append(" ");
+					}
+					currentLine.append(word);
+				}
+
+				// Draw the remaining part of the line
+				if (currentLine.length() > 0) {
+					int textY = startY + fmSmall.getAscent();
+					g.drawString(currentLine.toString().trim(), currentX, textY);
+					startY += lineHeight;
+				}
+			}
 		}
 
 		// Close Instruction

@@ -40,6 +40,8 @@ public class GameConstants {
 	public static final Font SMALLER_BUTTON_FONT = new Font("Monospaced", Font.BOLD, 18);
 	public static final Font SUBTITLE_FONT = new Font("Monospaced", Font.BOLD, 18);
 	public static final Font LIST_FONT = new Font("Monospaced", Font.PLAIN, 20);
+	// NEW: Font for instructions (Size 16)
+	public static final Font INSTRUCTION_FONT = new Font("Monospaced", Font.BOLD, 16);
 
 	// Paths
 	public static final String ASSET_DIR = "images/";
