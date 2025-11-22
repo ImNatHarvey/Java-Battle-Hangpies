@@ -29,12 +29,11 @@ public class BattleView {
 	private Hangpie playerPet;
 	private Enemy currentEnemy;
 
-	// UPDATED: List expanded to include new enemies.
+	// Regular Enemies
 	private final String[][] REGULAR_ENEMIES = { { "Riekling Scout", "enemies/enemies/goblin" },
 			{ "Seeker's Gaze", "enemies/enemies/evil_eye" }, { "Spriggan", "enemies/enemies/mushroom" },
 			{ "Draugr", "enemies/enemies/skeleton" }, { "Sand Worm", "enemies/enemies/worm" },
 			{ "Umbra", "enemies/enemies/black" },
-			// NEW ENEMIES
 			{ "Frost Atronach", "enemies/enemies/blue" }, { "Crystal Atronach", "enemies/enemies/orange" },
 			{ "Midden Heap", "enemies/enemies/tooth" }, { "Namira's Cur", "enemies/enemies/void_fox" },
 			{ "Mora's Leech", "enemies/enemies/voidling" }, { "Hermaeus Tumor", "enemies/enemies/void_hunchback" },
@@ -57,78 +56,78 @@ public class BattleView {
 	private boolean rewardsClaimed = false;
 
 	private String message = "";
-	private Color messageColor = Color.YELLOW; // Default color
+	private Color messageColor = Color.YELLOW; 
 
 	// Animation Timers & States
 	private long actionStartTime = 0;
 	private boolean isAnimatingAction = false;
 
-	// --- ATTACK ANIMATION TIMING ---
-	private final int ACTION_DURATION = 1700; // 1.7 Seconds total
-	private final int FADE_DURATION = 300; // ms
-	private final int TELEPORT_TO_TARGET_TIME = 300; // ms
-	private final int FADE_IN_TARGET_TIME = 600; // ms
-	private final int ATTACK_HOLD_TIME = 1100; // ms
-	private final int FADE_OUT_RETURN_TIME = 1400; // ms
-	private final int RETURN_HOME_TIME = 1700; // ms (End of animation)
+	// Attack Animation
+	private final int ACTION_DURATION = 1700; 
+	private final int FADE_DURATION = 300; 
+	private final int TELEPORT_TO_TARGET_TIME = 300; 
+	private final int FADE_IN_TARGET_TIME = 600; 
+	private final int ATTACK_HOLD_TIME = 1100; 
+	private final int FADE_OUT_RETURN_TIME = 1400; 
+	private final int RETURN_HOME_TIME = 1700; 
 
 	// Attack Animation Fields
-	private boolean isPlayerAttacking; // True if player initiates attack, false if enemy
+	private boolean isPlayerAttacking; 
 	private long currentAnimTime = 0;
 	private float playerAlpha = 1.0f;
 	private float enemyAlpha = 1.0f;
 
-	// Fixed Positions for rendering logic (No shaking applied to these base
-	// numbers)
+	// Attack Position
 	private final int PLAYER_HOME_X = 280;
 	private final int ENEMY_HOME_X = GameConstants.WINDOW_WIDTH - 280;
-	private final int ATTACK_PLAYER_X = ENEMY_HOME_X - 100; // Player attack target X (in front of enemy)
-	private final int ATTACK_ENEMY_X = PLAYER_HOME_X + 100; // Enemy attack target X (in front of player)
-
+	private final int ATTACK_PLAYER_X = ENEMY_HOME_X - 100; 
+	private final int ATTACK_ENEMY_X = PLAYER_HOME_X + 100; 
+	
+	// Death Animation
 	private boolean isDeathAnimating = false;
 	private long deathStartTime = 0;
-	private final int DEATH_DURATION = 3000; // 3 Seconds for Death Animation
+	private final int DEATH_DURATION = 3000; 
 
-	// --- TIMER LOGIC ---
+	// Timer Logic
 	private long lastGuessTime = 0;
 	private long currentTimeRemaining = 0;
 	private int timerX = 0, timerY = 0, timerW = 0, timerH = 0;
 
-	// --- PANIC VISUALS (Time-based shake on UI) ---
-	private int panicAlpha = 0; // Alpha for the timer box flicker
-	private int timeShakeX = 0; // Shake from time pressure (applied to UI)
+	// Panic Visual
+	private int panicAlpha = 0; 
+	private int timeShakeX = 0; 
 	private int timeShakeY = 0;
 	private long lastShakeTime = 0;
-	private int redPulseAlpha = 0; // Alpha for the full screen red pulse (Time)
+	private int redPulseAlpha = 0; 
 	private int lastSecondChecked = -1;
 	private final int SHAKE_MAGNITUDE = 3;
 	private final int MAX_RED_ALPHA = 80;
 
-	// --- DAMAGE VISUALS (Hit-based shake on target UI/Sprite) ---
+	// Damage Visual
 	private long damageStartTime = 0;
-	private final int DAMAGE_VISUAL_DURATION = 500; // Visual effects last for 500ms
+	private final int DAMAGE_VISUAL_DURATION = 500; 
 	private int damageShakeX = 0;
 	private int damageShakeY = 0;
 	private boolean isPlayerDamaged = false;
 	private boolean isEnemyDamaged = false;
 
-	// NEW: Damage Indicator variables
+	// Damage Indicator
 	private int damageIndicatorPlayer = 0;
 	private int damageIndicatorEnemy = 0;
 	private long damageIndicatorStartTime = 0;
-	private final int DAMAGE_INDICATOR_DURATION = 1500; // 1.5 seconds
-	private final int DAMAGE_INDICATOR_VERTICAL_TRAVEL = 50; // Pixels
+	private final int DAMAGE_INDICATOR_DURATION = 1500; 
+	private final int DAMAGE_INDICATOR_VERTICAL_TRAVEL = 50; 
 
-	// NEW: Rabbit flash logic
+	// Rabbit Flash
 	private Image rabbitImg;
 	private long rabbitFlashStartTime = 0;
-	private final int RABBIT_FLASH_DURATION = 500; // 0.5 seconds
-	private boolean hasFlashedThisGuess = false; // To ensure it only flashes once per cycle at 5s mark
+	private final int RABBIT_FLASH_DURATION = 500; 
+	private boolean hasFlashedThisGuess = false; 
 
 	// Assets
 	private Image bgImage;
 	private Image nameFrameImg;
-	private Image frameImg; // The general frame for stats
+	private Image frameImg; 
 	private Image settingsImg;
 	private Image modalImg;
 
@@ -170,7 +169,7 @@ public class BattleView {
 		this.playerUser = user;
 		this.playerPet = pet;
 		this.guessedLetters = new HashSet<>();
-		this.lastGuessTime = System.currentTimeMillis(); // Initialize timer
+		this.lastGuessTime = System.currentTimeMillis(); 
 
 		// Reset animations
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
@@ -181,25 +180,21 @@ public class BattleView {
 
 	private void loadAssets() {
 		nameFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 200, 50);
-		// UPDATED: Reduced width from 220 to 200 to match the name frame
 		frameImg = AssetLoader.loadImage(GameConstants.FRAME_IMG, 200, 80);
 
 		levelFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 150, 50);
 		settingsImg = AssetLoader.loadImage(GameConstants.SETTINGS_BTN_IMG, 50, 50);
 		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, 400, 300);
 
-		// Assuming user has locally updated to 15x15 icons
 		heartImg = AssetLoader.loadImage(GameConstants.HEART_IMG, 15, 15);
 		attackImg = AssetLoader.loadImage(GameConstants.ATTACK_IMG, 15, 15);
 		coinImg = AssetLoader.loadImage(GameConstants.COIN_IMG, 20, 20);
 
-		// UPDATED: Load Rabbit Image at full window resolution
 		rabbitImg = AssetLoader.loadImage(GameConstants.RABBIT_IMG, GameConstants.WINDOW_WIDTH,
 				GameConstants.WINDOW_HEIGHT);
 	}
 
 	private void initBattle() {
-		// Reset Round State
 		this.battleOver = false;
 		this.playerWon = false;
 		this.rewardsClaimed = false;
@@ -228,12 +223,12 @@ public class BattleView {
 		this.isPlayerDamaged = false;
 		this.isEnemyDamaged = false;
 
-		// NEW: Reset Damage Indicators
+		// Reset Damage Indicators
 		this.damageIndicatorPlayer = 0;
 		this.damageIndicatorEnemy = 0;
 		this.damageIndicatorStartTime = 0;
 
-		// NEW: Reset Rabbit Flash
+		// Reset Rabbit Flash
 		this.rabbitFlashStartTime = 0;
 		this.hasFlashedThisGuess = false;
 
@@ -248,14 +243,13 @@ public class BattleView {
 
 		// Word Logic (New vs Carry Over)
 		if (!shouldCarryOverWord) {
-			// UPDATED: Pass both worldLevel and progressLevel
 			generateNewWord(playerUser.getWorldLevel(), playerUser.getProgressLevel());
 		} else {
 			System.out.println("[Battle] Carrying over word: " + secretWord);
 			shouldCarryOverWord = false;
 		}
 
-		// Generate Enemy (Determined by progressLevel)
+		// Generate Enemy
 		generateEnemy();
 
 		// Preload Assets
@@ -264,11 +258,11 @@ public class BattleView {
 
 		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, 50, 50);
 
-		// Set Timer UI position to the bottom center
+		// Timer UI
 		timerW = 250;
 		timerH = 50;
 		timerX = (GameConstants.WINDOW_WIDTH - timerW) / 2;
-		timerY = GameConstants.WINDOW_HEIGHT - 120; // Near the bottom edge
+		timerY = GameConstants.WINDOW_HEIGHT - 120; 
 	}
 
 	private void loadGame() {
@@ -320,12 +314,12 @@ public class BattleView {
 		this.enemyAlpha = 1.0f;
 		this.currentAnimTime = 0;
 
-		// NEW: Reset Damage Indicators
+		// Reset Damage Indicators
 		this.damageIndicatorPlayer = 0;
 		this.damageIndicatorEnemy = 0;
 		this.damageIndicatorStartTime = 0;
 
-		// NEW: Reset Rabbit Flash
+		// Reset Rabbit Flash
 		this.rabbitFlashStartTime = 0;
 		this.hasFlashedThisGuess = false;
 
@@ -356,7 +350,6 @@ public class BattleView {
 		String enemyName;
 		String enemyPath;
 
-		// --- SCALING LOGIC ---
 		// Base Stats for World 1: 10 HP, 1 ATK
 		// Increase per World: +5 HP, +1 ATK
 
@@ -370,13 +363,13 @@ public class BattleView {
 		generateBackground(isBoss);
 
 		if (isBoss) {
-			// Boss Stats: +5 HP, +1 ATK relative to normal
+			
+			// Boss Stats: +5 HP, +1 ATK 
 			enemyHp = baseHp + 5;
 			enemyAtk = baseAtk + 1;
 
 			long seed = playerUser.getUsername().hashCode() + currentWorld;
 			Random bossRandom = new Random(seed);
-			// UPDATED: Range increased to 4 to include Sheogorath
 			int bossIndex = bossRandom.nextInt(4) + 1;
 
 			switch (bossIndex) {
@@ -402,8 +395,8 @@ public class BattleView {
 				break;
 			}
 		} else {
-			// UPDATED LOGIC: Select enemy randomly from all entries in REGULAR_ENEMIES.
-			// This allows all enemies to appear randomly on all non-boss stages (1-4).
+
+			// Enemy Randomizer
 			int enemyIndex = random.nextInt(REGULAR_ENEMIES.length);
 
 			enemyName = REGULAR_ENEMIES[enemyIndex][0];
@@ -427,7 +420,6 @@ public class BattleView {
 		}
 	}
 
-	// UPDATED: New signature to support progressive difficulty
 	private void generateNewWord(int worldLevel, int progressLevel) {
 		this.guessedLetters.clear();
 		WordBank.WordData data = WordBank.getRandomWord(worldLevel, progressLevel);
@@ -452,42 +444,42 @@ public class BattleView {
 			long timeElapsed = System.currentTimeMillis() - actionStartTime;
 			currentAnimTime = timeElapsed;
 
-			// --- Attack Animation State Machine ---
+			// Attack Animation State
 
-			if (timeElapsed > ACTION_DURATION) { // 1700ms
+			if (timeElapsed > ACTION_DURATION) { 
 				isAnimatingAction = false;
 				currentAnimTime = 0;
 				playerAlpha = 1.0f;
 				enemyAlpha = 1.0f;
 				checkRoundResult();
-			} else if (timeElapsed < FADE_DURATION) { // 0 - 300ms: Fade Out
+			} else if (timeElapsed < FADE_DURATION) { 
 				float fade = (float) timeElapsed / FADE_DURATION;
 				playerAlpha = isPlayerAttacking ? 1.0f - fade : 1.0f;
 				enemyAlpha = isPlayerAttacking ? 1.0f : 1.0f - fade;
-			} else if (timeElapsed < TELEPORT_TO_TARGET_TIME) { // 300ms: Hidden at home position
+			} else if (timeElapsed < TELEPORT_TO_TARGET_TIME) { 
 				playerAlpha = isPlayerAttacking ? 0.0f : 1.0f;
 				enemyAlpha = isPlayerAttacking ? 1.0f : 0.0f;
-			} else if (timeElapsed < FADE_IN_TARGET_TIME) { // 300 - 600ms: Fade In at target position
-				long fadeTime = timeElapsed - TELEPORT_TO_TARGET_TIME; // 0-300ms range
+			} else if (timeElapsed < FADE_IN_TARGET_TIME) { 
+				long fadeTime = timeElapsed - TELEPORT_TO_TARGET_TIME; 
 				float fade = (float) fadeTime / FADE_DURATION;
 
 				playerAlpha = isPlayerAttacking ? fade : 1.0f;
 				enemyAlpha = isPlayerAttacking ? 1.0f : fade;
 
-			} else if (timeElapsed < ATTACK_HOLD_TIME) { // 600 - 1100ms: Attack Hold (visible at target)
+			} else if (timeElapsed < ATTACK_HOLD_TIME) { 
 				playerAlpha = 1.0f;
 				enemyAlpha = 1.0f;
-			} else if (timeElapsed < ATTACK_HOLD_TIME + FADE_DURATION) { // 1100 - 1400ms: Fade Out from target
-				long fadeTime = timeElapsed - ATTACK_HOLD_TIME; // 0-300ms range
+			} else if (timeElapsed < ATTACK_HOLD_TIME + FADE_DURATION) { 
+				long fadeTime = timeElapsed - ATTACK_HOLD_TIME;
 				float fade = (float) fadeTime / FADE_DURATION;
 
 				playerAlpha = isPlayerAttacking ? 1.0f - fade : 1.0f;
 				enemyAlpha = isPlayerAttacking ? 1.0f : 1.0f - fade;
-			} else if (timeElapsed < FADE_OUT_RETURN_TIME) { // 1400ms: Hidden, returning home
+			} else if (timeElapsed < FADE_OUT_RETURN_TIME) { 
 				playerAlpha = isPlayerAttacking ? 0.0f : 1.0f;
 				enemyAlpha = isPlayerAttacking ? 1.0f : 0.0f;
-			} else if (timeElapsed < RETURN_HOME_TIME) { // 1400 - 1700ms: Fade In at home position
-				long fadeTime = timeElapsed - FADE_OUT_RETURN_TIME; // 0-300ms range
+			} else if (timeElapsed < RETURN_HOME_TIME) { 
+				long fadeTime = timeElapsed - FADE_OUT_RETURN_TIME; 
 				float fade = (float) fadeTime / FADE_DURATION;
 
 				playerAlpha = isPlayerAttacking ? fade : 1.0f;
@@ -508,10 +500,10 @@ public class BattleView {
 			}
 		}
 
-		// --- DAMAGE VISUALS UPDATE (RUNS IN PARALLEL TO ANIMATING ACTION) ---
+		// Damage Visuals
 		updateDamageVisuals();
 
-		// --- DAMAGE INDICATOR ANIMATION UPDATE ---
+		// Damage Indicator
 		if (damageIndicatorStartTime > 0) {
 			long timeElapsed = System.currentTimeMillis() - damageIndicatorStartTime;
 			if (timeElapsed > DAMAGE_INDICATOR_DURATION) {
@@ -521,7 +513,6 @@ public class BattleView {
 			}
 		}
 
-		// --- TIMER AND PANIC UPDATE LOGIC ---
 		if (!isAnimatingAction && !isDeathAnimating) {
 			long elapsedTime = System.currentTimeMillis() - lastGuessTime;
 			long maxTimeMillis = GameConstants.GUESS_TIME_LIMIT_SECONDS * 1000;
@@ -530,26 +521,23 @@ public class BattleView {
 			int secondsRemaining = (int) (currentTimeRemaining / 1000) + 1;
 			boolean isPanicking = secondsRemaining <= GameConstants.PANIC_THRESHOLD_SECONDS && secondsRemaining > 0;
 
-			// NEW: RABBIT FLASH TRIGGER LOGIC
 			if (secondsRemaining == GameConstants.PANIC_THRESHOLD_SECONDS && !hasFlashedThisGuess) {
 				rabbitFlashStartTime = System.currentTimeMillis();
 				hasFlashedThisGuess = true;
 			}
 
-			// Reset flash flag after a guess or if game is reset.
 			if (secondsRemaining > GameConstants.PANIC_THRESHOLD_SECONDS) {
 				hasFlashedThisGuess = false;
 			}
 
 			if (isPanicking) {
-				// --- Time Shake Logic (every 100ms) ---
+				
 				if (System.currentTimeMillis() - lastShakeTime > 100) {
 					timeShakeX = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
 					timeShakeY = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
 					lastShakeTime = System.currentTimeMillis();
 				}
 
-				// --- Red Pulse Logic (Per visual second) ---
 				if (secondsRemaining != lastSecondChecked) {
 					redPulseAlpha = MAX_RED_ALPHA;
 					lastSecondChecked = secondsRemaining;
@@ -572,7 +560,7 @@ public class BattleView {
 				}
 
 			} else {
-				// Reset shake and pulse outside of panic mode
+
 				timeShakeX = 0;
 				timeShakeY = 0;
 				redPulseAlpha = 0;
@@ -580,7 +568,6 @@ public class BattleView {
 				lastSecondChecked = -1;
 			}
 
-			// Timer Expired Logic
 			if (currentTimeRemaining <= 0) {
 				currentTimeRemaining = 0; // Clamp
 				handleTimeOutAttack();
@@ -593,8 +580,8 @@ public class BattleView {
 			long timeElapsed = System.currentTimeMillis() - damageStartTime;
 
 			if (timeElapsed < DAMAGE_VISUAL_DURATION) {
-				// Shake logic for damage (faster shake than time panic)
-				if (timeElapsed % 50 < 25) { // Shake every 50ms
+
+				if (timeElapsed % 50 < 25) { 
 					damageShakeX = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
 					damageShakeY = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
 				} else {
@@ -602,7 +589,7 @@ public class BattleView {
 					damageShakeY = 0;
 				}
 			} else {
-				// End of damage visuals duration
+
 				isPlayerDamaged = false;
 				isEnemyDamaged = false;
 				damageShakeX = 0;
@@ -613,11 +600,11 @@ public class BattleView {
 
 	private void handleTimeOutAttack() {
 
-		lastGuessTime = System.currentTimeMillis(); // Reset timer for next guess
+		lastGuessTime = System.currentTimeMillis(); 
 
 		actionStartTime = System.currentTimeMillis();
 		isAnimatingAction = true;
-		isPlayerAttacking = false; // Enemy is attacking
+		isPlayerAttacking = false; 
 
 		currentEnemy.setAnimationState(Enemy.AnimState.ATTACK);
 		playerPet.setAnimationState(Hangpie.AnimState.DAMAGE);
@@ -625,16 +612,13 @@ public class BattleView {
 		int dmg = currentEnemy.getAttackPower();
 		playerPet.takeDamage(dmg);
 
-		// NEW: Set damage indicator for player (damage received)
 		damageIndicatorPlayer = -dmg;
 		damageIndicatorEnemy = 0;
 		damageIndicatorStartTime = System.currentTimeMillis();
 
-		// UPDATED MESSAGE
 		message = "Time Out! Ouch! " + damageIndicatorPlayer + " HP";
 		messageColor = Color.RED;
 
-		// --- DAMAGE VISUALS TRIGGER ---
 		isPlayerDamaged = true;
 		damageStartTime = System.currentTimeMillis();
 	}
@@ -667,7 +651,6 @@ public class BattleView {
 		battleOver = true;
 		playerWon = true;
 
-		// Delete Save on Win
 		Main.saveManager.deleteSave(playerUser.getUsername());
 
 		if (!isWordCompleted()) {
@@ -679,7 +662,6 @@ public class BattleView {
 		if (!rewardsClaimed) {
 			boolean isBoss = (playerUser.getProgressLevel() == 5);
 
-			// Calculate Rewards
 			if (isBoss) {
 				goldReward = 10;
 				expReward = 5;
@@ -698,7 +680,7 @@ public class BattleView {
 				playerUser.setProgressLevel(playerUser.getProgressLevel() + 1);
 			}
 
-			// Apply Rewards (After World Level update to lift level cap if boss)
+			// Apply Rewards
 			playerUser.addGold(goldReward);
 			boolean leveledUp = playerPet.gainExp(expReward, playerUser.getWorldLevel());
 
@@ -728,8 +710,6 @@ public class BattleView {
 		Main.saveManager.deleteSave(playerUser.getUsername());
 	}
 
-// --- Input Handling ---
-
 	public void handleMouseMove(int x, int y) {
 		if (isSettingsOpen) {
 			selectedModalOption = -1;
@@ -753,30 +733,29 @@ public class BattleView {
 				isMenuConfirmation = false;
 				return "NONE";
 			} else if (modalSaveBounds != null && modalSaveBounds.contains(x, y)) {
-				// SAVE GAME ACTION
+				// Save Game Function
 				saveGame();
 				return "NONE";
 			} else if (modalMenuBounds != null && modalMenuBounds.contains(x, y)) {
-				// MENU CONFIRMATION
+				// Menu Confirmation
 				if (!isMenuConfirmation) {
 					isMenuConfirmation = true;
-					isExitConfirmation = false; // Clear other confirm
+					isExitConfirmation = false; 
 				} else {
 					return "MENU";
 				}
 				return "NONE";
 			} else if (modalExitBounds != null && modalExitBounds.contains(x, y)) {
-				// EXIT CONFIRMATION
+				// Exit Confirmation
 				if (!isExitConfirmation) {
 					isExitConfirmation = true;
-					isMenuConfirmation = false; // Clear other confirm
+					isMenuConfirmation = false; 
 				} else {
 					return "EXIT";
 				}
 				return "NONE";
 			}
 
-			// Reset confirmations if clicked elsewhere on modal
 			isExitConfirmation = false;
 			isMenuConfirmation = false;
 
@@ -810,7 +789,6 @@ public class BattleView {
 		if (isAnimatingAction || isDeathAnimating)
 			return;
 
-		// Don't process input if the timer has just run out (wait for attack animation)
 		if (currentTimeRemaining <= 0)
 			return;
 
@@ -826,17 +804,17 @@ public class BattleView {
 
 		guessedLetters.add(guess);
 
-		// --- RESET TIMER ON VALID GUESS ---
+		// Reset Timer On Valid Guess
 		lastGuessTime = System.currentTimeMillis();
 		timeShakeX = 0;
 		timeShakeY = 0;
 		redPulseAlpha = 0;
 		panicAlpha = 0;
 		lastSecondChecked = -1;
-		this.hasFlashedThisGuess = false; // Reset flash flag on a successful guess
+		this.hasFlashedThisGuess = false; 
 
 		boolean isCorrect = false;
-		// NEW: Calculate multiplier (letter count)
+		// Multiplier Damage
 		int letterCount = 0;
 		for (char c : secretWord.toCharArray()) {
 			if (c == guess) {
@@ -848,12 +826,11 @@ public class BattleView {
 		actionStartTime = System.currentTimeMillis();
 		isAnimatingAction = true;
 
-		// Reset damage flags before a new attack starts
 		isPlayerDamaged = false;
 		isEnemyDamaged = false;
 
 		if (isCorrect) {
-			isPlayerAttacking = true; // Player is attacking
+			isPlayerAttacking = true; 
 
 			playerPet.setAnimationState(Hangpie.AnimState.ATTACK);
 			currentEnemy.setAnimationState(Enemy.AnimState.DAMAGE);
@@ -861,18 +838,18 @@ public class BattleView {
 			int baseDmg = playerPet.getAttackPower();
 			int finalDmg = baseDmg * letterCount; // Apply multiplier
 
-			currentEnemy.takeDamage(finalDmg); // Use calculated damage
+			currentEnemy.takeDamage(finalDmg);
 
-			// NEW: Set damage indicator for enemy (damage dealt)
+			// Set damage indicator for enemy
 			damageIndicatorEnemy = finalDmg;
-			damageIndicatorPlayer = 0; // Clear other indicator
+			damageIndicatorPlayer = 0;
 			damageIndicatorStartTime = System.currentTimeMillis();
 
-			// UPDATED MESSAGE: Include damage dealt
+			// Damage Indicator
 			message = "Correct! Hit! +" + finalDmg + " DMG";
 			messageColor = Color.GREEN;
 
-			// --- DAMAGE VISUALS TRIGGER: ENEMY HIT ---
+			// Damage Visual Trigger
 			isEnemyDamaged = true;
 			damageStartTime = System.currentTimeMillis();
 
@@ -880,13 +857,12 @@ public class BattleView {
 				if (currentEnemy.isAlive()) {
 					message = "Word Cleared! New Word!";
 					messageColor = Color.CYAN;
-					// UPDATED: Pass worldLevel and progressLevel for new word
 					generateNewWord(playerUser.getWorldLevel(), playerUser.getProgressLevel());
 				}
 			}
 
 		} else {
-			isPlayerAttacking = false; // Enemy is attacking
+			isPlayerAttacking = false; 
 
 			currentEnemy.setAnimationState(Enemy.AnimState.ATTACK);
 			playerPet.setAnimationState(Hangpie.AnimState.DAMAGE);
@@ -894,16 +870,14 @@ public class BattleView {
 			int dmg = currentEnemy.getAttackPower();
 			playerPet.takeDamage(dmg);
 
-			// NEW: Set damage indicator for player (damage received)
+			// Set damage indicator for player
 			damageIndicatorPlayer = -dmg;
-			damageIndicatorEnemy = 0; // Clear other indicator
+			damageIndicatorEnemy = 0; 
 			damageIndicatorStartTime = System.currentTimeMillis();
-
-			// UPDATED MESSAGE: Include damage received
+ 
 			message = "Wrong! Ouch! " + damageIndicatorPlayer + " HP";
 			messageColor = Color.RED;
 
-			// --- DAMAGE VISUALS TRIGGER: PLAYER HIT ---
 			isPlayerDamaged = true;
 			damageStartTime = System.currentTimeMillis();
 		}
@@ -929,20 +903,16 @@ public class BattleView {
 
 	public void render(Graphics2D g, int width, int height, ImageObserver observer) {
 
-		// Determine which character is shaking (Damage)
 		int targetShakeX = isPlayerDamaged ? damageShakeX : isEnemyDamaged ? damageShakeX : 0;
 		int targetShakeY = isPlayerDamaged ? damageShakeY : isEnemyDamaged ? damageShakeY : 0;
 
-		// Determine which UI frames are shaking (Time Panic)
 		int uiOffsetX = timeShakeX;
 		int uiOffsetY = timeShakeY;
 
-		// --- Calculate Damage Pulse Alpha (for full screen flash) ---
 		long timeElapsedDamage = System.currentTimeMillis() - damageStartTime;
 		int currentDamagePulseAlpha = 0;
 		if (isPlayerDamaged || isEnemyDamaged) {
-			float pulseRatio = 1.0f - (float) timeElapsedDamage / DAMAGE_VISUAL_DURATION; // 1.0 to 0.0
-			// Boost opacity to make the screen flash noticeable
+			float pulseRatio = 1.0f - (float) timeElapsedDamage / DAMAGE_VISUAL_DURATION;
 			currentDamagePulseAlpha = (int) (MAX_RED_ALPHA * pulseRatio * 3.0);
 			currentDamagePulseAlpha = Math.min(255, Math.max(0, currentDamagePulseAlpha));
 		}
@@ -950,29 +920,26 @@ public class BattleView {
 		int groundY = height - 20;
 		int scaleFactor = 4;
 
-		// --- Calculate Dynamic Character Positions ---
+		// Character Positions
 		int pDrawX = PLAYER_HOME_X;
 		int eDrawX = ENEMY_HOME_X;
 		float currentPAlpha = playerAlpha;
 		float currentEAlpha = enemyAlpha;
 
-		// **FIX**: Declare statsUiY locally
 		int statsUiY = 140;
 
-		// Check if we are in the Attack Phase (from TELEPORT_TO_TARGET to
-		// FADE_OUT_RETURN)
 		boolean isAttackPhase = isAnimatingAction && currentAnimTime >= TELEPORT_TO_TARGET_TIME
 				&& currentAnimTime < FADE_OUT_RETURN_TIME;
 
 		if (isAttackPhase) {
 			if (isPlayerAttacking) {
-				// Player Attacking: Player moves to ATTACK_PLAYER_X (near enemy)
+				// Player Attacking
 				pDrawX = ATTACK_PLAYER_X;
-				currentEAlpha = 1.0f; // Enemy remains at 100% visibility/opacity
+				currentEAlpha = 1.0f; 
 			} else {
-				// Enemy Attacking: Enemy moves to ATTACK_ENEMY_X (near player)
+				// Enemy Attacking
 				eDrawX = ATTACK_ENEMY_X;
-				currentPAlpha = 1.0f; // Player remains at 100% visibility/opacity
+				currentPAlpha = 1.0f; 
 			}
 		}
 
@@ -980,30 +947,28 @@ public class BattleView {
 			g.drawImage(bgImage, 0, 0, width, height, observer);
 		}
 
-		// --- DRAW RED PULSE OVERLAY (FULL SCREEN, Time Panic) ---
+		// Red Pulse Overlay
 		if (redPulseAlpha > 0) {
 			g.setColor(new Color(255, 0, 0, redPulseAlpha));
 			g.fillRect(0, 0, width, height);
 		}
 
-		// --- DRAW RED PULSE OVERLAY (FULL SCREEN, Damage) ---
 		if (currentDamagePulseAlpha > 0) {
 			g.setColor(new Color(255, 0, 0, currentDamagePulseAlpha));
 			g.fillRect(0, 0, width, height);
 		}
 
-		// NEW: Draw Rabbit Flash
+		// Draw Rabbit Flash
 		if (rabbitFlashStartTime > 0 && rabbitImg != null) {
 			long timeElapsed = System.currentTimeMillis() - rabbitFlashStartTime;
 			if (timeElapsed < RABBIT_FLASH_DURATION) {
 
-				// Fade from 1.0 down to 0.0 over 500ms
 				float alpha = 1.0f - (float) timeElapsed / RABBIT_FLASH_DURATION;
 				alpha = Math.max(0.0f, Math.min(1.0f, alpha));
 
 				g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
 
-				int rX = 0; // Start at 0, 0 for full screen
+				int rX = 0; 
 				int rY = 0;
 
 				// Apply time shake to rabbit image if panic mode is active
@@ -1012,7 +977,6 @@ public class BattleView {
 					rY += timeShakeY;
 				}
 
-				// Draw using the full canvas dimensions
 				g.drawImage(rabbitImg, rX, rY, width, height, observer);
 				g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); // Reset alpha
 			} else {
@@ -1020,32 +984,21 @@ public class BattleView {
 			}
 		}
 
-		// Backdrop is generally static, but we'll apply UI shake
 		int backdropH = 130;
 		g.setColor(new Color(0, 0, 0, 180));
 		g.fillRect(0, 0, width, backdropH);
 
-		// --- APPLY OFFSETS TO UI COMPONENTS ---
-
-		// drawLevelIndicator(g, x, y, observer)
-		// FIXED: Method signature now matches call site (no width/height passed)
 		drawLevelIndicator(g, 30 + uiOffsetX, TOP_BAR_Y + uiOffsetY, observer);
 
-		// Settings Button (Offset)
 		if (settingsImg != null && settingsBtnBounds != null) {
 			g.drawImage(settingsImg, settingsBtnBounds.x + uiOffsetX, settingsBtnBounds.y + uiOffsetY,
 					settingsBtnBounds.width, settingsBtnBounds.height, observer);
 		}
 
-		// Word Puzzle (Offset)
 		drawWordPuzzle(g, width, height, observer, uiOffsetX, uiOffsetY);
 
-		// Timer UI (Offset)
-		// drawTimer(g, observer, offsetX, offsetY)
-		// FIXED: Method signature now matches call site (no width/height passed)
 		drawTimer(g, observer, uiOffsetX, uiOffsetY);
 
-		// Message Box (Offset)
 		int framesTopY = backdropH + 10;
 		if (!message.isEmpty()) {
 			g.setFont(GameConstants.UI_FONT);
@@ -1054,21 +1007,19 @@ public class BattleView {
 
 			int bgW = msgW + 60;
 			int bgH = 50;
-			int bgX = (width - bgW) / 2 + uiOffsetX; // Apply Offset
-			int bgY = framesTopY + uiOffsetY; // Apply Offset
+			int bgX = (width - bgW) / 2 + uiOffsetX; 
+			int bgY = framesTopY + uiOffsetY; 
 
 			if (nameFrameImg != null) {
 				g.drawImage(nameFrameImg, bgX, bgY, bgW, bgH, observer);
 			}
 
 			g.setColor(messageColor);
-			int textX = (width - msgW) / 2 + uiOffsetX; // Apply Offset
+			int textX = (width - msgW) / 2 + uiOffsetX; 
 			int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 7;
 			g.drawString(message, textX, textY);
 		}
 
-		// Character UI (Offset is applied to the frame/stat boxes, only shake if
-		// targeted)
 		// Player UI Shake: Time Shake + Damage Shake if damaged
 		int pUiShakeX = isPlayerDamaged ? uiOffsetX + targetShakeX : uiOffsetX;
 		int pUiShakeY = isPlayerDamaged ? uiOffsetY + targetShakeY : uiOffsetY;
@@ -1077,36 +1028,24 @@ public class BattleView {
 		int eUiShakeX = isEnemyDamaged ? uiOffsetX + targetShakeX : uiOffsetX;
 		int eUiShakeY = isEnemyDamaged ? uiOffsetY + targetShakeY : uiOffsetY;
 
-		// Draw Character UI Frames (Order swapped for visual layering fix)
 		drawCharacterUIFrames1(g, width, statsUiY + pUiShakeY, PLAYER_HOME_X + pUiShakeX, ENEMY_HOME_X + eUiShakeX,
 				observer);
-
-		// --- DRAW CHARACTERS (Attacker drawn last for layering fix) ---
 
 		Image playerImg = playerPet.getCurrentImage();
 		Image enemyImg = currentEnemy.getCurrentImage();
 
 		if (isPlayerAttacking) {
-			// Player is Attacker (Drawn Last/On Top)
 			drawEnemySprite1(g, enemyImg, eDrawX, groundY, scaleFactor, currentEAlpha, targetShakeX, targetShakeY,
 					isEnemyDamaged, observer);
-			drawPlayerSprite1(g, playerImg, pDrawX, groundY, scaleFactor, currentPAlpha, 0, 0, false, observer); // Player
-																													// sprite
-																													// does
-																													// not
-																													// damage-shake
+			drawPlayerSprite1(g, playerImg, pDrawX, groundY, scaleFactor, currentPAlpha, 0, 0, false, observer); 
+			
 		} else {
-			// Enemy is Attacker (Drawn Last/On Top)
+			
 			drawPlayerSprite1(g, playerImg, pDrawX, groundY, scaleFactor, currentPAlpha, targetShakeX, targetShakeY,
 					isPlayerDamaged, observer);
-			drawEnemySprite1(g, enemyImg, eDrawX, groundY, scaleFactor, currentEAlpha, 0, 0, false, observer); // Enemy
-																												// sprite
-																												// does
-																												// not
-																												// damage-shake
+			drawEnemySprite1(g, enemyImg, eDrawX, groundY, scaleFactor, currentEAlpha, 0, 0, false, observer); 
 		}
 
-		// --- DRAW DAMAGE INDICATORS ---
 		drawDamageIndicators(g, width, height);
 
 		if (isSettingsOpen) {
@@ -1116,7 +1055,6 @@ public class BattleView {
 		}
 	}
 
-	// NEW: Method to draw floating damage numbers
 	private void drawDamageIndicators(Graphics2D g, int width, int height) {
 		if (damageIndicatorStartTime == 0)
 			return;
@@ -1127,9 +1065,8 @@ public class BattleView {
 
 		float progress = (float) timeElapsed / DAMAGE_INDICATOR_DURATION;
 
-		// Vertical position calculation (floats up)
 		int verticalOffset = (int) (progress * DAMAGE_INDICATOR_VERTICAL_TRAVEL);
-		float alpha = 1.0f - progress; // Fade out
+		float alpha = 1.0f - progress; 
 
 		if (alpha < 0)
 			alpha = 0;
@@ -1139,21 +1076,19 @@ public class BattleView {
 
 		int groundY = height - 20;
 
-		// Player Damage (e.g., -2)
+		// Player Damage 
 		if (damageIndicatorPlayer != 0) {
 			String dmgText = String.valueOf(damageIndicatorPlayer);
 			g.setColor(Color.RED);
-			// Position near the player's head (approx. 200px from the ground)
 			int x = PLAYER_HOME_X - 60;
 			int y = groundY - 200 - verticalOffset;
 			g.drawString(dmgText, x, y);
 		}
 
-		// Enemy Damage (e.g., 3)
+		// Enemy Damage 
 		if (damageIndicatorEnemy != 0) {
 			String dmgText = String.valueOf(damageIndicatorEnemy);
 			g.setColor(Color.YELLOW);
-			// Position near the enemy's head
 			int x = ENEMY_HOME_X - 60;
 			int y = groundY - 200 - verticalOffset;
 			g.drawString(dmgText, x, y);
@@ -1162,9 +1097,7 @@ public class BattleView {
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
 	}
 
-	/**
-	 * Helper function to draw the player sprite, applying shake only if damaged.
-	 */
+	// Helper function to draw the player sprite, applying shake only if damaged.
 	private void drawPlayerSprite1(Graphics2D g, Image playerImg, int pDrawX, int groundY, int scaleFactor, float alpha,
 			int targetShakeX, int targetShakeY, boolean isDamaged, ImageObserver observer) {
 		if (playerImg == null)
@@ -1191,9 +1124,7 @@ public class BattleView {
 		}
 	}
 
-	/**
-	 * Helper function to draw the enemy sprite, applying shake only if damaged.
-	 */
+	// Helper function to draw the enemy sprite, applying shake only if damaged.
 	private void drawEnemySprite1(Graphics2D g, Image enemyImg, int eDrawX, int groundY, int scaleFactor, float alpha,
 			int targetShakeX, int targetShakeY, boolean isDamaged, ImageObserver observer) {
 		if (enemyImg == null)
@@ -1220,13 +1151,10 @@ public class BattleView {
 		}
 	}
 
-	/**
-	 * Helper function to draw the UI frames and content for both characters.
-	 */
+	// Helper function to draw the UI frames and content for both characters./
 	private void drawCharacterUIFrames1(Graphics2D g, int width, int topY, int playerCenterX, int enemyCenterX,
 			ImageObserver observer) {
 
-		// Define dimensions based on the centers which already contain UI offsets
 		int frameW = 200;
 		int statsW = 190;
 		int frameH = 70;
@@ -1237,23 +1165,22 @@ public class BattleView {
 		int statsFrameY = topY + 55;
 		int statsFrameH = 80;
 
-		// Fonts (assuming they are consistent and defined in GameConstants)
 		Font levelFont = new Font("Monospaced", Font.BOLD, 16);
 		Font nameFont = new Font("Monospaced", Font.BOLD, 16);
 		Font statsFont = new Font("Monospaced", Font.BOLD, 16);
 
-		// --- PLAYER UI ---
+		// Player UI
 
-		// 1. STATS Frame (Draw first, below the name)
+		// Stats Frame
 		if (frameImg != null) {
 			g.drawImage(frameImg, pStatsX, statsFrameY, statsW, statsFrameH, null);
 		}
-		// 2. NAME Frame (Draw second, above the stats)
+		// Name Frame
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, pFrameX, topY, frameW, frameH, null);
 		}
 
-		// 3. Name & Level Text
+		// Name & Level Text
 		g.setColor(Color.WHITE);
 		g.setFont(levelFont);
 		String pLevel = "LEVEL " + playerPet.getLevel();
@@ -1263,14 +1190,14 @@ public class BattleView {
 		String pName = playerPet.getName();
 		g.drawString(pName, pFrameX + (frameW - g.getFontMetrics().stringWidth(pName)) / 2, topY + 46);
 
-		// 4. NEW Stats Display (Icon HP | Icon ATK)
+		// Stats Display (Icon HP | Icon ATK)
 		drawModernStats(g, playerPet, pStatsX, statsFrameY, statsW, statsFrameH, statsFont, observer);
 
-		// 5. EXP BAR
+		// EXP Bar
 		int expBarH = 6;
-		int expBarW = statsW - 30; // Padding inside frame
+		int expBarW = statsW - 30; 
 		int expBarX = pStatsX + 15;
-		int expBarY = statsFrameY + statsFrameH - 15; // Near bottom
+		int expBarY = statsFrameY + statsFrameH - 15; 
 
 		// Bar Background
 		g.setColor(new Color(50, 50, 50));
@@ -1287,16 +1214,16 @@ public class BattleView {
 
 		// --- ENEMY UI ---
 
-		// 1. STATS Frame (Draw first)
+		// Stats Frame
 		if (frameImg != null) {
 			g.drawImage(frameImg, eStatsX, statsFrameY, statsW, statsFrameH, null);
 		}
-		// 2. NAME Frame (Draw second, above the stats)
+		// Name Frame 
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, eFrameX, topY, frameW, frameH, null);
 		}
 
-		// 3. Name & Level Text
+		// Name & Level Text
 		g.setColor(Color.WHITE);
 		g.setFont(levelFont);
 		String eLevel = "LEVEL " + currentEnemy.getLevel();
@@ -1309,7 +1236,7 @@ public class BattleView {
 		drawModernStats(g, currentEnemy, eStatsX, statsFrameY, statsW, statsFrameH, statsFont, observer);
 	}
 
-	// Helper method to draw the specific [Heart] HP | [Sword] ATK layout
+	// Helper method to the specific [Heart] HP | [Sword] ATK layout
 	private void drawModernStats(Graphics2D g, Character c, int x, int y, int w, int h, Font font, ImageObserver obs) {
 		g.setFont(font);
 		FontMetrics fm = g.getFontMetrics();
@@ -1318,43 +1245,40 @@ public class BattleView {
 		String atkTxt = " " + c.getAttackPower();
 		String sep = " | ";
 
-		int iconSize = 15; // Assuming the user set this to 15 globally
+		int iconSize = 15;
 
-		// Calculate total width to center everything
 		int totalW = iconSize + fm.stringWidth(hpTxt) + fm.stringWidth(sep) + iconSize + fm.stringWidth(atkTxt);
 
 		int startX = x + (w - totalW) / 2;
-		int centerY = y + (h / 2) + 5; // Approximate vertical center of the stats frame
+		int centerY = y + (h / 2) + 5; 
 
-		// Icon vertical adjustment: Adjusted offset from 15 to 12 to center the 15px
-		// icon with the size 16 font text.
 		int iconTopY = centerY - 12;
 
 		int currentX = startX;
 
-		// Draw Heart Icon
+		// Heart Icon
 		if (heartImg != null) {
 			g.drawImage(heartImg, currentX, iconTopY, iconSize, iconSize, obs);
 		}
 		currentX += iconSize;
 
-		// Draw HP Text
+		// HP Text
 		g.setColor(Color.WHITE);
 		g.drawString(hpTxt, currentX, centerY);
 		currentX += fm.stringWidth(hpTxt);
 
-		// Draw Separator
+		// Separator |
 		g.setColor(Color.GRAY);
 		g.drawString(sep, currentX, centerY);
 		currentX += fm.stringWidth(sep);
 
-		// Draw Attack Icon
+		// Attack Icon
 		if (attackImg != null) {
 			g.drawImage(attackImg, currentX, iconTopY, iconSize, iconSize, obs);
 		}
 		currentX += iconSize;
 
-		// Draw Atk Text
+		// Atk Text
 		g.setColor(Color.WHITE);
 		g.drawString(atkTxt, currentX, centerY);
 	}
@@ -1362,32 +1286,31 @@ public class BattleView {
 	private void drawWordPuzzle(Graphics2D g, int width, int height, ImageObserver obs, int offsetX, int offsetY) {
 		g.setFont(GameConstants.UI_FONT);
 
-		// --- CLUE (CENTERED) ---
+		// Clue
 		String clueText = "CLUE: " + clue;
 		FontMetrics fm = g.getFontMetrics();
 		int textW = fm.stringWidth(clueText);
 
 		int bgW = textW + 60;
 		int bgH = TOP_BAR_HEIGHT;
-		int bgX = (width - bgW) / 2 + offsetX; // Apply Offset
-		int bgY = TOP_BAR_Y + offsetY; // Apply Offset
+		int bgX = (width - bgW) / 2 + offsetX; 
+		int bgY = TOP_BAR_Y + offsetY; 
 
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, bgX, bgY, bgW, bgH, obs);
 		}
 
 		g.setColor(Color.WHITE);
-		int textX = (width - textW) / 2 + offsetX; // Apply Offset
+		int textX = (width - textW) / 2 + offsetX; 
 		int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 5;
 		g.drawString(clueText, textX, textY);
 
-		// --- GUESS LETTERS (CENTERED) ---
+		// Guess Letters
 		int spacing = 60;
-		int lettersY = 110 + offsetY; // Apply Offset to vertical position
+		int lettersY = 110 + offsetY;
 		int totalWidth = secretWord.length() * spacing;
 
-		// Calculate starting X to center the entire word puzzle structure
-		int startX = (width - totalWidth) / 2 + offsetX; // Apply Offset
+		int startX = (width - totalWidth) / 2 + offsetX; 
 		int currentX = startX;
 
 		for (char c : secretWord.toCharArray()) {
@@ -1440,7 +1363,7 @@ public class BattleView {
 		int btnGap = 15;
 		int startBtnY = mY + 80;
 
-		// --- 1. CONTINUE ---
+		// Continue
 		String contTxt = "CONTINUE";
 		if (selectedModalOption == 0) {
 			g.setColor(Color.YELLOW);
@@ -1452,7 +1375,7 @@ public class BattleView {
 		modalContinueBounds = new Rectangle(mX + (mW - contW) / 2 - 10, startBtnY, contW + 20, btnH);
 		g.drawString(contTxt, mX + (mW - contW) / 2, startBtnY + 25);
 
-		// --- 2. SAVE GAME ---
+		// Save Game
 		int nextY = startBtnY + btnH + btnGap;
 		String saveTxt = "SAVE GAME";
 		if (selectedModalOption == 1) {
@@ -1465,11 +1388,11 @@ public class BattleView {
 		modalSaveBounds = new Rectangle(mX + (mW - saveW) / 2 - 10, nextY, saveW + 20, btnH);
 		g.drawString(saveTxt, mX + (mW - saveW) / 2, nextY + 25);
 
-		// --- 3. MAIN MENU ---
+		// Main Menu
 		nextY += btnH + btnGap;
 		String menuTxt = "MAIN MENU";
 		if (isMenuConfirmation)
-			menuTxt = "CONFIRM?"; // Logic added here
+			menuTxt = "CONFIRM?"; 
 
 		if (selectedModalOption == 2) {
 			g.setColor(isMenuConfirmation ? Color.RED : Color.YELLOW);
@@ -1481,11 +1404,11 @@ public class BattleView {
 		modalMenuBounds = new Rectangle(mX + (mW - menuW) / 2 - 10, nextY, menuW + 20, btnH);
 		g.drawString(menuTxt, mX + (mW - menuW) / 2, nextY + 25);
 
-		// --- 4. EXIT GAME ---
+		// Exit Game
 		nextY += btnH + btnGap;
 		String exitTxt = "EXIT GAME";
 		if (isExitConfirmation)
-			exitTxt = "CONFIRM?"; // Logic added here
+			exitTxt = "CONFIRM?"; 
 
 		if (selectedModalOption == 3) {
 			g.setColor(isExitConfirmation ? Color.RED : Color.YELLOW);
@@ -1549,16 +1472,10 @@ public class BattleView {
 		}
 	}
 
-	// =========================================================================
-	// FIX START: Corrected method signatures for helper drawing functions
-	// =========================================================================
-
-	// **FIXED:** Removed unused width and height parameters to match the call site.
 	private void drawLevelIndicator(Graphics2D g, int x, int y, ImageObserver observer) {
 		int w = 150;
 		int h = TOP_BAR_HEIGHT;
 		if (levelFrameImg != null) {
-			// x and y already contain the offset
 			g.drawImage(levelFrameImg, x, y, w, h, observer);
 		}
 		g.setColor(new Color(231, 76, 60));
@@ -1570,29 +1487,23 @@ public class BattleView {
 		g.drawString(levelTxt, textX, textY);
 	}
 
-	// **FIXED:** Removed unused width and height parameters to match the call site.
 	private void drawTimer(Graphics2D g, ImageObserver observer, int offsetX, int offsetY) {
 
-		int drawX = timerX + offsetX; // Apply Offset
-		int drawY = timerY + offsetY; // Apply Offset
+		int drawX = timerX + offsetX; 
+		int drawY = timerY + offsetY; 
 
-		// Draw the timer background frame
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, drawX, drawY, timerW, timerH, observer);
 		}
 
 		// Draw Panic Flash Effect (Timer Box Flicker)
 		if (panicAlpha > 0) {
-			// Creates the "flash" effect when time is low
 			Color panicColor = new Color(GameConstants.TIMER_PANIC_COLOR.getRed(),
 					GameConstants.TIMER_PANIC_COLOR.getGreen(), GameConstants.TIMER_PANIC_COLOR.getBlue(), panicAlpha);
 			g.setColor(panicColor);
 			g.fillRect(drawX + 2, drawY + 2, timerW - 4, timerH - 4);
 		}
 
-		// Calculate text
-		// Add +1 to seconds remaining because we want to show the current second we are
-		// in, not the full seconds passed.
 		int secondsRemaining = (int) Math.max(0, currentTimeRemaining / 1000) + 1;
 		String timerText = String.format("TIME: %d", secondsRemaining);
 
@@ -1600,7 +1511,7 @@ public class BattleView {
 		if (secondsRemaining <= GameConstants.PANIC_THRESHOLD_SECONDS) {
 			g.setColor(GameConstants.TIMER_PANIC_COLOR);
 		} else {
-			g.setColor(Color.BLACK); // Draw black text over the light brown frame
+			g.setColor(Color.BLACK);
 		}
 
 		g.setFont(GameConstants.UI_FONT);
@@ -1612,13 +1523,9 @@ public class BattleView {
 
 		g.drawString(timerText, textX, textY);
 	}
-	// =========================================================================
-	// FIX END
-	// =========================================================================
 
-	/**
-	 * Helper function to draw the player sprite, applying shake only if damaged.
-	 */
+	// Helper function to draw the player sprite, applying shake only if damaged.
+	 
 	private void drawPlayerSprite(Graphics2D g, Image playerImg, int pDrawX, int groundY, int scaleFactor, float alpha,
 			int targetShakeX, int targetShakeY, boolean isDamaged, ImageObserver observer) {
 		if (playerImg == null)
@@ -1641,13 +1548,12 @@ public class BattleView {
 
 			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
 			g.drawImage(playerImg, drawX, drawY, drawW, drawH, observer);
-			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); // Reset alpha
+			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); 
 		}
 	}
 
-	/**
-	 * Helper function to draw the enemy sprite, applying shake only if damaged.
-	 */
+	// Helper function to draw the enemy sprite, applying shake only if damaged.
+	
 	private void drawEnemySprite(Graphics2D g, Image enemyImg, int eDrawX, int groundY, int scaleFactor, float alpha,
 			int targetShakeX, int targetShakeY, boolean isDamaged, ImageObserver observer) {
 		if (enemyImg == null)
@@ -1670,18 +1576,13 @@ public class BattleView {
 
 			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
 			g.drawImage(enemyImg, drawX, drawY, drawW, drawH, observer);
-			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); // Reset alpha
+			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); 
 		}
 	}
 
-	/**
-	 * Helper function to draw the UI frames and content for both characters.
-	 * Renamed from drawCharacterUI to avoid confusion with internal logic.
-	 */
 	private void drawCharacterUIFrames(Graphics2D g, int width, int topY, int playerCenterX, int enemyCenterX,
 			ImageObserver observer) {
 
-		// Define dimensions based on the centers which already contain UI offsets
 		int frameW = 200;
 		int statsW = 190;
 		int frameH = 70;
@@ -1692,23 +1593,17 @@ public class BattleView {
 		int statsFrameY = topY + 55;
 		int statsFrameH = 80;
 
-		// Fonts (assuming they are consistent and defined in GameConstants)
 		Font levelFont = new Font("Monospaced", Font.BOLD, 16);
 		Font nameFont = new Font("Monospaced", Font.BOLD, 16);
 		Font statsFont = new Font("Monospaced", Font.BOLD, 16);
 
-		// --- PLAYER UI ---
-
-		// 1. STATS Frame (Draw first, below the name)
 		if (frameImg != null) {
 			g.drawImage(frameImg, pStatsX, statsFrameY, statsW, statsFrameH, null);
 		}
-		// 2. NAME Frame (Draw second, above the stats)
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, pFrameX, topY, frameW, frameH, null);
 		}
 
-		// 3. Name & Level Text
 		g.setColor(Color.WHITE);
 		g.setFont(levelFont);
 		String pLevel = "LEVEL " + playerPet.getLevel();
@@ -1718,20 +1613,16 @@ public class BattleView {
 		String pName = playerPet.getName();
 		g.drawString(pName, pFrameX + (frameW - g.getFontMetrics().stringWidth(pName)) / 2, topY + 46);
 
-		// 4. NEW Stats Display (Icon HP | Icon ATK)
 		drawModernStats(g, playerPet, pStatsX, statsFrameY, statsW, statsFrameH, statsFont, observer);
 
-		// 5. EXP BAR
 		int expBarH = 6;
-		int expBarW = statsW - 30; // Padding inside frame
+		int expBarW = statsW - 30; 
 		int expBarX = pStatsX + 15;
-		int expBarY = statsFrameY + statsFrameH - 15; // Near bottom
+		int expBarY = statsFrameY + statsFrameH - 15; 
 
-		// Bar Background
 		g.setColor(new Color(50, 50, 50));
 		g.fillRect(expBarX, expBarY, expBarW, expBarH);
 
-		// Bar Fill
 		float expPercent = (float) playerPet.getCurrentExp() / (float) playerPet.getMaxExpForCurrentLevel();
 		if (expPercent > 1.0f)
 			expPercent = 1.0f;
@@ -1740,18 +1631,13 @@ public class BattleView {
 		g.setColor(new Color(100, 100, 100));
 		g.drawRect(expBarX, expBarY, expBarW, expBarH);
 
-		// --- ENEMY UI ---
-
-		// 1. STATS Frame (Draw first)
 		if (frameImg != null) {
 			g.drawImage(frameImg, eStatsX, statsFrameY, statsW, statsFrameH, null);
 		}
-		// 2. NAME Frame (Draw second, above the stats)
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, eFrameX, topY, frameW, frameH, null);
 		}
 
-		// 3. Name & Level Text
 		g.setColor(Color.WHITE);
 		g.setFont(levelFont);
 		String eLevel = "LEVEL " + currentEnemy.getLevel();
@@ -1760,7 +1646,6 @@ public class BattleView {
 		String eName = currentEnemy.getName();
 		g.drawString(eName, eFrameX + (frameW - g.getFontMetrics().stringWidth(eName)) / 2, topY + 46);
 
-		// 4. New Stats Display
 		drawModernStats(g, currentEnemy, eStatsX, statsFrameY, statsW, statsFrameH, statsFont, observer);
 	}
 }
