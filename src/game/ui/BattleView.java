@@ -29,21 +29,16 @@ public class BattleView {
 	private Hangpie playerPet;
 	private Enemy currentEnemy;
 
-	// UPDATED: List expanded to include the "Umbra" enemy.
-	// All regular enemies in this list will be randomly selected for stages 1-4.
-	private final String[][] REGULAR_ENEMIES = {
-			// Index 0
-			{ "Riekling Scout", "enemies/enemies/goblin" },
-			// Index 1
-			{ "Seeker's Gaze", "enemies/enemies/evil_eye" },
-			// Index 2
-			{ "Spriggan", "enemies/enemies/mushroom" },
-			// Index 3
-			{ "Draugr", "enemies/enemies/skeleton" },
-			// Index 4
-			{ "Sand Worm", "enemies/enemies/worm" },
-			// Index 5 (NEW ENEMY)
-			{ "Umbra", "enemies/enemies/black" } };
+	// UPDATED: List expanded to include new enemies.
+	private final String[][] REGULAR_ENEMIES = { { "Riekling Scout", "enemies/enemies/goblin" },
+			{ "Seeker's Gaze", "enemies/enemies/evil_eye" }, { "Spriggan", "enemies/enemies/mushroom" },
+			{ "Draugr", "enemies/enemies/skeleton" }, { "Sand Worm", "enemies/enemies/worm" },
+			{ "Umbra", "enemies/enemies/black" },
+			// NEW ENEMIES
+			{ "Frost Atronach", "enemies/enemies/blue" }, { "Crystal Atronach", "enemies/enemies/orange" },
+			{ "Midden Heap", "enemies/enemies/tooth" }, { "Namira's Cur", "enemies/enemies/void_fox" },
+			{ "Mora's Leech", "enemies/enemies/voidling" }, { "Hermaeus Tumor", "enemies/enemies/void_hunchback" },
+			{ "Apocrypha's Host", "enemies/enemies/void_walker" }, { "Ichor Drone", "enemies/enemies/void_wing" } };
 
 	// Battle State
 	private String secretWord;
@@ -381,7 +376,8 @@ public class BattleView {
 
 			long seed = playerUser.getUsername().hashCode() + currentWorld;
 			Random bossRandom = new Random(seed);
-			int bossIndex = bossRandom.nextInt(3) + 1;
+			// UPDATED: Range increased to 4 to include Sheogorath
+			int bossIndex = bossRandom.nextInt(4) + 1;
 
 			switch (bossIndex) {
 			case 1:
@@ -395,6 +391,10 @@ public class BattleView {
 			case 3:
 				enemyName = "Hermaeus Mora";
 				enemyPath = "enemies/boss/boss3";
+				break;
+			case 4:
+				enemyName = "Sheogorath";
+				enemyPath = "enemies/boss/boss4";
 				break;
 			default:
 				enemyName = "Mehrunes Dagon";
