@@ -9,6 +9,7 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferStrategy;
+import java.util.Random;
 
 import game.GameConstants;
 import models.Hangpie;
@@ -51,10 +52,27 @@ public class GameWindow extends Frame implements Runnable {
 	private final int TITLE_WIDTH = 900;
 	private final int TITLE_HEIGHT = 100;
 
+	private final int MENU_UI_BUTTON_SIZE = 50;
+	private final int MODAL_WIDTH = 400;
+	private final int MODAL_HEIGHT = 500;
+
 	// Menu State
 	private String[] options = { "Play Game", "Inventory", "Exit Game" };
 	private volatile int selectedOption = -1;
 	private Rectangle[] menuBounds;
+
+	// Menu Controls & State
+	private Rectangle instructionBtnBounds;
+	private boolean isInstructionOpen = false;
+
+	// Equipped Error State
+	private long errorFlashStartTime = 0;
+	private final int ERROR_DURATION = 1500;
+	private final int SHAKE_MAGNITUDE = 5;
+	private int shakeX = 0;
+	private int shakeY = 0;
+	private long lastShakeTime = 0;
+	private Random random = new Random();
 
 	public GameWindow(User user) {
 		this.currentUser = user;
@@ -65,6 +83,10 @@ public class GameWindow extends Frame implements Runnable {
 
 		setupWindow();
 		loadAssets();
+
+		// Setup Menu UI Bounds
+		instructionBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, 20, MENU_UI_BUTTON_SIZE,
+				MENU_UI_BUTTON_SIZE);
 
 		setVisible(true);
 		start();
@@ -113,6 +135,16 @@ public class GameWindow extends Frame implements Runnable {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				if (currentState == GameState.MENU) {
+					if (isInstructionOpen) {
+						isInstructionOpen = false; // Close instruction modal on click
+						return;
+					}
+
+					if (instructionBtnBounds != null && instructionBtnBounds.contains(e.getX(), e.getY())) {
+						isInstructionOpen = true;
+						return;
+					}
+
 					if (selectedOption != -1) {
 						handleMenuClick(selectedOption);
 					}
@@ -146,7 +178,9 @@ public class GameWindow extends Frame implements Runnable {
 		gameCanvas.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent e) {
-				if (currentState == GameState.PLAYING && battleView != null) {
+				if (currentState == GameState.MENU && e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+					isInstructionOpen = false; // Close instruction modal on ESC
+				} else if (currentState == GameState.PLAYING && battleView != null) {
 					// Pass Key Press to Battle View
 					battleView.handleKeyPress(e.getKeyCode(), e.getKeyChar());
 
@@ -191,7 +225,8 @@ public class GameWindow extends Frame implements Runnable {
 			// PLAY GAME
 			if (equippedHangpie == null) {
 				System.out.println("[Game] Cannot start: No Hangpie equipped.");
-				currentState = GameState.INVENTORY;
+				// NEW: Set error state and shake
+				errorFlashStartTime = System.currentTimeMillis();
 			} else {
 				startBattle();
 			}
@@ -222,7 +257,7 @@ public class GameWindow extends Frame implements Runnable {
 		titleCoverImage = AssetLoader.loadImage(titleCoverPath, COVER_WIDTH, COVER_HEIGHT);
 
 		// Load UI
-		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, 400, 300);
+		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, MODAL_WIDTH, MODAL_HEIGHT);
 		frameImg = AssetLoader.loadImage(GameConstants.FRAME_IMG, 600, 60);
 		nameFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 250, 50);
 	}
@@ -266,9 +301,28 @@ public class GameWindow extends Frame implements Runnable {
 				if (currentState == GameState.PLAYING && battleView != null) {
 					battleView.update();
 				}
+				// NEW: Update shake effect if error is active
+				updateMenuShake();
 				delta--;
 			}
 			render(bs);
+		}
+	}
+
+	private void updateMenuShake() {
+		if (errorFlashStartTime > 0) {
+			long timeElapsed = System.currentTimeMillis() - errorFlashStartTime;
+			if (timeElapsed < ERROR_DURATION) {
+				if (System.currentTimeMillis() - lastShakeTime > 50) {
+					shakeX = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
+					shakeY = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
+					lastShakeTime = System.currentTimeMillis();
+				}
+			} else {
+				errorFlashStartTime = 0;
+				shakeX = 0;
+				shakeY = 0;
+			}
 		}
 	}
 
@@ -280,6 +334,9 @@ public class GameWindow extends Frame implements Runnable {
 		switch (currentState) {
 		case MENU:
 			renderMenu(g);
+			if (isInstructionOpen) {
+				drawInstructionModal(g, gameCanvas.getWidth(), gameCanvas.getHeight());
+			}
 			break;
 		case INVENTORY:
 			inventoryView.render(g, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
@@ -297,9 +354,40 @@ public class GameWindow extends Frame implements Runnable {
 	}
 
 	private void renderMenu(Graphics2D g) {
+		// Base Shake Offset only applies to the Equipped Status box
+		int equippedOffsetX = (equippedHangpie == null && errorFlashStartTime > 0) ? shakeX : 0;
+		int equippedOffsetY = (equippedHangpie == null && errorFlashStartTime > 0) ? shakeY : 0;
+
+		// Menu Options offset is always 0, 0 unless a generic global shake is
+		// implemented (not requested here)
+		int menuOptionsOffsetX = 0;
+		int menuOptionsOffsetY = 0;
+
 		// 1. Draw Background
 		if (background != null) {
 			g.drawImage(background, 0, 0, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
+		}
+
+		// NEW: Draw Instruction Button in the upper right
+		if (instructionBtnBounds != null && nameFrameImg != null) {
+			int btnX = instructionBtnBounds.x;
+			int btnY = instructionBtnBounds.y;
+			int btnW = instructionBtnBounds.width;
+			int btnH = instructionBtnBounds.height;
+
+			g.drawImage(nameFrameImg, btnX, btnY, btnW, btnH, null);
+
+			// Draw "?" text - Adjusted for centering
+			g.setFont(GameConstants.HEADER_FONT);
+			g.setColor(Color.BLACK);
+			FontMetrics fm = g.getFontMetrics();
+			String qText = "?";
+			int textX = btnX + (btnW - fm.stringWidth(qText)) / 2;
+			// Adjusted textY calculation to vertically center the large HEADER_FONT (40pt)
+			// in the 50px nameframe
+			// Reduced baseline adjustment from -6 to -10 to push the text up slightly
+			int textY = btnY + (btnH - fm.getAscent()) / 2 + fm.getAscent() - 10;
+			g.drawString(qText, textX, textY);
 		}
 
 		// 2. Draw Title Banner
@@ -315,60 +403,147 @@ public class GameWindow extends Frame implements Runnable {
 			g.drawImage(titleImage, textX, textY, TITLE_WIDTH, TITLE_HEIGHT, null);
 		}
 
-		// 3. Draw Subtitle with Frame Placeholder (Overlapping below title)
-		int subCenterY = 260;
+		// 3. Draw World Level/Stage Level with Frame
+		int levelFrameCenterY = 260;
+		int levelFrameW = 350;
+		int levelFrameH = 50;
+		int levelFrameX = (gameCanvas.getWidth() - levelFrameW) / 2;
 
-		if (frameImg != null) {
-			int frameW = 600;
-			int frameH = 50;
-			int frameX = (gameCanvas.getWidth() - frameW) / 2;
-			g.drawImage(frameImg, frameX, subCenterY, frameW, frameH, null);
+		if (nameFrameImg != null) {
+			g.drawImage(nameFrameImg, levelFrameX, levelFrameCenterY, levelFrameW, levelFrameH, null);
 
-			// Draw Text Centered in Frame
+			// Draw World Level Text Centered in Frame
 			g.setFont(GameConstants.SUBTITLE_FONT);
 			g.setColor(GameConstants.TEXT_COLOR);
 			FontMetrics fm = g.getFontMetrics();
-			String subtitle = GameConstants.SUBTITLE_TEXT;
-			int subWidth = fm.stringWidth(subtitle);
-			int subX = (gameCanvas.getWidth() - subWidth) / 2;
-			// Center vertically in the 50px height frame
-			int textY = subCenterY + ((frameH - fm.getHeight()) / 2) + fm.getAscent();
-			g.drawString(subtitle, subX, textY);
+
+			String levelText = String.format("WORLD: %d - STAGE: %d", currentUser.getWorldLevel(),
+					currentUser.getProgressLevel());
+			int levelWidth = fm.stringWidth(levelText);
+			int levelTextX = (gameCanvas.getWidth() - levelWidth) / 2;
+			int levelTextY = levelFrameCenterY + ((levelFrameH - fm.getHeight()) / 2) + fm.getAscent();
+			g.drawString(levelText, levelTextX, levelTextY);
 		}
 
 		// 4. Draw Equipped Status (Name Frame)
-		// Positioned below the subtitle frame
-		int equipY = subCenterY + 70;
+		int equipY = levelFrameCenterY + 70;
+		int nfW = 350;
+		int nfH = 50;
+		int nfX = (gameCanvas.getWidth() - nfW) / 2 + equippedOffsetX; // Apply shake here
+		int nfY = equipY + equippedOffsetY; // Apply shake here
 
-		if (nameFrameImg != null) {
-			int nfW = 250;
-			int nfH = 50;
-			int nfX = (gameCanvas.getWidth() - nfW) / 2;
-			g.drawImage(nameFrameImg, nfX, equipY, nfW, nfH, null);
-
-			// Text
-			g.setFont(GameConstants.BUTTON_FONT);
-			FontMetrics fm = g.getFontMetrics();
-			String nameText = (equippedHangpie != null) ? equippedHangpie.getName() : "No Hangpie";
-			g.setColor(Color.WHITE);
-			if (equippedHangpie == null)
-				g.setColor(Color.GRAY);
-
-			int nameW = fm.stringWidth(nameText);
-			int nameX = (gameCanvas.getWidth() - nameW) / 2;
-			int nameY = equipY + ((nfH - fm.getHeight()) / 2) + fm.getAscent();
-			g.drawString(nameText, nameX, nameY);
+		// NEW: Red flash for error state
+		if (equippedHangpie == null && errorFlashStartTime > 0) {
+			long timeElapsed = System.currentTimeMillis() - errorFlashStartTime;
+			int flicker = (int) (timeElapsed / 100) % 2;
+			if (flicker == 0) {
+				g.setColor(new Color(200, 0, 0, 150));
+				g.fillRect(nfX, nfY, nfW, nfH);
+			}
 		}
 
-		// 5. Draw Menu Options (Original position, no modal)
-		drawMenuOptions(g);
+		if (nameFrameImg != null) {
+			g.drawImage(nameFrameImg, nfX, nfY, nfW, nfH, null);
+		}
+
+		// Text: Use SMALLER_BUTTON_FONT for equipped status
+		g.setFont(GameConstants.SMALLER_BUTTON_FONT);
+		FontMetrics fmEquip = g.getFontMetrics();
+		String nameText = (equippedHangpie != null) ? equippedHangpie.getName() : "No Hangpie Equipped";
+
+		if (equippedHangpie == null) {
+			g.setColor(Color.RED);
+			if (errorFlashStartTime > 0) {
+				g.setColor(Color.WHITE);
+			}
+		} else {
+			g.setColor(Color.WHITE);
+		}
+
+		int nameW = fmEquip.stringWidth(nameText);
+		int nameX = (gameCanvas.getWidth() - nameW) / 2 + equippedOffsetX;
+		int nameY = nfY + ((nfH - fmEquip.getHeight()) / 2) + fmEquip.getAscent();
+		g.drawString(nameText, nameX, nameY);
+
+		// 5. Draw Menu Options (Original position)
+		drawMenuOptions(g, menuOptionsOffsetX, menuOptionsOffsetY);
 	}
 
-	private void drawMenuOptions(Graphics g) {
+	private void drawInstructionModal(Graphics2D g, int width, int height) {
+		g.setColor(new Color(0, 0, 0, 150));
+		g.fillRect(0, 0, width, height);
+
+		int mW = MODAL_WIDTH;
+		int mH = MODAL_HEIGHT;
+		int mX = (width - mW) / 2;
+		int mY = (height - mH) / 2;
+
+		if (modalImg != null) {
+			g.drawImage(modalImg, mX, mY, mW, mH, null);
+		} else {
+			g.setColor(Color.GRAY);
+			g.fillRect(mX, mY, mW, mH);
+		}
+
+		// Title
+		g.setColor(Color.BLACK);
+		g.setFont(GameConstants.HEADER_FONT);
+		String title = GameConstants.INSTRUCTION_TITLE;
+		FontMetrics fm = g.getFontMetrics();
+		g.drawString(title, mX + (mW - fm.stringWidth(title)) / 2, mY + 50);
+
+		// Instructions Content: Using SUBTITLE_FONT (18pt) for better fit
+		g.setFont(GameConstants.SUBTITLE_FONT);
+		g.setColor(Color.BLACK);
+
+		String[] instructions = GameConstants.INSTRUCTION_TEXT.split("\n");
+		int startY = mY + 110;
+		FontMetrics fmSmall = g.getFontMetrics();
+		int lineHeight = fmSmall.getHeight();
+		int indent = 30;
+
+		for (String line : instructions) {
+
+			String trimmedLine = line.trim();
+			int lineW = fmSmall.stringWidth(line);
+
+			if (trimmedLine.isEmpty()) {
+				startY += lineHeight / 2;
+				continue;
+			}
+
+			if (trimmedLine.endsWith(":")) {
+				// Header lines (e.g., "Correct Guess:") - aligned slightly to the left
+				g.drawString(line, mX + indent, startY);
+			} else if (trimmedLine.startsWith("Type")) {
+				// Main section headers (Type the letters...) - centered
+				g.drawString(line, mX + (mW - lineW) / 2, startY);
+			} else if (trimmedLine.startsWith("Your Hangpie") || trimmedLine.startsWith("Your Hangpie takes")) {
+				// Details / bullet points - indented further
+				g.drawString(line, mX + indent + 20, startY);
+			} else if (trimmedLine.startsWith("Objectives")) {
+				// Objectives header
+				g.drawString(line, mX + indent, startY);
+			} else if (trimmedLine.startsWith("Defeat enemy") || trimmedLine.startsWith("Win the World")) {
+				// Objectives list items
+				g.drawString(line, mX + indent + 20, startY);
+			}
+
+			startY += lineHeight;
+		}
+
+		// Close Instruction
+		g.setFont(new Font("Monospaced", Font.BOLD, 16));
+		g.setColor(Color.DARK_GRAY);
+		String closeText = "[Press ESC or Click to Close]";
+		g.drawString(closeText, mX + (mW - g.getFontMetrics().stringWidth(closeText)) / 2, mY + mH - 30);
+	}
+
+	private void drawMenuOptions(Graphics g, int offsetX, int offsetY) {
 		g.setFont(GameConstants.UI_FONT);
 		FontMetrics fm = g.getFontMetrics();
 
-		int startY = 530;
+		int startY = 530 + offsetY;
 		int spacing = 50;
 
 		for (int i = 0; i < options.length; i++) {
@@ -384,7 +559,7 @@ public class GameWindow extends Frame implements Runnable {
 
 			int textWidth = fm.stringWidth(text);
 			int textHeight = fm.getHeight();
-			int x = (gameCanvas.getWidth() - textWidth) / 2;
+			int x = (gameCanvas.getWidth() - textWidth) / 2 + offsetX;
 			int y = startY + (i * spacing);
 
 			menuBounds[i] = new Rectangle(x, y - fm.getAscent(), textWidth, textHeight);

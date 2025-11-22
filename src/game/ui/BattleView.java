@@ -33,10 +33,10 @@ public class BattleView {
 	private final String[][] REGULAR_ENEMIES = { { "Riekling Scout", "enemies/enemies/goblin" },
 			{ "Seeker's Gaze", "enemies/enemies/evil_eye" }, { "Spriggan", "enemies/enemies/mushroom" },
 			{ "Draugr", "enemies/enemies/skeleton" }, { "Sand Worm", "enemies/enemies/worm" },
-			{ "Umbra", "enemies/enemies/black" },
-			{ "Frost Atronach", "enemies/enemies/blue" }, { "Crystal Atronach", "enemies/enemies/orange" },
-			{ "Midden Heap", "enemies/enemies/tooth" }, { "Namira's Cur", "enemies/enemies/void_fox" },
-			{ "Mora's Leech", "enemies/enemies/voidling" }, { "Hermaeus Tumor", "enemies/enemies/void_hunchback" },
+			{ "Umbra", "enemies/enemies/black" }, { "Frost Atronach", "enemies/enemies/blue" },
+			{ "Crystal Atronach", "enemies/enemies/orange" }, { "Midden Heap", "enemies/enemies/tooth" },
+			{ "Namira's Cur", "enemies/enemies/void_fox" }, { "Mora's Leech", "enemies/enemies/voidling" },
+			{ "Hermaeus Tumor", "enemies/enemies/void_hunchback" },
 			{ "Apocrypha's Host", "enemies/enemies/void_walker" }, { "Ichor Drone", "enemies/enemies/void_wing" } };
 
 	// Battle State
@@ -56,23 +56,23 @@ public class BattleView {
 	private boolean rewardsClaimed = false;
 
 	private String message = "";
-	private Color messageColor = Color.YELLOW; 
+	private Color messageColor = Color.YELLOW;
 
 	// Animation Timers & States
 	private long actionStartTime = 0;
 	private boolean isAnimatingAction = false;
 
 	// Attack Animation
-	private final int ACTION_DURATION = 1700; 
-	private final int FADE_DURATION = 300; 
-	private final int TELEPORT_TO_TARGET_TIME = 300; 
-	private final int FADE_IN_TARGET_TIME = 600; 
-	private final int ATTACK_HOLD_TIME = 1100; 
-	private final int FADE_OUT_RETURN_TIME = 1400; 
-	private final int RETURN_HOME_TIME = 1700; 
+	private final int ACTION_DURATION = 1700;
+	private final int FADE_DURATION = 300;
+	private final int TELEPORT_TO_TARGET_TIME = 300;
+	private final int FADE_IN_TARGET_TIME = 600;
+	private final int ATTACK_HOLD_TIME = 1100;
+	private final int FADE_OUT_RETURN_TIME = 1400;
+	private final int RETURN_HOME_TIME = 1700;
 
 	// Attack Animation Fields
-	private boolean isPlayerAttacking; 
+	private boolean isPlayerAttacking;
 	private long currentAnimTime = 0;
 	private float playerAlpha = 1.0f;
 	private float enemyAlpha = 1.0f;
@@ -80,13 +80,13 @@ public class BattleView {
 	// Attack Position
 	private final int PLAYER_HOME_X = 280;
 	private final int ENEMY_HOME_X = GameConstants.WINDOW_WIDTH - 280;
-	private final int ATTACK_PLAYER_X = ENEMY_HOME_X - 100; 
-	private final int ATTACK_ENEMY_X = PLAYER_HOME_X + 100; 
-	
+	private final int ATTACK_PLAYER_X = ENEMY_HOME_X - 100;
+	private final int ATTACK_ENEMY_X = PLAYER_HOME_X + 100;
+
 	// Death Animation
 	private boolean isDeathAnimating = false;
 	private long deathStartTime = 0;
-	private final int DEATH_DURATION = 3000; 
+	private final int DEATH_DURATION = 3000;
 
 	// Timer Logic
 	private long lastGuessTime = 0;
@@ -94,18 +94,18 @@ public class BattleView {
 	private int timerX = 0, timerY = 0, timerW = 0, timerH = 0;
 
 	// Panic Visual
-	private int panicAlpha = 0; 
-	private int timeShakeX = 0; 
+	private int panicAlpha = 0;
+	private int timeShakeX = 0;
 	private int timeShakeY = 0;
 	private long lastShakeTime = 0;
-	private int redPulseAlpha = 0; 
+	private int redPulseAlpha = 0;
 	private int lastSecondChecked = -1;
 	private final int SHAKE_MAGNITUDE = 3;
 	private final int MAX_RED_ALPHA = 80;
 
 	// Damage Visual
 	private long damageStartTime = 0;
-	private final int DAMAGE_VISUAL_DURATION = 500; 
+	private final int DAMAGE_VISUAL_DURATION = 500;
 	private int damageShakeX = 0;
 	private int damageShakeY = 0;
 	private boolean isPlayerDamaged = false;
@@ -115,19 +115,19 @@ public class BattleView {
 	private int damageIndicatorPlayer = 0;
 	private int damageIndicatorEnemy = 0;
 	private long damageIndicatorStartTime = 0;
-	private final int DAMAGE_INDICATOR_DURATION = 1500; 
-	private final int DAMAGE_INDICATOR_VERTICAL_TRAVEL = 50; 
+	private final int DAMAGE_INDICATOR_DURATION = 1500;
+	private final int DAMAGE_INDICATOR_VERTICAL_TRAVEL = 50;
 
 	// Rabbit Flash
 	private Image rabbitImg;
 	private long rabbitFlashStartTime = 0;
-	private final int RABBIT_FLASH_DURATION = 500; 
-	private boolean hasFlashedThisGuess = false; 
+	private final int RABBIT_FLASH_DURATION = 500;
+	private boolean hasFlashedThisGuess = false;
 
 	// Assets
 	private Image bgImage;
 	private Image nameFrameImg;
-	private Image frameImg; 
+	private Image frameImg;
 	private Image settingsImg;
 	private Image modalImg;
 
@@ -147,9 +147,11 @@ public class BattleView {
 	private boolean isSettingsOpen = false;
 	private boolean isExitConfirmation = false;
 	private boolean isMenuConfirmation = false;
+	private boolean isInstructionOpen = false; // NEW
 
 	// UI Buttons
 	private Rectangle settingsBtnBounds;
+	private Rectangle instructionBtnBounds; // NEW
 
 	// Modal Buttons
 	private Rectangle modalContinueBounds;
@@ -164,12 +166,15 @@ public class BattleView {
 	// Layout Constants
 	private final int TOP_BAR_Y = 20;
 	private final int TOP_BAR_HEIGHT = 50;
+	private final int UI_BUTTON_SIZE = 50;
+	private final int MODAL_WIDTH = 400;
+	private final int MODAL_HEIGHT = 500;
 
 	public BattleView(User user, Hangpie pet) {
 		this.playerUser = user;
 		this.playerPet = pet;
 		this.guessedLetters = new HashSet<>();
-		this.lastGuessTime = System.currentTimeMillis(); 
+		this.lastGuessTime = System.currentTimeMillis();
 
 		// Reset animations
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
@@ -183,8 +188,8 @@ public class BattleView {
 		frameImg = AssetLoader.loadImage(GameConstants.FRAME_IMG, 200, 80);
 
 		levelFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 150, 50);
-		settingsImg = AssetLoader.loadImage(GameConstants.SETTINGS_BTN_IMG, 50, 50);
-		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, 400, 300);
+		settingsImg = AssetLoader.loadImage(GameConstants.SETTINGS_BTN_IMG, UI_BUTTON_SIZE, UI_BUTTON_SIZE);
+		modalImg = AssetLoader.loadImage(GameConstants.MODAL_IMG, MODAL_WIDTH, MODAL_HEIGHT);
 
 		heartImg = AssetLoader.loadImage(GameConstants.HEART_IMG, 15, 15);
 		attackImg = AssetLoader.loadImage(GameConstants.ATTACK_IMG, 15, 15);
@@ -222,6 +227,7 @@ public class BattleView {
 		this.damageShakeY = 0;
 		this.isPlayerDamaged = false;
 		this.isEnemyDamaged = false;
+		this.isInstructionOpen = false;
 
 		// Reset Damage Indicators
 		this.damageIndicatorPlayer = 0;
@@ -256,13 +262,18 @@ public class BattleView {
 		this.playerPet.preloadAssets();
 		this.currentEnemy.preloadAssets();
 
-		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, 50, 50);
+		// UI Button Bounds
+		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE);
+		instructionBtnBounds = new Rectangle(settingsBtnBounds.x - 60, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE); // NEW:
+																													// Left
+																													// of
+																													// settings
 
 		// Timer UI
 		timerW = 250;
 		timerH = 50;
 		timerX = (GameConstants.WINDOW_WIDTH - timerW) / 2;
-		timerY = GameConstants.WINDOW_HEIGHT - 120; 
+		timerY = GameConstants.WINDOW_HEIGHT - 120;
 	}
 
 	private void loadGame() {
@@ -290,7 +301,13 @@ public class BattleView {
 
 		this.playerPet.preloadAssets();
 		this.currentEnemy.preloadAssets();
-		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, 50, 50);
+
+		// UI Button Bounds
+		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE);
+		instructionBtnBounds = new Rectangle(settingsBtnBounds.x - 60, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE); // NEW:
+																													// Left
+																													// of
+																													// settings
 
 		// Set Timer UI position
 		timerW = 250;
@@ -313,6 +330,7 @@ public class BattleView {
 		this.playerAlpha = 1.0f;
 		this.enemyAlpha = 1.0f;
 		this.currentAnimTime = 0;
+		this.isInstructionOpen = false;
 
 		// Reset Damage Indicators
 		this.damageIndicatorPlayer = 0;
@@ -363,8 +381,8 @@ public class BattleView {
 		generateBackground(isBoss);
 
 		if (isBoss) {
-			
-			// Boss Stats: +5 HP, +1 ATK 
+
+			// Boss Stats: +5 HP, +1 ATK
 			enemyHp = baseHp + 5;
 			enemyAtk = baseAtk + 1;
 
@@ -437,7 +455,8 @@ public class BattleView {
 	}
 
 	public void update() {
-		if (isSettingsOpen || battleOver)
+		// UPDATED: Check for instruction open as well
+		if (isSettingsOpen || isInstructionOpen || battleOver)
 			return;
 
 		if (isAnimatingAction) {
@@ -446,40 +465,40 @@ public class BattleView {
 
 			// Attack Animation State
 
-			if (timeElapsed > ACTION_DURATION) { 
+			if (timeElapsed > ACTION_DURATION) {
 				isAnimatingAction = false;
 				currentAnimTime = 0;
 				playerAlpha = 1.0f;
 				enemyAlpha = 1.0f;
 				checkRoundResult();
-			} else if (timeElapsed < FADE_DURATION) { 
+			} else if (timeElapsed < FADE_DURATION) {
 				float fade = (float) timeElapsed / FADE_DURATION;
 				playerAlpha = isPlayerAttacking ? 1.0f - fade : 1.0f;
 				enemyAlpha = isPlayerAttacking ? 1.0f : 1.0f - fade;
-			} else if (timeElapsed < TELEPORT_TO_TARGET_TIME) { 
+			} else if (timeElapsed < TELEPORT_TO_TARGET_TIME) {
 				playerAlpha = isPlayerAttacking ? 0.0f : 1.0f;
 				enemyAlpha = isPlayerAttacking ? 1.0f : 0.0f;
-			} else if (timeElapsed < FADE_IN_TARGET_TIME) { 
-				long fadeTime = timeElapsed - TELEPORT_TO_TARGET_TIME; 
+			} else if (timeElapsed < FADE_IN_TARGET_TIME) {
+				long fadeTime = timeElapsed - TELEPORT_TO_TARGET_TIME;
 				float fade = (float) fadeTime / FADE_DURATION;
 
 				playerAlpha = isPlayerAttacking ? fade : 1.0f;
 				enemyAlpha = isPlayerAttacking ? 1.0f : fade;
 
-			} else if (timeElapsed < ATTACK_HOLD_TIME) { 
+			} else if (timeElapsed < ATTACK_HOLD_TIME) {
 				playerAlpha = 1.0f;
 				enemyAlpha = 1.0f;
-			} else if (timeElapsed < ATTACK_HOLD_TIME + FADE_DURATION) { 
+			} else if (timeElapsed < ATTACK_HOLD_TIME + FADE_DURATION) {
 				long fadeTime = timeElapsed - ATTACK_HOLD_TIME;
 				float fade = (float) fadeTime / FADE_DURATION;
 
 				playerAlpha = isPlayerAttacking ? 1.0f - fade : 1.0f;
 				enemyAlpha = isPlayerAttacking ? 1.0f : 1.0f - fade;
-			} else if (timeElapsed < FADE_OUT_RETURN_TIME) { 
+			} else if (timeElapsed < FADE_OUT_RETURN_TIME) {
 				playerAlpha = isPlayerAttacking ? 0.0f : 1.0f;
 				enemyAlpha = isPlayerAttacking ? 1.0f : 0.0f;
-			} else if (timeElapsed < RETURN_HOME_TIME) { 
-				long fadeTime = timeElapsed - FADE_OUT_RETURN_TIME; 
+			} else if (timeElapsed < RETURN_HOME_TIME) {
+				long fadeTime = timeElapsed - FADE_OUT_RETURN_TIME;
 				float fade = (float) fadeTime / FADE_DURATION;
 
 				playerAlpha = isPlayerAttacking ? fade : 1.0f;
@@ -531,7 +550,7 @@ public class BattleView {
 			}
 
 			if (isPanicking) {
-				
+
 				if (System.currentTimeMillis() - lastShakeTime > 100) {
 					timeShakeX = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
 					timeShakeY = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
@@ -581,7 +600,7 @@ public class BattleView {
 
 			if (timeElapsed < DAMAGE_VISUAL_DURATION) {
 
-				if (timeElapsed % 50 < 25) { 
+				if (timeElapsed % 50 < 25) {
 					damageShakeX = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
 					damageShakeY = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
 				} else {
@@ -600,11 +619,11 @@ public class BattleView {
 
 	private void handleTimeOutAttack() {
 
-		lastGuessTime = System.currentTimeMillis(); 
+		lastGuessTime = System.currentTimeMillis();
 
 		actionStartTime = System.currentTimeMillis();
 		isAnimatingAction = true;
-		isPlayerAttacking = false; 
+		isPlayerAttacking = false;
 
 		currentEnemy.setAnimationState(Enemy.AnimState.ATTACK);
 		playerPet.setAnimationState(Hangpie.AnimState.DAMAGE);
@@ -726,6 +745,11 @@ public class BattleView {
 	}
 
 	public String handleMouseClick(int x, int y) {
+		if (isInstructionOpen) {
+			isInstructionOpen = false;
+			return "NONE";
+		}
+
 		if (isSettingsOpen) {
 			if (modalContinueBounds != null && modalContinueBounds.contains(x, y)) {
 				isSettingsOpen = false;
@@ -740,7 +764,7 @@ public class BattleView {
 				// Menu Confirmation
 				if (!isMenuConfirmation) {
 					isMenuConfirmation = true;
-					isExitConfirmation = false; 
+					isExitConfirmation = false;
 				} else {
 					return "MENU";
 				}
@@ -749,7 +773,7 @@ public class BattleView {
 				// Exit Confirmation
 				if (!isExitConfirmation) {
 					isExitConfirmation = true;
-					isMenuConfirmation = false; 
+					isMenuConfirmation = false;
 				} else {
 					return "EXIT";
 				}
@@ -766,6 +790,9 @@ public class BattleView {
 				isMenuConfirmation = false;
 				selectedModalOption = -1;
 				return "NONE";
+			} else if (instructionBtnBounds != null && instructionBtnBounds.contains(x, y)) {
+				isInstructionOpen = true;
+				return "NONE";
 			}
 		}
 		return "NONE";
@@ -777,6 +804,13 @@ public class BattleView {
 				isSettingsOpen = false;
 				isExitConfirmation = false;
 				isMenuConfirmation = false;
+			}
+			return;
+		}
+
+		if (isInstructionOpen) {
+			if (keyCode == KeyEvent.VK_ESCAPE) {
+				isInstructionOpen = false;
 			}
 			return;
 		}
@@ -811,7 +845,7 @@ public class BattleView {
 		redPulseAlpha = 0;
 		panicAlpha = 0;
 		lastSecondChecked = -1;
-		this.hasFlashedThisGuess = false; 
+		this.hasFlashedThisGuess = false;
 
 		boolean isCorrect = false;
 		// Multiplier Damage
@@ -830,7 +864,7 @@ public class BattleView {
 		isEnemyDamaged = false;
 
 		if (isCorrect) {
-			isPlayerAttacking = true; 
+			isPlayerAttacking = true;
 
 			playerPet.setAnimationState(Hangpie.AnimState.ATTACK);
 			currentEnemy.setAnimationState(Enemy.AnimState.DAMAGE);
@@ -862,7 +896,7 @@ public class BattleView {
 			}
 
 		} else {
-			isPlayerAttacking = false; 
+			isPlayerAttacking = false;
 
 			currentEnemy.setAnimationState(Enemy.AnimState.ATTACK);
 			playerPet.setAnimationState(Hangpie.AnimState.DAMAGE);
@@ -872,9 +906,9 @@ public class BattleView {
 
 			// Set damage indicator for player
 			damageIndicatorPlayer = -dmg;
-			damageIndicatorEnemy = 0; 
+			damageIndicatorEnemy = 0;
 			damageIndicatorStartTime = System.currentTimeMillis();
- 
+
 			message = "Wrong! Ouch! " + damageIndicatorPlayer + " HP";
 			messageColor = Color.RED;
 
@@ -935,11 +969,11 @@ public class BattleView {
 			if (isPlayerAttacking) {
 				// Player Attacking
 				pDrawX = ATTACK_PLAYER_X;
-				currentEAlpha = 1.0f; 
+				currentEAlpha = 1.0f;
 			} else {
 				// Enemy Attacking
 				eDrawX = ATTACK_ENEMY_X;
-				currentPAlpha = 1.0f; 
+				currentPAlpha = 1.0f;
 			}
 		}
 
@@ -968,7 +1002,7 @@ public class BattleView {
 
 				g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
 
-				int rX = 0; 
+				int rX = 0;
 				int rY = 0;
 
 				// Apply time shake to rabbit image if panic mode is active
@@ -990,6 +1024,27 @@ public class BattleView {
 
 		drawLevelIndicator(g, 30 + uiOffsetX, TOP_BAR_Y + uiOffsetY, observer);
 
+		// NEW: Draw Instruction Button (Using nameFrameImg as background)
+		if (instructionBtnBounds != null && nameFrameImg != null) {
+			int btnX = instructionBtnBounds.x + uiOffsetX;
+			int btnY = instructionBtnBounds.y + uiOffsetY;
+			int btnW = instructionBtnBounds.width;
+			int btnH = instructionBtnBounds.height;
+
+			g.drawImage(nameFrameImg, btnX, btnY, btnW, btnH, observer);
+
+			// Draw "?" text - Adjusted for centering
+			g.setFont(GameConstants.HEADER_FONT);
+			g.setColor(Color.BLACK);
+			FontMetrics fm = g.getFontMetrics();
+			String qText = "?";
+			int textX = btnX + (btnW - fm.stringWidth(qText)) / 2;
+			// Adjusted textY calculation to vertically center the large HEADER_FONT (40pt)
+			// in the 50px nameframe
+			int textY = btnY + (btnH - fm.getAscent()) / 2 + fm.getAscent() - 10;
+			g.drawString(qText, textX, textY);
+		}
+
 		if (settingsImg != null && settingsBtnBounds != null) {
 			g.drawImage(settingsImg, settingsBtnBounds.x + uiOffsetX, settingsBtnBounds.y + uiOffsetY,
 					settingsBtnBounds.width, settingsBtnBounds.height, observer);
@@ -1007,15 +1062,15 @@ public class BattleView {
 
 			int bgW = msgW + 60;
 			int bgH = 50;
-			int bgX = (width - bgW) / 2 + uiOffsetX; 
-			int bgY = framesTopY + uiOffsetY; 
+			int bgX = (width - bgW) / 2 + uiOffsetX;
+			int bgY = framesTopY + uiOffsetY;
 
 			if (nameFrameImg != null) {
 				g.drawImage(nameFrameImg, bgX, bgY, bgW, bgH, observer);
 			}
 
 			g.setColor(messageColor);
-			int textX = (width - msgW) / 2 + uiOffsetX; 
+			int textX = (width - msgW) / 2 + uiOffsetX;
 			int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 7;
 			g.drawString(message, textX, textY);
 		}
@@ -1037,22 +1092,95 @@ public class BattleView {
 		if (isPlayerAttacking) {
 			drawEnemySprite1(g, enemyImg, eDrawX, groundY, scaleFactor, currentEAlpha, targetShakeX, targetShakeY,
 					isEnemyDamaged, observer);
-			drawPlayerSprite1(g, playerImg, pDrawX, groundY, scaleFactor, currentPAlpha, 0, 0, false, observer); 
-			
+			drawPlayerSprite1(g, playerImg, pDrawX, groundY, scaleFactor, currentPAlpha, 0, 0, false, observer);
+
 		} else {
-			
+
 			drawPlayerSprite1(g, playerImg, pDrawX, groundY, scaleFactor, currentPAlpha, targetShakeX, targetShakeY,
 					isPlayerDamaged, observer);
-			drawEnemySprite1(g, enemyImg, eDrawX, groundY, scaleFactor, currentEAlpha, 0, 0, false, observer); 
+			drawEnemySprite1(g, enemyImg, eDrawX, groundY, scaleFactor, currentEAlpha, 0, 0, false, observer);
 		}
 
 		drawDamageIndicators(g, width, height);
 
 		if (isSettingsOpen) {
 			drawSettingsModal(g, width, height);
+		} else if (isInstructionOpen) {
+			drawInstructionModal(g, width, height);
 		} else if (battleOver) {
 			drawEndScreen(g, width, height);
 		}
+	}
+
+	// NEW: Instruction Modal
+	private void drawInstructionModal(Graphics2D g, int width, int height) {
+		g.setColor(new Color(0, 0, 0, 150));
+		g.fillRect(0, 0, width, height);
+
+		int mW = MODAL_WIDTH;
+		int mH = MODAL_HEIGHT;
+		int mX = (width - mW) / 2;
+		int mY = (height - mH) / 2;
+
+		if (modalImg != null) {
+			g.drawImage(modalImg, mX, mY, mW, mH, null);
+		} else {
+			g.setColor(Color.GRAY);
+			g.fillRect(mX, mY, mW, mH);
+		}
+
+		// Title
+		g.setColor(Color.BLACK);
+		g.setFont(GameConstants.HEADER_FONT);
+		String title = GameConstants.INSTRUCTION_TITLE;
+		FontMetrics fm = g.getFontMetrics();
+		g.drawString(title, mX + (mW - fm.stringWidth(title)) / 2, mY + 50);
+
+		// Instructions Content: Using SUBTITLE_FONT (18pt) for better fit
+		g.setFont(GameConstants.SUBTITLE_FONT);
+		g.setColor(Color.BLACK);
+
+		String[] instructions = GameConstants.INSTRUCTION_TEXT.split("\n");
+		int startY = mY + 110;
+		FontMetrics fmSmall = g.getFontMetrics();
+		int lineHeight = fmSmall.getHeight();
+		int indent = 30;
+
+		for (String line : instructions) {
+
+			String trimmedLine = line.trim();
+			int lineW = fmSmall.stringWidth(line);
+
+			if (trimmedLine.isEmpty()) {
+				startY += lineHeight / 2;
+				continue;
+			}
+
+			if (trimmedLine.endsWith(":")) {
+				// Header lines (e.g., "Correct Guess:") - aligned slightly to the left
+				g.drawString(line, mX + indent, startY);
+			} else if (trimmedLine.startsWith("Type")) {
+				// Main section headers (Type the letters...) - centered
+				g.drawString(line, mX + (mW - lineW) / 2, startY);
+			} else if (trimmedLine.startsWith("Your Hangpie") || trimmedLine.startsWith("Your Hangpie takes")) {
+				// Details / bullet points - indented further
+				g.drawString(line, mX + indent + 20, startY);
+			} else if (trimmedLine.startsWith("Objectives")) {
+				// Objectives header
+				g.drawString(line, mX + indent, startY);
+			} else if (trimmedLine.startsWith("Defeat enemy") || trimmedLine.startsWith("Win the World")) {
+				// Objectives list items
+				g.drawString(line, mX + indent + 20, startY);
+			}
+
+			startY += lineHeight;
+		}
+
+		// Close Instruction
+		g.setFont(new Font("Monospaced", Font.BOLD, 16));
+		g.setColor(Color.DARK_GRAY);
+		String closeText = "[Press ESC or Click to Close]";
+		g.drawString(closeText, mX + (mW - g.getFontMetrics().stringWidth(closeText)) / 2, mY + mH - 30);
 	}
 
 	private void drawDamageIndicators(Graphics2D g, int width, int height) {
@@ -1066,7 +1194,7 @@ public class BattleView {
 		float progress = (float) timeElapsed / DAMAGE_INDICATOR_DURATION;
 
 		int verticalOffset = (int) (progress * DAMAGE_INDICATOR_VERTICAL_TRAVEL);
-		float alpha = 1.0f - progress; 
+		float alpha = 1.0f - progress;
 
 		if (alpha < 0)
 			alpha = 0;
@@ -1076,7 +1204,7 @@ public class BattleView {
 
 		int groundY = height - 20;
 
-		// Player Damage 
+		// Player Damage
 		if (damageIndicatorPlayer != 0) {
 			String dmgText = String.valueOf(damageIndicatorPlayer);
 			g.setColor(Color.RED);
@@ -1085,7 +1213,7 @@ public class BattleView {
 			g.drawString(dmgText, x, y);
 		}
 
-		// Enemy Damage 
+		// Enemy Damage
 		if (damageIndicatorEnemy != 0) {
 			String dmgText = String.valueOf(damageIndicatorEnemy);
 			g.setColor(Color.YELLOW);
@@ -1195,9 +1323,9 @@ public class BattleView {
 
 		// EXP Bar
 		int expBarH = 6;
-		int expBarW = statsW - 30; 
+		int expBarW = statsW - 30;
 		int expBarX = pStatsX + 15;
-		int expBarY = statsFrameY + statsFrameH - 15; 
+		int expBarY = statsFrameY + statsFrameH - 15;
 
 		// Bar Background
 		g.setColor(new Color(50, 50, 50));
@@ -1218,7 +1346,7 @@ public class BattleView {
 		if (frameImg != null) {
 			g.drawImage(frameImg, eStatsX, statsFrameY, statsW, statsFrameH, null);
 		}
-		// Name Frame 
+		// Name Frame
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, eFrameX, topY, frameW, frameH, null);
 		}
@@ -1250,7 +1378,7 @@ public class BattleView {
 		int totalW = iconSize + fm.stringWidth(hpTxt) + fm.stringWidth(sep) + iconSize + fm.stringWidth(atkTxt);
 
 		int startX = x + (w - totalW) / 2;
-		int centerY = y + (h / 2) + 5; 
+		int centerY = y + (h / 2) + 5;
 
 		int iconTopY = centerY - 12;
 
@@ -1293,15 +1421,15 @@ public class BattleView {
 
 		int bgW = textW + 60;
 		int bgH = TOP_BAR_HEIGHT;
-		int bgX = (width - bgW) / 2 + offsetX; 
-		int bgY = TOP_BAR_Y + offsetY; 
+		int bgX = (width - bgW) / 2 + offsetX;
+		int bgY = TOP_BAR_Y + offsetY;
 
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, bgX, bgY, bgW, bgH, obs);
 		}
 
 		g.setColor(Color.WHITE);
-		int textX = (width - textW) / 2 + offsetX; 
+		int textX = (width - textW) / 2 + offsetX;
 		int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 5;
 		g.drawString(clueText, textX, textY);
 
@@ -1310,7 +1438,7 @@ public class BattleView {
 		int lettersY = 110 + offsetY;
 		int totalWidth = secretWord.length() * spacing;
 
-		int startX = (width - totalWidth) / 2 + offsetX; 
+		int startX = (width - totalWidth) / 2 + offsetX;
 		int currentX = startX;
 
 		for (char c : secretWord.toCharArray()) {
@@ -1340,7 +1468,7 @@ public class BattleView {
 		g.setColor(new Color(0, 0, 0, 150));
 		g.fillRect(0, 0, width, height);
 
-		int mW = 400;
+		int mW = MODAL_WIDTH;
 		int mH = 300;
 		int mX = (width - mW) / 2;
 		int mY = (height - mH) / 2;
@@ -1392,7 +1520,7 @@ public class BattleView {
 		nextY += btnH + btnGap;
 		String menuTxt = "MAIN MENU";
 		if (isMenuConfirmation)
-			menuTxt = "CONFIRM?"; 
+			menuTxt = "CONFIRM?";
 
 		if (selectedModalOption == 2) {
 			g.setColor(isMenuConfirmation ? Color.RED : Color.YELLOW);
@@ -1408,7 +1536,7 @@ public class BattleView {
 		nextY += btnH + btnGap;
 		String exitTxt = "EXIT GAME";
 		if (isExitConfirmation)
-			exitTxt = "CONFIRM?"; 
+			exitTxt = "CONFIRM?";
 
 		if (selectedModalOption == 3) {
 			g.setColor(isExitConfirmation ? Color.RED : Color.YELLOW);
@@ -1489,8 +1617,8 @@ public class BattleView {
 
 	private void drawTimer(Graphics2D g, ImageObserver observer, int offsetX, int offsetY) {
 
-		int drawX = timerX + offsetX; 
-		int drawY = timerY + offsetY; 
+		int drawX = timerX + offsetX;
+		int drawY = timerY + offsetY;
 
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, drawX, drawY, timerW, timerH, observer);
@@ -1525,7 +1653,7 @@ public class BattleView {
 	}
 
 	// Helper function to draw the player sprite, applying shake only if damaged.
-	 
+
 	private void drawPlayerSprite(Graphics2D g, Image playerImg, int pDrawX, int groundY, int scaleFactor, float alpha,
 			int targetShakeX, int targetShakeY, boolean isDamaged, ImageObserver observer) {
 		if (playerImg == null)
@@ -1548,12 +1676,12 @@ public class BattleView {
 
 			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
 			g.drawImage(playerImg, drawX, drawY, drawW, drawH, observer);
-			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); 
+			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
 		}
 	}
 
 	// Helper function to draw the enemy sprite, applying shake only if damaged.
-	
+
 	private void drawEnemySprite(Graphics2D g, Image enemyImg, int eDrawX, int groundY, int scaleFactor, float alpha,
 			int targetShakeX, int targetShakeY, boolean isDamaged, ImageObserver observer) {
 		if (enemyImg == null)
@@ -1576,7 +1704,7 @@ public class BattleView {
 
 			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
 			g.drawImage(enemyImg, drawX, drawY, drawW, drawH, observer);
-			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); 
+			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
 		}
 	}
 
@@ -1616,9 +1744,9 @@ public class BattleView {
 		drawModernStats(g, playerPet, pStatsX, statsFrameY, statsW, statsFrameH, statsFont, observer);
 
 		int expBarH = 6;
-		int expBarW = statsW - 30; 
+		int expBarW = statsW - 30;
 		int expBarX = pStatsX + 15;
-		int expBarY = statsFrameY + statsFrameH - 15; 
+		int expBarY = statsFrameY + statsFrameH - 15;
 
 		g.setColor(new Color(50, 50, 50));
 		g.fillRect(expBarX, expBarY, expBarW, expBarH);
