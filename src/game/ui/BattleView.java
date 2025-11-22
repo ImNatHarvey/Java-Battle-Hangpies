@@ -55,6 +55,15 @@ public class BattleView {
 	private int expReward = 0;
 	private boolean rewardsClaimed = false;
 
+	// NEW: EXP/Level Up Animation State
+	private boolean isRewardAnimating = false;
+	private long rewardAnimStartTime = 0;
+	private final int REWARD_ANIM_DURATION = 3000; // 3 seconds for EXP gain + potential level up
+	private boolean levelUpOccurred = false;
+	private float levelUpFlashAlpha = 0.0f;
+	private final int LEVEL_UP_FLASH_DURATION = 500;
+	private final int LEVEL_UP_FLASH_PEAK = 200; // Max alpha for flash
+
 	private String message = "";
 	private Color messageColor = Color.YELLOW;
 
@@ -203,6 +212,8 @@ public class BattleView {
 		this.battleOver = false;
 		this.playerWon = false;
 		this.rewardsClaimed = false;
+		this.goldReward = 0;
+		this.expReward = 0;
 		this.message = "";
 		this.messageColor = Color.YELLOW;
 
@@ -213,6 +224,12 @@ public class BattleView {
 		this.playerAlpha = 1.0f;
 		this.enemyAlpha = 1.0f;
 		this.currentAnimTime = 0;
+
+		// NEW: Reset Reward Animation State
+		this.isRewardAnimating = false;
+		this.rewardAnimStartTime = 0;
+		this.levelUpOccurred = false;
+		this.levelUpFlashAlpha = 0.0f;
 
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
 
@@ -269,7 +286,7 @@ public class BattleView {
 																													// of
 																													// settings
 
-		// Timer UI
+		// Set Timer UI position
 		timerW = 250;
 		timerH = 50;
 		timerX = (GameConstants.WINDOW_WIDTH - timerW) / 2;
@@ -331,6 +348,12 @@ public class BattleView {
 		this.enemyAlpha = 1.0f;
 		this.currentAnimTime = 0;
 		this.isInstructionOpen = false;
+
+		// NEW: Reset Reward Animation State
+		this.isRewardAnimating = false;
+		this.rewardAnimStartTime = 0;
+		this.levelUpOccurred = false;
+		this.levelUpFlashAlpha = 0.0f;
 
 		// Reset Damage Indicators
 		this.damageIndicatorPlayer = 0;
@@ -512,84 +535,114 @@ public class BattleView {
 			if (System.currentTimeMillis() - deathStartTime > DEATH_DURATION) {
 				isDeathAnimating = false;
 				if (!currentEnemy.isAlive()) {
-					handleWin();
+					// START REWARD ANIMATION INSTEAD OF handleWin()
+					if (rewardsClaimed) {
+						handleWin(); // Should only happen if a game was loaded and enemy died immediately.
+					} else {
+						// This is the correct moment to calculate and start the EXP animation
+						calculateRewardsAndStartAnimation();
+					}
 				} else if (!playerPet.isAlive()) {
 					handleLoss();
 				}
 			}
-		}
-
-		// Damage Visuals
-		updateDamageVisuals();
-
-		// Damage Indicator
-		if (damageIndicatorStartTime > 0) {
-			long timeElapsed = System.currentTimeMillis() - damageIndicatorStartTime;
-			if (timeElapsed > DAMAGE_INDICATOR_DURATION) {
-				damageIndicatorPlayer = 0;
-				damageIndicatorEnemy = 0;
-				damageIndicatorStartTime = 0;
-			}
-		}
-
-		if (!isAnimatingAction && !isDeathAnimating) {
-			long elapsedTime = System.currentTimeMillis() - lastGuessTime;
-			long maxTimeMillis = GameConstants.GUESS_TIME_LIMIT_SECONDS * 1000;
-			currentTimeRemaining = maxTimeMillis - elapsedTime;
-
-			int secondsRemaining = (int) (currentTimeRemaining / 1000) + 1;
-			boolean isPanicking = secondsRemaining <= GameConstants.PANIC_THRESHOLD_SECONDS && secondsRemaining > 0;
-
-			if (secondsRemaining == GameConstants.PANIC_THRESHOLD_SECONDS && !hasFlashedThisGuess) {
-				rabbitFlashStartTime = System.currentTimeMillis();
-				hasFlashedThisGuess = true;
+		} else if (isRewardAnimating) { // NEW: Handle Reward Animation
+			long timeElapsed = System.currentTimeMillis() - rewardAnimStartTime;
+			if (timeElapsed >= REWARD_ANIM_DURATION) {
+				isRewardAnimating = false;
+				handleWin(); // Proceed to victory screen
 			}
 
-			if (secondsRemaining > GameConstants.PANIC_THRESHOLD_SECONDS) {
-				hasFlashedThisGuess = false;
-			}
+			// Handle Level Up Flash
+			if (levelUpOccurred) {
+				// Flash effect loops for the entire duration
+				float duration = (float) LEVEL_UP_FLASH_DURATION;
+				float timeIntoCycle = timeElapsed % duration; // Loop the flash
 
-			if (isPanicking) {
-
-				if (System.currentTimeMillis() - lastShakeTime > 100) {
-					timeShakeX = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
-					timeShakeY = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
-					lastShakeTime = System.currentTimeMillis();
-				}
-
-				if (secondsRemaining != lastSecondChecked) {
-					redPulseAlpha = MAX_RED_ALPHA;
-					lastSecondChecked = secondsRemaining;
-				}
-
-				long timeSincePulse = System.currentTimeMillis() % 1000;
-				if (timeSincePulse < 500) {
-					redPulseAlpha = (int) (MAX_RED_ALPHA * (1.0 - (timeSincePulse / 500.0)));
+				if (timeIntoCycle < duration / 2) {
+					// Fade in (0 to LEVEL_UP_FLASH_PEAK)
+					levelUpFlashAlpha = (timeIntoCycle / (duration / 2)) * LEVEL_UP_FLASH_PEAK;
 				} else {
+					// Fade out (LEVEL_UP_FLASH_PEAK to 0)
+					levelUpFlashAlpha = LEVEL_UP_FLASH_PEAK
+							- ((timeIntoCycle - (duration / 2)) / (duration / 2)) * LEVEL_UP_FLASH_PEAK;
+				}
+				levelUpFlashAlpha = Math.max(0.0f, Math.min((float) LEVEL_UP_FLASH_PEAK, levelUpFlashAlpha));
+			}
+
+		} else {
+			// Damage Visuals
+			updateDamageVisuals();
+
+			// Damage Indicator
+			if (damageIndicatorStartTime > 0) {
+				long timeElapsed = System.currentTimeMillis() - damageIndicatorStartTime;
+				if (timeElapsed > DAMAGE_INDICATOR_DURATION) {
+					damageIndicatorPlayer = 0;
+					damageIndicatorEnemy = 0;
+					damageIndicatorStartTime = 0;
+				}
+			}
+
+			if (!isAnimatingAction && !isDeathAnimating) {
+				long elapsedTime = System.currentTimeMillis() - lastGuessTime;
+				long maxTimeMillis = GameConstants.GUESS_TIME_LIMIT_SECONDS * 1000;
+				currentTimeRemaining = maxTimeMillis - elapsedTime;
+
+				int secondsRemaining = (int) (currentTimeRemaining / 1000) + 1;
+				boolean isPanicking = secondsRemaining <= GameConstants.PANIC_THRESHOLD_SECONDS && secondsRemaining > 0;
+
+				if (secondsRemaining == GameConstants.PANIC_THRESHOLD_SECONDS && !hasFlashedThisGuess) {
+					rabbitFlashStartTime = System.currentTimeMillis();
+					hasFlashedThisGuess = true;
+				}
+
+				if (secondsRemaining > GameConstants.PANIC_THRESHOLD_SECONDS) {
+					hasFlashedThisGuess = false;
+				}
+
+				if (isPanicking) {
+
+					if (System.currentTimeMillis() - lastShakeTime > 100) {
+						timeShakeX = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
+						timeShakeY = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
+						lastShakeTime = System.currentTimeMillis();
+					}
+
+					if (secondsRemaining != lastSecondChecked) {
+						redPulseAlpha = MAX_RED_ALPHA;
+						lastSecondChecked = secondsRemaining;
+					}
+
+					long timeSincePulse = System.currentTimeMillis() % 1000;
+					if (timeSincePulse < 500) {
+						redPulseAlpha = (int) (MAX_RED_ALPHA * (1.0 - (timeSincePulse / 500.0)));
+					} else {
+						redPulseAlpha = 0;
+					}
+					redPulseAlpha = Math.max(0, redPulseAlpha);
+
+					// --- Panic Alpha for Timer Box (Flicker) ---
+					long pulseTime = System.currentTimeMillis() % 1000;
+					if (pulseTime < 500) {
+						panicAlpha = 80;
+					} else {
+						panicAlpha = 0;
+					}
+
+				} else {
+
+					timeShakeX = 0;
+					timeShakeY = 0;
 					redPulseAlpha = 0;
-				}
-				redPulseAlpha = Math.max(0, redPulseAlpha);
-
-				// --- Panic Alpha for Timer Box (Flicker) ---
-				long pulseTime = System.currentTimeMillis() % 1000;
-				if (pulseTime < 500) {
-					panicAlpha = 80;
-				} else {
 					panicAlpha = 0;
+					lastSecondChecked = -1;
 				}
 
-			} else {
-
-				timeShakeX = 0;
-				timeShakeY = 0;
-				redPulseAlpha = 0;
-				panicAlpha = 0;
-				lastSecondChecked = -1;
-			}
-
-			if (currentTimeRemaining <= 0) {
-				currentTimeRemaining = 0; // Clamp
-				handleTimeOutAttack();
+				if (currentTimeRemaining <= 0) {
+					currentTimeRemaining = 0; // Clamp
+					handleTimeOutAttack();
+				}
 			}
 		}
 	}
@@ -666,54 +719,72 @@ public class BattleView {
 		}
 	}
 
+	private void calculateRewardsAndStartAnimation() {
+
+		if (rewardsClaimed) {
+			return;
+		}
+
+		boolean isBoss = (playerUser.getProgressLevel() == 5);
+
+		if (isBoss) {
+			goldReward = 10;
+			expReward = 5;
+		} else {
+			goldReward = 5;
+			expReward = 1;
+		}
+
+		// Handle Progression (Must happen before EXP gain is applied)
+		if (isBoss) {
+			playerUser.setProgressLevel(1);
+			playerUser.setWorldLevel(playerUser.getWorldLevel() + 1);
+		} else {
+			playerUser.setProgressLevel(playerUser.getProgressLevel() + 1);
+		}
+
+		// Apply Rewards (This is where the pet gains EXP and potentially levels up)
+		levelUpOccurred = playerPet.gainExp(expReward, playerUser.getWorldLevel());
+
+		playerUser.addGold(goldReward);
+
+		// Update user data immediately to save the progress
+		Main.userManager.updateUser(playerUser);
+
+		// Delete Save on Win
+		Main.saveManager.deleteSave(playerUser.getUsername());
+
+		// Set the message for the central box
+		String rewardMsg = String.format("Gold: +%dG | Exp: +%d EXP", goldReward, expReward);
+
+		if (levelUpOccurred) {
+			message = "LEVEL UP! " + rewardMsg;
+			messageColor = Color.CYAN;
+		} else if (playerPet.getLevel() >= playerUser.getWorldLevel()
+				&& playerPet.getCurrentExp() >= playerPet.getMaxExpForCurrentLevel()) {
+			message = "EXP MAX (Defeat Boss!) " + rewardMsg;
+			messageColor = Color.ORANGE;
+		} else {
+			message = rewardMsg;
+			messageColor = Color.YELLOW;
+		}
+
+		rewardsClaimed = true;
+
+		// Start the animation
+		isRewardAnimating = true;
+		rewardAnimStartTime = System.currentTimeMillis();
+	}
+
 	private void handleWin() {
 		battleOver = true;
 		playerWon = true;
 
-		Main.saveManager.deleteSave(playerUser.getUsername());
-
+		// Word carry over logic
 		if (!isWordCompleted()) {
 			shouldCarryOverWord = true;
 		} else {
 			shouldCarryOverWord = false;
-		}
-
-		if (!rewardsClaimed) {
-			boolean isBoss = (playerUser.getProgressLevel() == 5);
-
-			if (isBoss) {
-				goldReward = 10;
-				expReward = 5;
-			} else {
-				goldReward = 5;
-				expReward = 1;
-			}
-
-			// Handle Progression
-			if (isBoss) {
-				// Beat the Boss -> Advance World
-				playerUser.setProgressLevel(1);
-				playerUser.setWorldLevel(playerUser.getWorldLevel() + 1);
-			} else {
-				// Normal Stage -> Advance Stage
-				playerUser.setProgressLevel(playerUser.getProgressLevel() + 1);
-			}
-
-			// Apply Rewards
-			playerUser.addGold(goldReward);
-			boolean leveledUp = playerPet.gainExp(expReward, playerUser.getWorldLevel());
-
-			if (leveledUp) {
-				message = "LEVEL UP!";
-				messageColor = Color.CYAN;
-			} else if (playerPet.getLevel() >= playerUser.getWorldLevel()
-					&& playerPet.getCurrentExp() >= playerPet.getMaxExpForCurrentLevel()) {
-				message = "EXP MAX (Defeat Boss!)";
-				messageColor = Color.ORANGE;
-			}
-
-			Main.userManager.updateUser(playerUser);
-			rewardsClaimed = true;
 		}
 	}
 
@@ -817,6 +888,10 @@ public class BattleView {
 
 		if (battleOver) {
 			handleMenuInput(keyCode);
+			return;
+		}
+
+		if (isRewardAnimating) { // Block input during reward animation
 			return;
 		}
 
@@ -1107,9 +1182,60 @@ public class BattleView {
 			drawSettingsModal(g, width, height);
 		} else if (isInstructionOpen) {
 			drawInstructionModal(g, width, height);
+		} else if (isRewardAnimating) { // NEW: Draw Reward Animation Overlay
+			drawExpAnimation(g, width, height, observer);
 		} else if (battleOver) {
 			drawEndScreen(g, width, height);
 		}
+	}
+
+	// NEW: Logic for drawing the EXP/Level Up animation
+	private void drawExpAnimation(Graphics2D g, int width, int height, ImageObserver observer) {
+		long timeElapsed = System.currentTimeMillis() - rewardAnimStartTime;
+		float progress = (float) timeElapsed / REWARD_ANIM_DURATION;
+
+		// 1. Level Up Screen Flash Effect
+		if (levelUpOccurred) {
+			// Level Up Flash is already calculated in update()
+			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, levelUpFlashAlpha / 255.0f));
+			g.setColor(Color.WHITE);
+			g.fillRect(0, 0, width, height);
+			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+		}
+
+		// 2. EXP Gained Indicator Animation (Fading up from player's position)
+		int expIndicatorTravel = 80;
+		int playerGroundY = height - 20;
+		int startY = playerGroundY - 150; // Starting above the player's head
+		int endY = startY - expIndicatorTravel;
+
+		int indicatorY = (int) (startY - (expIndicatorTravel * progress));
+		float alpha = 1.0f - progress;
+
+		if (alpha < 0)
+			alpha = 0;
+
+		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+		g.setFont(new Font("Monospaced", Font.BOLD, 36));
+
+		String expText;
+		Color expColor;
+
+		if (levelUpOccurred) {
+			expText = "LEVEL UP! +" + expReward + " EXP";
+			expColor = Color.CYAN;
+		} else {
+			expText = "+" + expReward + " EXP";
+			expColor = Color.YELLOW;
+		}
+
+		// Draw the EXP amount
+		g.setColor(expColor);
+		FontMetrics fm = g.getFontMetrics();
+		int textX = PLAYER_HOME_X - (fm.stringWidth(expText) / 2);
+		g.drawString(expText, textX, indicatorY);
+
+		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); // Reset alpha
 	}
 
 	// NEW: Instruction Modal (With Word Wrap and smaller font)
@@ -1637,6 +1763,7 @@ public class BattleView {
 
 			g.setFont(GameConstants.UI_FONT);
 			g.setColor(Color.YELLOW);
+			// REWARDS ARE NOW CALCULATED BEFORE THIS SCREEN
 			String rewardMsg = "REWARD: " + goldReward + "G | " + expReward + " EXP";
 			if (playerUser.getProgressLevel() == 1 && playerUser.getWorldLevel() > 1) {
 				rewardMsg += " (BOSS DEFEATED!)";

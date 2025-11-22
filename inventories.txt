@@ -1,9 +1,9 @@
 // uniqueId|ownerUsername|productId|customName|level|currentExp
-89b7f392-6ac9-4dc1-92a0-81a7bb4ae799|player123|HP-001|Miraak|1|0
-54089e5d-3e56-47e5-8ffd-0ce0b7c26a2e|player123|HP-002|J'zargo|1|0
-faa51b77-8d49-4b24-b107-fac3cb50e660|player123|HP-003|Dovahkiin|1|0
-f7f31f41-9c37-4266-80d9-2e4b5b7fae38|player123|HP-004|Jenassa|1|0
-8c61c5f6-1f35-4877-acfe-621cb6dc3e49|player123|HP-005|Ulfric Stormcloak|1|0
-ff3d6f22-fa84-41ba-a381-bd32e4da87fa|player123|HP-006|Serana|1|0
-84045a08-0a31-4f3b-8259-98de931275c4|player123|HP-007|M'aiq the Liar|1|0
-f8c0b257-dccf-4eb8-83ed-b2e92b29f778|player123|HP-008|Vilkas|1|0
+89b7f392-6ac9-4dc1-92a0-81a7bb4ae799|player123|HP-001|Miraak|1|9
+54089e5d-3e56-47e5-8ffd-0ce0b7c26a2e|player123|HP-002|J'zargo|1|9
+faa51b77-8d49-4b24-b107-fac3cb50e660|player123|HP-003|Dovahkiin|1|9
+f7f31f41-9c37-4266-80d9-2e4b5b7fae38|player123|HP-004|Jenassa|1|9
+8c61c5f6-1f35-4877-acfe-621cb6dc3e49|player123|HP-005|Ulfric Stormcloak|1|9
+ff3d6f22-fa84-41ba-a381-bd32e4da87fa|player123|HP-006|Serana|2|5
+84045a08-0a31-4f3b-8259-98de931275c4|player123|HP-007|M'aiq the Liar|1|9
+f8c0b257-dccf-4eb8-83ed-b2e92b29f778|player123|HP-008|Vilkas|1|9
