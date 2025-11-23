@@ -3,113 +3,206 @@ package views;
 import static main.Main.scanner;
 import static main.Main.userManager;
 
+import controllers.AlertManager;
+import interfaces.Colorable;
+import main.Main;
 import models.User;
 
 public class SignUp
 {
 	public static void doSignUp()
 	{
-		System.out.println("\n--- Create Account ---");
-
-		// Add restrictions here
-		// This fields must be filled by the users
-		System.out.print("Enter First Name: ");
-		String firstName = scanner.nextLine();
-
-		System.out.print("Enter Last Name: ");
-		String lastName = scanner.nextLine();
-
+		Main.clearScreen();
+		Main.displayLogo();
+		
+		System.out.println("\n\n\n\n\n\n\n\n" + Colorable.GREEN
+							+ "\n\t\t\t\t\t\t       █▀▀ █▀▄ █▀▀ █▀█ ▀█▀ █▀▀   █▀█ █▀▀ █▀▀ █▀█ █ █ █▀█ ▀█▀"
+							+ "\n\t\t\t\t\t\t       █   █▀▄ █▀▀ █▀█  █  █▀▀   █▀█ █   █   █ █ █ █ █ █  █ "
+							+ "\n\t\t\t\t\t\t       ▀▀▀ ▀ ▀ ▀▀▀ ▀ ▀  ▀  ▀▀▀   ▀ ▀ ▀▀▀ ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀  ▀ "
+							+ "\n\n\n\n\n\n\n\n" + Colorable.RESET);
+		
+		String firstName;
+		String lastName;
 		String contactNum;
+		String username;
+		String password;
+		
+		while (true)
+		{
+			System.out.print("\t\t\t[Enter First Name]: " + Colorable.GREEN);
+			firstName = scanner.nextLine().trim();
+
+			System.out.print("\t\t\t" + Colorable.RESET + "[Enter Last Name]: " + Colorable.GREEN);
+			lastName = scanner.nextLine().trim();
+			
+			if (firstName.isEmpty() || lastName.isEmpty())
+			{
+				AlertManager.setError("First name and Last name cannot be empty.\n");
+				System.out.println("\t\t\t" + AlertManager.getAndClearAlert());
+			}
+			
+			else if (!firstName.matches("[A-Za-z- ]+") || !lastName.matches("^[A-Za-z- ]+"))
+			{
+				AlertManager.setError("First name and Last name must contain only letters or hypen.\n");
+				System.out.println("\t\t\t" + AlertManager.getAndClearAlert());
+			}
+			
+			else
+			{
+				break;
+			}
+			
+			try
+			{
+				Thread.sleep(16);
+			}
+			
+			catch (Exception e)
+			{
+				
+			}
+		}
 
 		while (true)
 		{
-			System.out.print("Enter Contact Number (must be 11 digits): ");
+			System.out.print("\t\t\t" + Colorable.RESET + "[Enter Contact Number (must be 11 digits)]: " + Colorable.GREEN);
 			contactNum = scanner.nextLine().trim();
 
 			if (contactNum.isEmpty())
 			{
-				System.out.println("Error: Contact number cannot be empty.");
+				AlertManager.setError("Contact number cannot be empty.");
+				System.out.println("\t\t\t" + AlertManager.getAndClearAlert());
 			}
 
 			else if (!contactNum.matches("[0-9]+"))
 			{
-				System.out.println("Error: Contact number must contain only numbers.");
+				AlertManager.setError("Contact number must contain only numbers.");
+				System.out.println("\t\t\t" + AlertManager.getAndClearAlert());
 			}
 
 			else if (contactNum.length() != 11)
 			{
-				System.out.println("Error: Contact number must be exactly 11 digits.");
+				AlertManager.setError("Error: Contact number must be exactly 11 digits.");
+				System.out.println("\t\t\t" + AlertManager.getAndClearAlert());
 			}
 
 			else
 			{
 				break;
 			}
+			
+			try
+			{
+				Thread.sleep(16);
+			}
+			
+			catch (Exception e)
+			{
+				
+			}
 		}
-
-		String username;
 
 		while(true)
 		{
-			System.out.print("Enter new username (must be at least 8 characters): ");
+			System.out.println(Colorable.YELLOW + "\t\t\t\t[NOTE]: The username cannot be changed after the account was created. Think your username thoughtfully.");
+			System.out.print("\t\t\t" + Colorable.RESET + "[Enter new username (must be at least 8 characters)]: " + Colorable.GREEN);
 			username = scanner.nextLine().trim();
 
 			if (username.isEmpty())
 			{
-				System.out.println("Error: Username cannot be empty.");
+				AlertManager.setError("Username cannot be empty.");
+				System.out.println("\t\t\t" + AlertManager.getAndClearAlert());
 			}
-
-			else if (username.contains("|"))	// To be edit, need to add more restrictions
-			{
-				System.out.println("Error: Username cannot contain the '|' character.");
-			}
-
+			
 			else if (username.length() < 8)
 			{
-				System.out.println("Error: Username must be at least 8 characters long.");
+				AlertManager.setError("Error: Username must be at least 8 characters long.");
+				System.out.println("\t\t\t" + AlertManager.getAndClearAlert());
+			}
+
+			else if (!username.matches("[a-zA-Z0-9_-]+")) 
+			{
+				AlertManager.setError("Username must contain only alphanumeric characters, underscores, and hyphens");
+				System.out.println("\t\t\t" + AlertManager.getAndClearAlert());
 			}
 
 			else
 			{
 				break;
 			}
+			
+			try
+			{
+				Thread.sleep(16);
+			}
+			
+			catch (Exception e)
+			{
+				
+			}
 		}
-
-		String password;
 
 		while (true)
 		{
-			System.out.print("Enter new password (must be at least 8 characters): ");
+			System.out.print("\t\t\t" + Colorable.RESET + "[Enter new password (must be at least 8 characters)]: " + Colorable.GREEN);
 			password = scanner.nextLine().trim();
 
 			if (password.isEmpty())
 			{
-				System.out.println("Error: Password cannot be empty.");
+				AlertManager.setError("Error: Password cannot be empty.");
+				System.out.println("\t\t\t" + AlertManager.getAndClearAlert());
 			}
 
 			else if (password.length() < 8)
 			{
-				System.out.println("Error: Password must be at least 8 characters long.");
+				AlertManager.setError("Error: Password must be at least 8 characters long.");
+				System.out.println("\t\t\t" + AlertManager.getAndClearAlert());
 			}
 
 			else
 			{
 				break;
 			}
+			
+			try
+			{
+				Thread.sleep(16);
+			}
+			
+			catch (Exception e)
+			{
+				
+			}
 		}
-
-		User newUser = new User(username, password, false, firstName, lastName, contactNum);
-
-		boolean isCreated = userManager.createAccount(newUser);
-
-		if (isCreated)
+		
+		System.out.print("\t\t\t" + Colorable.YELLOW + "[SYSTEM]: Create Account? [YES] / [NO]: " + Colorable.RESET);
+		String confirmation = scanner.nextLine();
+		
+		if (confirmation.equalsIgnoreCase("YES"))
 		{
-			System.out.println("Account created successfully!");
-			System.out.println("You may now log in.");
+			User newUser = new User(username, password, false, firstName, lastName, contactNum, false);
+
+			boolean isCreated = userManager.createAccount(newUser);
+
+			if (isCreated)
+			{	
+				AlertManager.setSuccess("Account created successfully! You may now log in.");
+			}
+			
+			else
+			{
+				AlertManager.setError("Username '" + username + "' is already taken. Please Sign Up again.");
+			}
 		}
+		
+		else if (confirmation.equalsIgnoreCase("NO"))
+		{
+			AlertManager.setError("Account Creation cancelled.");
+		}
+		
 		else
 		{
-			System.out.println("Error: That username is already taken. Please try again.");
+			AlertManager.setError("Invalid Input. Account Creation cancelled.");
 		}
 	}
 }

@@ -2,79 +2,189 @@ package main;
 
 import java.util.Scanner;
 
-import controllers.AnnouncementManager;
+import controllers.AlertManager;
+import controllers.AnnouncementManager; 
 import controllers.CodeManager;
 import controllers.ListingManager;
 import controllers.ProductManager;
 import controllers.PurchaseManager;
-import controllers.SaveManager;
+import controllers.SaveManager; 
 import controllers.UserManager;
+import interfaces.Colorable;
 import models.User;
 import views.AdminMenu;
 import views.Login;
 import views.SignUp;
 import views.UserMenu;
 
-public class Main {
+// This is the main class
+public class Main implements Colorable
+{
+	// Declare Objects
 	public static UserManager userManager;
 	public static ProductManager productManager;
 	public static CodeManager codeManager;
 	public static PurchaseManager purchaseManager;
 	public static ListingManager listingManager;
-	public static AnnouncementManager announcementManager;
-	public static SaveManager saveManager;
+	public static AnnouncementManager announcementManager; 
+	public static SaveManager saveManager; 
 
 	public static Scanner scanner;
 	public static User currentUser;
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception
+	{
+
+		// Create Objects
 		productManager = new ProductManager();
 		codeManager = new CodeManager();
 		userManager = new UserManager(productManager);
 		purchaseManager = new PurchaseManager();
 		listingManager = new ListingManager();
-		announcementManager = new AnnouncementManager();
-		saveManager = new SaveManager();
+		announcementManager = new AnnouncementManager(); 
+		saveManager = new SaveManager(); 
+		scanner = new Scanner(System.in);
 
-		try (Scanner mainScanner = new Scanner(System.in)) {
-			scanner = mainScanner;
+		while(true)
+		{
+			Main.clearScreen();
 
-			while (true) {
-				currentUser = null;
+			try
+			{
+				Thread.sleep(16);
+			}
 
-				showLoginMenu();
+			catch (Exception e)
+			{
 
-				String choice = scanner.nextLine();
+			}
 
-				if (choice.equals("1")) {
-					Login.doLogin();
-				} else if (choice.equals("2")) {
-					SignUp.doSignUp();
-				} else if (choice.equals("3")) {
-					System.out.println("Thank you for playing Battle Hangpies!");
-					break;
-				} else {
-					System.out.println("Invalid choice. Please enter 1, 2, or 3.");
+			currentUser = null;
+
+			Main.showLoginMenu();
+
+			String choice = scanner.nextLine();
+
+			if(choice.equals("1"))
+			{
+				Login.doLogin();
+			}
+			else if (choice.equals("2"))
+			{
+				SignUp.doSignUp();
+			}
+			else if (choice.equals("3"))
+			{
+				System.out.println("Thank you for playing Battle Hangpies!");
+				scanner.close();
+				break;
+			}
+			else
+			{
+				AlertManager.setError("Invalid choice. Please enter 1, 2, or 3.");
+			}
+
+			if (currentUser != null)
+			{
+				if (currentUser.isAdmin())
+				{
+					AdminMenu.showAdminDashboard();
 				}
+				else
+				{
+					// Re-enabling isBanned check
+					if (currentUser.isBanned())
+					{
+						AlertManager.setError("This Account is banned.");
+					}
 
-				if (currentUser != null) {
-					if (currentUser.isAdmin()) {
-						AdminMenu.showAdminDashboard();
-					} else {
+					else
+					{
 						UserMenu.showUserDashboard();
 					}
 				}
-
 			}
 		}
 	}
 
-	private static void showLoginMenu() {
-		System.out.println("\n--- BATTLE HANGPIES ---");
-		System.out.println("Welcome! Please log in or create an account.");
-		System.out.println("1. Log In");
-		System.out.println("2. Sign Up");
-		System.out.println("3. Exit");
-		System.out.print("Enter your choice: ");
+	public static void displayLogo()
+	{
+		// Single string with all formatting precomputed
+		String fullOutput = 
+						"\t\t\u001b[38;2;255;255;0m        ██████╗  █████╗ ████████╗████████╗██╗     ███████╗    ██╗  ██╗ █████╗ ███╗   ██╗ ██████╗ ██████╗ ██╗███████╗███████╗    \u001B[0m\n" +
+						"\t\t\u001b[38;2;255;234;0m        ██╔══██╗██╔══██╗╚══██╔══╝╚══██╔══╝██║     ██╔════╝    ██║  ██║██╔══██╗████╗  ██║██╔════╝ ██╔══██╗██║██╔════╝██╔════╝    \u001B[0m\n" +
+						"\t\t\u001b[38;2;255;213;0m        ██████╔╝███████║   ██║      ██║   ██║     █████╗      ███████║███████║██╔██╗ ██║██║  ███╗██████╔╝██║█████╗  ███████╗    \u001B[0m\n" +
+						"\t\t\u001b[38;2;255;191;0m        ██╔══██╗██╔══██║   ██║      ██║   ██║     ██╔══╝      ██╔══██║██╔══██║██║╚██╗██║██║   ██║██╔═══╝ ██║██╔══╝  ╚════██║    \u001B[0m\n" +
+						"\t\t\u001b[38;2;255;160;0m        ██████╔╝██║  ██║   ██║      ██║   ███████╗███████╗    ██║  ██║██║  ██║██║ ╚████║╚██████╔╝██║     ██║███████╗███████║    \u001B[0m\n" +
+						"\t\t\u001b[38;2;255;120;0m        ╚═════╝ ╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚══════╝╚══════╝    ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝╚══════╝    \u001B[0m\n";
+
+		System.out.print(fullOutput);
+		System.out.println("\n\t\t\t\t\t\t\t    AN INTEGRATED GAMING AND MARKETPLACE SYSTEM");
+	}
+
+	private static void showLoginMenu()
+	{
+		Main.displayLogo();
+
+		System.out.println("\n\n\t\t\t" + Colorable.YELLOW + "[PATCH NOTES:]" + Colorable.RESET);
+
+		System.out.println("\t\t\t __________________________________________________________________________                   ▄▄▄▄▄▄▄▄      ");
+		System.out.println("\t\t\t|                                                                          |            █   ▄██████████▄    ");
+		System.out.println("\t\t\t|  " + Colorable.YELLOW + "[EXCLUSIVE] BATTLE HANGPIES IS LIVE NOW!" + Colorable.RESET + "                                |           █▐   ████████████    ");
+		System.out.println("\t\t\t|  The wait is over! Battle Hangpies has finally arrived!                  |           ▌▐  ██▄▀██████▀▄██   ");
+		System.out.println("\t\t\t|__________________________________________________________________________|          ▐ ▐  ██▄▄▄▄██▄▄▄▄██   ");
+		System.out.println("\t\t\t __________________________________________________________________________           ▐ ▐  ██████████████   ");
+		System.out.println("\t\t\t|                                                                          |          ▐▄▐████ ▀▐▐▀█ █ ▌▐██▄ ");
+		System.out.println("\t\t\t|  " + Colorable.YELLOW + "[UPDATE] Version 1.1.0 - The Marketplace Update" + Colorable.RESET + "                         |            █████          ▐███▌");
+		System.out.println("\t\t\t|  Explore the Marketplace to buy and sell with other players!             |            █▀▀██▄█ ▄   ▐ ▄███▀ ");
+		System.out.println("\t\t\t|__________________________________________________________________________|            █  ███████▄██████   ");
+		System.out.println("\t\t\t __________________________________________________________________________                ██████████████   ");
+		System.out.println("\t\t\t|                                                                          |               █████████▐▌██▌   ");
+		System.out.println("\t\t\t|  " + Colorable.YELLOW + "[NEW] New Map: Volcanic Peak!" + Colorable.RESET + "                                           |               ▐▀▐ ▌▀█▀ ▐ █     ");
+		System.out.println("\t\t\t|  Explore the treacherous Volcanic Peak map!                              |                     ▐    ▌     ");
+		System.out.println("\t\t\t|__________________________________________________________________________|");
+
+
+		if (AlertManager.hasAlert())
+		{
+			System.out.println("\n\t\t\t" + AlertManager.getAndClearAlert());
+		}
+		else
+		{
+			System.out.println("\n");
+		}
+
+		System.out.println("\n\t\t\t" + Colorable.YELLOW + "[SYSTEM]: Welcome! Please log in or create an account." + Colorable.RESET);
+		System.out.println("\n\t\t\t[1] - LOG IN");
+		System.out.println("\t\t\t[2] - SIGN UP");
+		System.out.println("\t\t\t[3] - EXIT");
+		System.out.print("\n\t\t\t" + Colorable.BLUE + "[Enter your choice]: " + Colorable.RESET);
+	}
+
+	public static void clearScreen()
+	{
+		for (int i = 0; i < 50; i++)
+		{
+			System.out.println();
+		}
+	}
+
+	public static void fillUpList(int desiredFill, int occupied, String fill)
+	{
+		int count = desiredFill - occupied;
+
+		if (occupied > desiredFill)
+		{
+			return;
+		}
+
+		else
+		{
+			for (int i = 0; i < count; i++)
+			{
+				System.out.println(fill);
+			}
+		}
+
 	}
 }

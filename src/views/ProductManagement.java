@@ -3,74 +3,72 @@ package views;
 import static main.Main.productManager;
 import static main.Main.scanner;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import game.GameConstants;
+import controllers.AlertManager;
+import interfaces.Colorable;
+import main.Main;
 import models.Hangpie;
 
-public class ProductManagement
-{
-	public static void showProductManagement()
-	{
-		while (true)
-		{
+public class ProductManagement implements Colorable {
+	public static void showProductManagement() {
+		while (true) {
+			Main.clearScreen();
+			AdminMenu.displayAdminNavbar(); // Re-use the admin navbar for consistency
 			System.out.println("\n--- Product Management ---");
-			System.out.println("Current Products in Marketplace:");
-			System.out.println(" [PODUCT ID]\t[NAME]\t\t\t[STATS]\t\t\t[IMG]\t\t[PRICE]\t\t\t[DESCRIPTION]");
+			System.out.println("Current Products in Shop:");
+			System.out.println(" [PODUCT ID]\t[NAME]\t\t\t[STATS]\t\t\t[PRICE]\t\t\t[DESCRIPTION]");
 
 			List<Hangpie> productList = new ArrayList<>(productManager.getAllProducts());
 
 			Collections.sort(productList);
+			int listCount = 0;
 
-			for (Hangpie product : productList)
-			{
+			for (Hangpie product : productList) {
 				System.out.println("  - " + product.toString());
+				listCount++;
 			}
 
+			Main.fillUpList(10, listCount, "");
+
+			System.out.println("\n" + AlertManager.getAndClearAlert());
+
 			System.out.println("\nOptions:");
-			System.out.println("1. Add New Product");
-			System.out.println("2. Update Product");
-			System.out.println("3. Delete Product");
-			System.out.println("4. Back to Admin Dashboard");
-			System.out.print("Enter your choice: ");
+			System.out.println(" [1] - Add New Product");
+			System.out.println(" [2] - Update Product");
+			System.out.println(" [3] - Delete Product");
+			System.out.println(" [4] - Back to Admin Dashboard");
+			System.out.print(" " + Colorable.BLUE + "[Enter your choice]: " + Colorable.RESET);
 
 			String choice = scanner.nextLine();
 
-			if (choice.equals("1"))
-			{
+			if (choice.equals("1")) {
 				doAddProduct();
 			}
 
-			else if (choice.equals("2"))
-			{
+			else if (choice.equals("2")) {
 				doUpdateProduct();
 			}
 
-			else if (choice.equals("3"))
-			{
+			else if (choice.equals("3")) {
 				doDeleteProduct();
 			}
 
-			else if (choice.equals("4"))
-			{
+			else if (choice.equals("4")) {
 				break;
 			}
 
-			else
-			{
-				System.out.println("Invalid choice. Please try again.");
+			else {
+				AlertManager.setError("Invalid choice. Please try again.");
 			}
 		}
 	}
 
-	private static void doAddProduct()
-	{
+	private static void doAddProduct() {
 		System.out.println("\n--- Add New Product ---");
-		try
-		{
+		try {
 			System.out.print("Enter Product ID (e.g., HP-004): ");
 			String id = scanner.nextLine().trim();
 
@@ -79,6 +77,9 @@ public class ProductManagement
 
 			System.out.print("Enter Description: ");
 			String description = scanner.nextLine().trim();
+
+			System.out.print("Enter Image Folder Name (e.g., evil_wizard): ");
+			String imageName = scanner.nextLine().trim();
 
 			System.out.print("Enter Price (e.g., 300): ");
 			double price = Double.parseDouble(scanner.nextLine().trim());
@@ -91,154 +92,95 @@ public class ProductManagement
 
 			System.out.print("Enter Attack Power (e.g., 10): ");
 			int attackPower = Integer.parseInt(scanner.nextLine().trim());
-			
-			// New Image Selection (Selects Folder Name)
-			String imageName = selectImageFile();
 
 			Hangpie newProduct = new Hangpie(id, name, description, price, maxHealth, level, attackPower, imageName);
 
-			if (productManager.addProduct(newProduct))
-			{
-				System.out.println("Product added successfully!");
+			if (productManager.addProduct(newProduct)) {
+				AlertManager.setSuccess("Product added successfully!");
+			} else {
+				AlertManager.setError("A product with ID '" + id + "' already exists.");
 			}
-			else
-			{
-				System.out.println("Error: A product with ID '" + id + "' already exists.");
-			}
-		}
-		catch (NumberFormatException e)
-		{
-			System.err.println("Error: Invalid number. Price, Health, Level, and Attack must be numbers.");
+		} catch (NumberFormatException e) {
+			AlertManager.setError("Invalid number. Price, Health, Level, and Attack must be numbers.");
 		}
 	}
 
-	private static void doUpdateProduct()
-	{
+	private static void doUpdateProduct() {
 		System.out.println("\n--- Update Product ---");
 		System.out.print("Enter the ID of the product to update (e.g., HP-001): ");
 		String id = scanner.nextLine().trim();
 
 		Hangpie product = productManager.getProductById(id);
 
-		if (product == null)
-		{
-			System.out.println("Error: Product ID '" + id + "' not found.");
+		if (product == null) {
+			AlertManager.setError("Product ID '" + id + "' not found.");
 			return;
 		}
 
 		System.out.println("Updating product: " + product.getName());
 		System.out.println("(Press Enter to keep the current value)");
 
-		try
-		{
+		try {
 			System.out.print("Enter new Name (current: " + product.getName() + "): ");
 			String newName = scanner.nextLine().trim();
 
-			if (!newName.isEmpty())
-			{
+			if (!newName.isEmpty()) {
 				product.setName(newName);
 			}
 
 			System.out.print("Enter new Description (current: " + product.getDescription() + "): ");
 			String newDesc = scanner.nextLine().trim();
 
-			if (!newDesc.isEmpty())
-			{
+			if (!newDesc.isEmpty()) {
 				product.setDescription(newDesc);
+			}
+
+			System.out.print("Enter new Image Folder Name (current: " + product.getImageName() + "): ");
+			String newImageName = scanner.nextLine().trim();
+
+			if (!newImageName.isEmpty()) {
+				product.setImageName(newImageName);
 			}
 
 			System.out.print("Enter new Price (current: " + product.getPrice() + "): ");
 			String newPrice = scanner.nextLine().trim();
 
-			if (!newPrice.isEmpty())
-			{
+			if (!newPrice.isEmpty()) {
 				product.setPrice(Double.parseDouble(newPrice));
 			}
 
 			System.out.print("Enter new Max Health (current: " + product.getMaxHealth() + "): ");
 			String newMaxHealth = scanner.nextLine().trim();
 
-			if (!newMaxHealth.isEmpty())
-			{
+			if (!newMaxHealth.isEmpty()) {
 				product.setMaxHealth(Integer.parseInt(newMaxHealth));
 			}
 
 			System.out.print("Enter new Attack Power (current: " + product.getAttackPower() + "): ");
 			String newAtkPower = scanner.nextLine();
 
-			if (!newAtkPower.isEmpty())
-			{
+			if (!newAtkPower.isEmpty()) {
 				product.setAttackPower(Integer.parseInt(newAtkPower));
-			}
-			
-			System.out.print("Update Image? (yes/no) (current: " + product.getImageName() + "): ");
-			String updateImg = scanner.nextLine().trim();
-			if (updateImg.equalsIgnoreCase("yes")) {
-				String newImage = selectImageFile();
-				product.setImageName(newImage);
 			}
 
 			productManager.updateProduct(product);
-			System.out.println("Product updated successfully!");
+			AlertManager.setSuccess("Product updated successfully!");
 
+		} catch (NumberFormatException e) {
+			AlertManager.setError("Invalid number. Price, Health, Level, and Attack must be numbers.");
 		}
-		catch (NumberFormatException e)
-		{
-			System.err.println("Error: Invalid number. Price, Health, Level, and Attack must be numbers.");
-		}
+
 	}
 
-	private static void doDeleteProduct()
-	{
+	private static void doDeleteProduct() {
 		System.out.println("\n--- Delete Product ---");
 		System.out.print("Enter Product ID to delete: ");
 		String id = scanner.nextLine().trim();
 
-		if (productManager.deleteProduct(id))
-		{
-			System.out.println("Product '" + id + "' deleted successfully.");
-		}
-		else
-		{
-			System.out.println("Error: Product ID '" + id + "' not found.");
-		}
-	}
-	
-	/**
-	 * Scans the images/hangpies folder and asks the user to select a SUBFOLDER (Type).
-	 * @return The name of the selected folder (e.g., "crystal").
-	 */
-	private static String selectImageFile() {
-		System.out.println("\n--- Select Hangpie Type (Folder) ---");
-		
-		File folder = new File(GameConstants.HANGPIE_DIR);
-		// Filter for directories only (e.g., crystal, ice, dude)
-		File[] fileList = folder.listFiles(File::isDirectory);
-		
-		if (fileList == null || fileList.length == 0) {
-			System.out.println("No asset folders found in " + GameConstants.HANGPIE_DIR);
-			return "default";
-		}
-		
-		for (int i = 0; i < fileList.length; i++) {
-			System.out.println((i + 1) + ". " + fileList[i].getName());
-		}
-		
-		while (true) {
-			System.out.print("Enter number to select asset type: ");
-			try {
-				String input = scanner.nextLine().trim();
-				int choice = Integer.parseInt(input);
-				
-				if (choice > 0 && choice <= fileList.length) {
-					// Return the folder name. The view will automatically append /idle.gif
-					return fileList[choice - 1].getName();
-				} else {
-					System.out.println("Invalid number.");
-				}
-			} catch (NumberFormatException e) {
-				System.out.println("Please enter a number.");
-			}
+		if (productManager.deleteProduct(id)) {
+			AlertManager.setSuccess("Product '" + id + "' deleted successfully.");
+		} else {
+			AlertManager.setError("Product ID '" + id + "' not found.");
 		}
 	}
 }

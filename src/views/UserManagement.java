@@ -6,26 +6,65 @@ import static main.Main.userManager;
 
 import java.util.Collection;
 
+import controllers.AlertManager;
+import controllers.LogManager;
+import interfaces.Colorable;
+import main.Main;
 import models.User;
 
-public class UserManagement
+public class UserManagement implements Colorable
 {
 	public static void showUserManagement()
 	{
 		while (true)
 		{
+			Main.clearScreen();
+			AdminMenu.displayAdminNavbar();
+			
 			System.out.println("\n--- User Management ---");
-			System.out.println("1. View All Users");
-			System.out.println("2. Delete User");
-			System.out.println("3. Update User");
-			System.out.println("4. Back to Admin Dashboard");
-			System.out.print("Enter your choice: ");
+			System.out.println("  [Username]\t[Full Name]\t\t[Contact]\t[Is Admin]\t[Status]");
+			System.out.println("  ----------------------------------------------------------------------------------");
+
+			Collection<User> users = userManager.getAllUsers();
+			int listCount = 0;
+
+			if (users.isEmpty())
+			{
+				System.out.println("No users found in the system.");
+			}
+
+			else
+			{
+				for (User user : users)
+				{
+					String adminStatus = user.isAdmin() ? Colorable.GREEN + "TRUE" + Colorable.RESET : Colorable.RED + "FALSE" + Colorable.RESET;
+					String bannedStatus = user.isBanned() ? Colorable.RED + "BANNED" + Colorable.RESET : Colorable.GREEN + "ACTIVE" + Colorable.RESET;
+					
+					System.out.printf("  %-15s\t%-20s\t%-15s\t%-5s\t\t%s\n",
+							user.getUsername(),
+							user.getFirstName() + " " + user.getLastName(),
+							user.getContactNum(),
+							adminStatus,
+							bannedStatus);
+					listCount++;
+				}
+			}
+			
+			Main.fillUpList(10, listCount, "  ");
+			
+			System.out.println("\n" + AlertManager.getAndClearAlert());
+
+			System.out.println("\nOptions:");
+			System.out.println(" [1] - Update User Details/Status");
+			System.out.println(" [2] - Delete User");
+			System.out.println(" [3] - Back to Admin Dashboard");
+			System.out.print(" " + Colorable.BLUE + "[Enter your choice]: " + Colorable.RESET);
 
 			String choice = scanner.nextLine();
 
 			if (choice.equals("1"))
 			{
-				doViewAllUsers();
+				doUpdateUser();
 			}
 
 			else if (choice.equals("2"))
@@ -35,44 +74,13 @@ public class UserManagement
 
 			else if (choice.equals("3"))
 			{
-				doUpdateUser();
-			}
-
-			else if (choice.equals("4"))
-			{
 				break;
 			}
 
 			else
 			{
-				System.out.println("Invalid choice. Please try again.");
+				AlertManager.setError("Invalid choice. Please try again.");
 			}    
-		}
-	}
-
-	private static void doViewAllUsers()
-	{
-		System.out.println("\n--- All Registered Users ---");
-		System.out.println("[Username]\t[Full Name]\t\t[Contact]\t[Is Admin]");
-		System.out.println("-----------------------------------------------------------------");
-
-		Collection<User> users = userManager.getAllUsers();
-
-		if (users.isEmpty())
-		{
-			System.out.println("No users found in the system.");
-		}
-
-		else
-		{
-			for (User user : users)
-			{
-				System.out.printf("%-15s\t%-20s\t%-15s\t%-5s\n",
-						user.getUsername(),
-						user.getFirstName() + " " + user.getLastName(),
-						user.getContactNum(),
-						user.isAdmin());
-			}
 		}
 	}
 
@@ -86,13 +94,14 @@ public class UserManagement
 
 		if (user == null)
 		{
-			System.out.println("Error: User '" + username + "' not found.");
+			AlertManager.setError("User '" + username + "' not found.");
 			return;
 		}
 
 		System.out.println("Updating user: " + user.getUsername());
 		System.out.println("(Press Enter to keep the current value)");
 
+		// Update Contact
 		System.out.print("Enter new Contact Number (current: " + user.getContactNum() + "): ");
 		String newContact = scanner.nextLine().trim();
 
@@ -105,10 +114,11 @@ public class UserManagement
 
 			else
 			{
-				System.out.println("Invalid contact number format. Skipping update.");
+				AlertManager.setError("Invalid contact number format. Skipping update.");
 			}
 		}
 
+		// Update Admin Status
 		System.out.print("Make this user an admin? (yes/no) (current: " + user.isAdmin() + "): ");
 		String adminChoice = scanner.nextLine().trim();
 
@@ -122,7 +132,7 @@ public class UserManagement
 
 			if (user.isAdmin() && user.getUsername().equals(currentUser.getUsername()))
 			{
-				System.out.println("Error: You cannot remove your own admin status.");
+				AlertManager.setError("Error: You cannot remove your own admin status.");
 			}
 
 			else
@@ -130,9 +140,33 @@ public class UserManagement
 				user.setAdmin(false);
 			}
 		}
+		
+		// Update Banned Status
+		System.out.print("Ban this user? (yes/no) (current: " + user.isBanned() + "): ");
+		String banChoice = scanner.nextLine().trim();
+		
+		if (banChoice.equalsIgnoreCase("yes"))
+		{
+			if (user.getUsername().equals(currentUser.getUsername()))
+			{
+				AlertManager.setError("Error: You cannot ban yourself.");
+			}
+			else
+			{
+				user.setStatus(true);
+			}
+		}
+		
+		else if (banChoice.equalsIgnoreCase("no"))
+		{
+			user.setStatus(false);
+		}
 
 		userManager.updateUser(user);
-		System.out.println("User updated successfully!");
+		AlertManager.setSuccess("User updated successfully!");
+		
+		String logMsg = "Updated user: " + user.getUsername();
+		LogManager.log(currentUser.getUsername(), logMsg);
 	}
 
 	private static void doDeleteUser()
@@ -145,17 +179,20 @@ public class UserManagement
 
 		if (result == 1)
 		{
-			System.out.println("User '" + username + "' was deleted successfully.");
+			AlertManager.setSuccess("User '" + username + "' was deleted successfully.");
 		}
 
 		else if (result == 0)
 		{
-			System.out.println("Error: User '" + username + "' not found.");
+			AlertManager.setError("User '" + username + "' not found.");
 		}
 
 		else if (result == -1)
 		{
-			System.out.println("Error: You cannot delete your own admin account.");
+			AlertManager.setError("You cannot delete your own admin account.");
 		}
+		
+		String logMsg = "Attempted to delete user: " + username + ". Result: " + result;
+		LogManager.log(currentUser.getUsername(), logMsg);
 	}
 }

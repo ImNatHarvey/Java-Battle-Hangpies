@@ -58,7 +58,8 @@ public class SaveManager {
 				}
 			}
 		} catch (IOException e) {
-			System.out.println("No existing save file found. Creating new one on save.");
+			// This is not a critical error, just indicates the file doesn't exist yet
+			// (normal on first run)
 		}
 	}
 
@@ -80,7 +81,7 @@ public class SaveManager {
 	public void saveBattle(BattleState state) {
 		saveMap.put(state.getUsername(), state);
 		writeSaves();
-		System.out.println("[SaveManager] Game saved for user: " + state.getUsername());
+		// Removed console log for saved state
 	}
 
 	public BattleState loadBattle(String username) {
@@ -91,7 +92,7 @@ public class SaveManager {
 		if (saveMap.containsKey(username)) {
 			saveMap.remove(username);
 			writeSaves();
-			System.out.println("[SaveManager] Save deleted for user: " + username);
+			// Removed console log for deleted save
 		}
 	}
 

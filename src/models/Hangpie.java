@@ -3,46 +3,71 @@ package models;
 import java.awt.Image;
 import java.util.UUID;
 import utils.AssetLoader;
-import game.GameConstants;
+import game.GameConstants; // Must be added
 
-public class Hangpie extends Character implements Comparable<Hangpie> {
-	// Animation States
+// This class define the Attributes and Characteristics of a Hangpie
+// This class implements the public interface Comparable<T> used for sorting objects
+public class Hangpie extends Character implements Comparable<Hangpie>
+{
+	// Animation States (from original code)
 	public enum AnimState {
 		IDLE, ATTACK, DAMAGE, DEATH
 	}
 
-	private String uniqueId; // UUID used for Marketplace
-	private String productId; // Product ID used exclusively in Shop
-	private String description; // Hangpie's description
-	private double price; // For the marketplace
-	private String imageName; // The folder name of the image (e.g., "wizard")
+	// UUID used for Marketplace
+	private String uniqueId;
+	
+	// Product ID used exclusively in Shop
+	private String productId;
+	
+	// Hangpie's description
+	private String description;
+	
+	// For the marketplace
+	private double price;
+	
+	// The folder name of the image (e.g., "wizard") (from original code)
+	private String imageName; 
 
-	private int currentExp; // Current EXP
-
+	// Current EXP (from original code)
+	private int currentExp; 
+	
+	// Current Animation State (from original code)
 	private AnimState currentAnimState = AnimState.IDLE;
-
-	public Hangpie(String id, String name, String description, double price, int maxHealth, int level, int attackPower,
-			String imageName) {
-		super(name, maxHealth, level, attackPower);
+	
+	// Hangpie constructor to be used in defining a particular Hangpie (Updated to match original codebase structure)
+	public Hangpie(String id, String name, String description, double price, int maxHealth, int level, int attackPower, String imageName)
+	{
+		super(name, maxHealth, level, attackPower);	// Calls the parent (Character) constructor using "super" keyword
 		this.productId = id;
 		this.description = description;
 		this.price = price;
-		this.imageName = imageName;
-		this.currentExp = 0;
+		this.imageName = imageName; // Added
+		this.currentExp = 0; // Added
 	}
 
-	public Hangpie(Hangpie localCopy) {
+	/* This is a Copy constructor.
+	 * It serves as the local copy of products of the user.
+	 * Its purpose is to store owned hangpie/s to the Inventory.
+	 * Having a local copy of products can allow the user to modify their own Hangpie's data without affecting the Shop Product data. 
+	 * This is used to prevent data manipulation to the product list in shop.
+	 */
+	public Hangpie (Hangpie localCopy)
+	{
+		// super keyword for the Character constructor
 		super(localCopy.getName(), localCopy.getMaxHealth(), localCopy.getLevel(), localCopy.getAttackPower());
+		
+		// Generate random UUID. Used UUID Class
 		this.uniqueId = UUID.randomUUID().toString();
+		
 		this.productId = localCopy.productId;
 		this.description = localCopy.description;
 		this.price = localCopy.price;
-		this.imageName = localCopy.imageName;
-		this.currentExp = localCopy.currentExp;
+		this.imageName = localCopy.imageName; // Added
+		this.currentExp = localCopy.currentExp; // Added
 	}
-
-	// --- Progression Methods ---
-
+	
+	// --- Progression Methods (from original code) ---
 	public int getMaxExpForCurrentLevel() {
 		// Level 1: 10, Level 2: 20, Level 3: 30...
 		return this.level * 10;
@@ -50,10 +75,9 @@ public class Hangpie extends Character implements Comparable<Hangpie> {
 
 	/**
 	 * Adds EXP to the Hangpie. Handles level ups and caps based on World Level.
-	 * 
-	 * @param amount          The amount of EXP to gain.
+	 * * @param amount          The amount of EXP to gain.
 	 * @param worldLevelLimit The player's current World Level (Hard Cap for Pet
-	 *                        Level).
+	 * Level).
 	 * @return true if the pet leveled up, false otherwise.
 	 */
 	public boolean gainExp(int amount, int worldLevelLimit) {
@@ -85,7 +109,7 @@ public class Hangpie extends Character implements Comparable<Hangpie> {
 
 		return leveledUp;
 	}
-
+	
 	private void levelUp() {
 		this.level++;
 		// Stats Growth: +1 HP / +1 ATK per level
@@ -94,9 +118,8 @@ public class Hangpie extends Character implements Comparable<Hangpie> {
 		// Heal on level up
 		this.currentHealth = this.maxHealth;
 	}
-
-	// --- Animation Methods ---
-
+	
+	// --- Animation Methods (from original code) ---
 	public void setAnimationState(AnimState state) {
 		if (this.currentAnimState != state) {
 			this.currentAnimState = state;
@@ -140,61 +163,79 @@ public class Hangpie extends Character implements Comparable<Hangpie> {
 			getImageForState(state);
 		}
 	}
-
-	// --- Getters & Setters ---
-
+	
 	@Override
+	// This method is used to display this object to the Shop easily (Updated to
+	// include EXP from original code)
 	public String toString() {
+		// Updated format to include EXP and EXP cap
 		return String.format("[%s]\t%s\t\tLvl:%d (EXP:%d/%d)\t[Price: %.2fG]\t%s", productId, name, level, currentExp,
 				getMaxExpForCurrentLevel(), price, description);
 	}
-
+	
 	@Override
-	public int compareTo(Hangpie other) {
+	// This is a sorting method used to sort out Products by its Product ID
+	// It can be used to sort the Product list to ascending or descending
+	public int compareTo(Hangpie other)
+	{
 		return this.productId.compareTo(other.getId());
 	}
 
-	public String getUniqueId() {
+	// Getter Methods (Updated to include new fields)
+	public String getUniqueId()
+	{
 		return uniqueId;
 	}
-
-	public String getId() {
+	
+	public String getId()
+	{
 		return productId;
 	}
 
-	public double getPrice() {
+	public double getPrice()
+	{
 		return price;
 	}
 
-	public String getDescription() {
+	public String getDescription()
+	{
 		return description;
 	}
-
-	public String getImageName() {
+	
+	public String getImageName()
+	{
 		return imageName;
 	}
 
-	public int getCurrentExp() {
+	public int getCurrentExp()
+	{
 		return currentExp;
 	}
 
-	public void setUniqueId(String uniqueId) {
+
+	// Setter Method (Updated to include new fields)
+	public void setUniqueId(String uniqueId)
+	{
 		this.uniqueId = uniqueId;
 	}
-
-	public void setPrice(double price) {
+	
+	public void setPrice(double price)
+	{
 		this.price = price;
 	}
 
-	public void setDescription(String description) {
+	public void setDescription(String description)
+	{
 		this.description = description;
 	}
 
-	public void setImageName(String imageName) {
+	public void setImageName(String imageName)
+	{
 		this.imageName = imageName;
 	}
 
-	public void setCurrentExp(int currentExp) {
+	public void setCurrentExp(int currentExp)
+	{
 		this.currentExp = currentExp;
 	}
 }

@@ -13,33 +13,42 @@ import models.Hangpie;
 import models.Listing;
 import models.User;
 
-public class ListingManager {
+public class ListingManager
+{
 	private Map<String, Listing> listMap;
 	private String databaseFile = "listings.txt";
-
-	public ListingManager() {
+	
+	public ListingManager()
+	{
 		this.listMap = new HashMap<>();
 		loadListings();
 	}
-
-	private void loadListings() {
-		try (BufferedReader reader = new BufferedReader(new FileReader(databaseFile))) {
+	
+	private void loadListings()
+	{
+		try (BufferedReader reader = new BufferedReader(new FileReader(databaseFile)))
+		{
 			String line;
-
-			while ((line = reader.readLine()) != null) {
-				if (line.startsWith("//") || line.trim().isEmpty()) {
+			
+			while ((line = reader.readLine()) != null)
+			{
+				if (line.startsWith("//") || line.trim().isEmpty())
+				{
 					continue;
 				}
-
-				// Use limit -1 to keep empty strings if description (last field) is empty
+				
+				// Use limit -1 to ensure empty trailing strings are included
 				String[] parts = line.split("\\|", -1);
 
-				if (parts.length < 9) {
-					System.out.println("Skipping corrupt listing: " + line);
+				if (parts.length < 9)
+				{
+					// Use System.err.println for unrecoverable data corruption warning during loading
+					System.err.println("[Warning]: Skipping corrupt listing: " + line);
 					continue;
 				}
-
-				try {
+				
+				try
+				{
 					String uniquePetId = parts[0];
 					String sellerUsername = parts[1];
 					Double sellerPrice = Double.parseDouble(parts[2]);
@@ -49,69 +58,82 @@ public class ListingManager {
 					int petHealth = Integer.parseInt(parts[6]);
 					int petAttack = Integer.parseInt(parts[7]);
 					String description = parts[8];
-
-					// Parse EXP (Index 9), default to 0 if missing
+					
+					// Parse EXP (Index 9), default to 0 if missing (backward compatibility)
 					int petExp = 0;
 					if (parts.length > 9) {
 						petExp = Integer.parseInt(parts[9]);
 					}
 
-					Listing listing = new Listing(uniquePetId, sellerUsername, sellerPrice, productId, petName,
-							petLevel, petHealth, petAttack, description, petExp);
+					Listing listing = new Listing(uniquePetId, sellerUsername, sellerPrice, productId, petName, petLevel, petHealth, petAttack, description, petExp);
 					listMap.put(listing.getUniqueId(), listing);
 				}
-
-				catch (NumberFormatException e) {
+				
+				catch (NumberFormatException e)
+				{
+					// Use System.err.println for unrecoverable data corruption warning during loading
 					System.err.println("Error loading listings: " + e.getMessage());
 				}
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e)
+		{
+			// Inform user of error loading
 			System.err.println("Error loading listings: " + e.getMessage());
 		}
 	}
-
-	private void saveListing() {
-		try (BufferedWriter writer = new BufferedWriter(new FileWriter(databaseFile))) {
-			writer.write(
-					"// FORMAT: uniquePetId|sellerUsername|price|productId|petName|petLevel|petHealth|petAttack|description|petExp");
-			writer.newLine();
-
-			for (Listing listing : listMap.values()) {
-				writer.write(listing.toFileString());
-				writer.newLine();
-			}
+	
+	private void saveListing()
+	{
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(databaseFile)))
+		{
+			writer.write("// FORMAT: uniquePetId|sellerUsername|price|productId|petName|petLevel|petHealth|petAttack|description|petExp");
+            writer.newLine();
+            
+            for (Listing listing: listMap.values())
+            {
+            	writer.write(listing.toFileString());
+            	writer.newLine();
+            }
 		}
-
-		catch (IOException e) {
+		
+		catch (IOException e)
+		{
+			// Use System.err.println for critical save failure
 			System.err.println("CRITICAL ERROR: Could not save listings: " + e.getMessage());
 		}
 	}
-
+	
 	// Public Methods
-
+		
 	// Gets all current P2P listings
-	public Collection<Listing> getAllListings() {
+	public Collection<Listing> getAllListings()
+	{
 		return listMap.values();
 	}
-
+	
 	// Finds a single listing by the pet's unique ID
-	public Listing getListing(String uniqueId) {
+	public Listing getListing(String uniqueId)
+	{
 		return listMap.get(uniqueId);
 	}
-
+	
 	// Creates a new listing and saves it
-	public void createListing(User seller, Hangpie pet, double price) {
+	public void createListing(User seller, Hangpie pet, double price)
+	{
 		Listing newListing = new Listing(seller.getUsername(), pet, price);
 		listMap.put(pet.getUniqueId(), newListing);
 		saveListing();
 	}
-
-	public void removeListing(String uniquePetId) {
+	
+	public void removeListing(String uniquePetId)
+	{
 		listMap.remove(uniquePetId);
 		saveListing();
 	}
-
-	public int getListingCount() {
+	
+	public int getListingCount()
+	{
 		return listMap.size();
 	}
 }

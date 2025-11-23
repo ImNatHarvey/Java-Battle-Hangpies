@@ -11,7 +11,10 @@ import java.util.List;
 import models.Hangpie;
 import models.Listing;
 import models.User;
+import controllers.AlertManager;
 import controllers.LogManager;
+import interfaces.Colorable;
+import main.Main;
 
 public class Marketplace
 {
@@ -19,41 +22,51 @@ public class Marketplace
 	{
 		while (true)
 		{
-			System.out.println("\n--- Player Marketplace (P2P) ---");
-			System.out.println("Here you can buy unique Hangpies from other players.");
-			
+			Main.clearScreen();
+			System.out.println("   _________________________________________________________________________________________________________________________________________________________________ \n"
+							 + "  |                                                                                                                                                                 |");
+			System.out.println("  |  " + Colorable.YELLOW + "░█▀█░█░░░█▀█░█░█░█▀▀░█▀▄░░░█▄█░█▀█░█▀▄░█░█░█▀▀░▀█▀░█▀█░█░░░█▀█░█▀▀░█▀▀" + Colorable.RESET + "                                                                                         |\n"
+							 + "  |  " + Colorable.YELLOW + "░█▀▀░█░░░█▀█░░█░░█▀▀░█▀▄░░░█░█░█▀█░█▀▄░█▀▄░█▀▀░░█░░█▀▀░█░░░█▀█░█░░░█▀▀" + Colorable.RESET + "                                                                                         |\n"
+							 + "  |  " + Colorable.YELLOW + "░▀░░░▀▀▀░▀░▀░░▀░░▀▀▀░▀░▀░░░▀░▀░▀░▀░▀░▀░▀░▀░▀▀▀░░▀░░▀░░░▀▀▀░▀░▀░▀▀▀░▀▀▀" + Colorable.RESET + "                                                                                         |\n"
+							 + "  |_________________________________________________________________________________________________________________________________________________________________|\n");
+
+			System.out.println("    Here you can buy unique Hangpies from other players. Your Gold Balance: " + Colorable.YELLOW+ currentUser.getGoldBalance() + " G" + Colorable.RESET + "\n");
+
 			// 1. Get the list of listings
 			List<Listing> listings = new ArrayList<>(listingManager.getAllListings());
-
+			
 			if (listings.isEmpty())
 			{
-				System.out.println("The marketplace is currently empty. Check back later!");
+				System.out.println("    The marketplace is currently empty. Check back later!");
 			}
-			
+
 			else
 			{
 				// 2. Display them as a numbered list
 				int count = 1;
-				
+
 				for (Listing listing : listings)
 				{
-					System.out.println(count++ + ". " + listing.toString());
+					System.out.println("    " + count++ + ". " + listing.toString());
 				}
 				
 			}
+			
+			Main.fillUpList(19, listings.size(), "");
+			
+			System.out.println("\n  " + AlertManager.getAndClearAlert());
 
-			System.out.println("\nOptions:");
-			System.out.println("1. Buy a Hangpie from a Player");
-			System.out.println("2. Back to Dashboard");
-
-			System.out.print("Enter your choice: ");
+			System.out.println("\n  [Options]:");
+			System.out.println("  [1] - Buy a Hangpie from a Player");
+			System.out.println("  [2] - Back to Dashboard");
+			System.out.print("  " + Colorable.BLUE + "[Enter your choice]: " + Colorable.RESET);
 			String choice = scanner.nextLine();
 
 			if (choice.equals("1"))
 			{
 				if (listings.isEmpty())
 				{
-					System.out.println("There are no items to buy.");
+					AlertManager.setError("There are no items to buy.");
 				}
 
 				else
@@ -70,7 +83,7 @@ public class Marketplace
 
 			else
 			{
-				System.out.println("Invalid choice.");
+				AlertManager.setError("Invalid choice.");
 			}
 
 		}
@@ -78,93 +91,110 @@ public class Marketplace
 
 	private static void doBuyFromMarketplace(List<Listing> listings)
 	{
-		System.out.println("\n--- Buy from Marketplace ---");
-		System.out.print("Enter the number of the pet you wish to buy: ");	
+		System.out.print("  [Enter the number of the pet you wish to buy] : ");	
 		String inputSellNumber = scanner.nextLine().trim();
 		
 		int sellNumber;
-		
+
 		try
 		{
 			sellNumber = Integer.parseInt(inputSellNumber);
-			
+
 			if (sellNumber < 1 || sellNumber > listings.size())
 			{
-				System.out.println("Invalid number.");
+				AlertManager.setError("Invalid number. Enter a valid number from the list");
 				return;
 			}			
 		}
-		
+
 		catch (NumberFormatException e)
 		{
-			System.out.println("Invalid input. Please enter a number.");
+			AlertManager.setError("Invalid input. Please enter a number.");
 			return;
 		}
-		
+
 		Listing listing = listings.get(sellNumber - 1);
-
-		if (listing.getSellerUsername().equals(currentUser.getUsername()))
-		{
-			System.out.println("Error: You cannot buy your own item.");
-			return;
-		}
-
-		if (currentUser.getGoldBalance() < listing.getPrice())
-		{
-			System.out.println("Error: Not enough gold. You need " + listing.getPrice() + "G.");
-			return;
-		}
-
-		User seller = userManager.getUserByUsername(listing.getSellerUsername());
-
 		
-		if (seller == null)
+		// Confirmation
+		System.out.print(Colorable.YELLOW + "  [Are you sure you want to buy " + listing.getPetName() + " for " + listing.getPrice() + "G? (YES / NO)]: " + Colorable.RESET);
+		String choice = scanner.nextLine().trim();
+		
+		if (choice.equalsIgnoreCase("YES"))
 		{
-			System.out.println("CRITICAL ERROR: The seller no longer exists. Cancelling sale.");
+			if (listing.getSellerUsername().equals(currentUser.getUsername()))
+			{
+				AlertManager.setError("You cannot buy your own item.");
+				return;
+			}
+
+			if (currentUser.getGoldBalance() < listing.getPrice())
+			{
+				AlertManager.setError("Not enough gold. You need " + listing.getPrice() + " G.");
+				return;
+			}
+
+			User seller = userManager.getUserByUsername(listing.getSellerUsername());
+
+
+			if (seller == null)
+			{
+				AlertManager.setError("CRITICAL ERROR: The seller no longer exists. Cancelling sale.");
+				listingManager.removeListing(listing.getUniqueId());
+				return;
+			}
+			
+			// 1. Transfer Gold
+			currentUser.subtractGold(listing.getPrice());
+			seller.addGold(listing.getPrice());
+
+			// 2. "Rebuild" the Hangpie
+			Hangpie blueprint = productManager.getProductById(listing.getProductId());
+
+			if (blueprint == null)
+			{
+				AlertManager.setError("CRITICAL ERROR: The original product blueprint no longer exists. Cancelling.");
+				return;
+			}
+
+			// Create a new copy
+			Hangpie purchasedPet = new Hangpie(blueprint);
+
+			purchasedPet.setUniqueId(listing.getUniqueId());
+			purchasedPet.setName(listing.getPetName());
+			purchasedPet.setLevel(listing.getPetLevel());
+			purchasedPet.setMaxHealth(listing.getPetHealth());
+			purchasedPet.setAttackPower(listing.getPetAttack());
+			purchasedPet.setCurrentExp(listing.getPetExp());
+
+			// 3. Add pet to buyer's inventory
+			currentUser.addToInventory(purchasedPet);
+
+			// 4. Remove listing from marketplace
 			listingManager.removeListing(listing.getUniqueId());
-			return;
+
+			// 5. Save both users and the listings
+			userManager.updateUser(currentUser);
+			userManager.updateUser(seller);
+
+			// Update Buyer's Activity Log
+			String logMsg = "Bought " + purchasedPet.getName() + " from " + seller.getUsername() + " for " + listing.getPrice() + "G.";
+			LogManager.log(currentUser.getUsername(), logMsg);
+
+			// Update Seller's Activity Log
+			String sellerLogMsg = "Sold " + purchasedPet.getName() + " to " + currentUser.getUsername() + " for " + listing.getPrice() + "G.";
+			LogManager.log(seller.getUsername(), sellerLogMsg);
+
+			AlertManager.setSuccess("Congratulations! You have purchased " + purchasedPet.getName() + " from " + seller.getUsername() + "!");
 		}
-
-		// 1. Transfer Gold
-		currentUser.subtractGold(listing.getPrice());
-		seller.addGold(listing.getPrice());
-
-		// 2. "Rebuild" the Hangpie
-		Hangpie blueprint = productManager.getProductById(listing.getProductId());
-
-		if (blueprint == null)
-		{
-			System.out.println("CRITICAL ERROR: The original product blueprint no longer exists. Cancelling.");
-			return;
-		}
-
-		// Create a new copy
-		Hangpie purchasedPet = new Hangpie(blueprint);
-
-		purchasedPet.setUniqueId(listing.getUniqueId());
-		purchasedPet.setName(listing.getPetName());
-		purchasedPet.setLevel(listing.getPetLevel());
-		purchasedPet.setMaxHealth(listing.getPetHealth());
-		purchasedPet.setAttackPower(listing.getPetAttack());
-
-		// 3. Add pet to buyer's inventory
-		currentUser.addToInventory(purchasedPet);
-
-		// 4. Remove listing from marketplace
-		listingManager.removeListing(listing.getUniqueId());
-
-		// 5. Save both users and the listings
-		userManager.updateUser(currentUser);
-		userManager.updateUser(seller);
 		
-		// Update Buyer's Activity Log
-		String logMsg = "Bought " + purchasedPet.getName() + " from " + seller.getUsername() + " for " + listing.getPrice() + "G.";
-	    LogManager.log(currentUser.getUsername(), logMsg);
-	    
-	    // Update Seller's Activity Log
-	    String sellerLogMsg = "Sold " + purchasedPet.getName() + " to " + currentUser.getUsername() + " for " + listing.getPrice() + "G.";
-	    LogManager.log(seller.getUsername(), sellerLogMsg);
-
-		System.out.println("Congratulations! You have purchased " + purchasedPet.getName() + " from " + seller.getUsername() + "!");
+		else if (choice.equalsIgnoreCase("NO"))
+		{
+			AlertManager.setError("Buy Cancelled.");
+		}
+		
+		else
+		{
+			AlertManager.setError("Invalid input. Cancelling.");
+		}
 	}
 }

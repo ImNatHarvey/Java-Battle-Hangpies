@@ -10,6 +10,7 @@ public abstract class Character
 	protected int level;				// Character's Level
 	protected int attackPower;			// Character's Attack Power
 
+	// Parent Constructor. Sub classes can access this constructor using "super" keyword
 	public Character(String name, int maxHealth, int level, int attackPower)
 	{
 		this.name = name;
@@ -18,19 +19,24 @@ public abstract class Character
 		this.level = level;
 		this.attackPower  = attackPower;
 	}
-
+	
+	// Used to apply damage 
 	public void takeDamage(int damage)
 	{
-		this.currentHealth -= damage;	// For every Character that took damage, the currentHealth will be reduced by the damage
-
-		if (this.currentHealth < 0)		// The value of currentHealth will always be 0 after having negative value subtracted by the damage
+		// For every Character that took damage, the currentHealth will be reduced by the damage
+		this.currentHealth -= damage;
+		
+		// The value of currentHealth will always be 0 after having negative value subtracted by the damage
+		if (this.currentHealth < 0)
 		{
 			this.currentHealth = 0;
 		}
 	}
-
-	public boolean isAlive()			// If the Character's Health reaches 0, isAlive() return false
+	
+	// Character's Alive Status
+	public boolean isAlive()
 	{
+		// IF the Character's Health reaches 0, THEN isAlive() return false
 		return this.currentHealth > 0;
 	}
 
@@ -61,7 +67,7 @@ public abstract class Character
 		return attackPower;
 	}
 
-	// Setter Method
+	//Setter Methods
 	public void setName(String name)
 	{
 		this.name = name;
@@ -77,18 +83,18 @@ public abstract class Character
 		this.maxHealth = maxHealth;
 	}
 	
-	// --- NEWLY ADDED METHOD TO FIX ERROR ---
+	public void setAttackPower(int attackPower)
+	{
+		this.attackPower = attackPower;
+	}
+	
+	// --- ADDED METHOD FOR HEALTH RESTORATION/LOADING ---
 	public void setCurrentHealth(int health) 
 	{
 		this.currentHealth = health;
 		if (this.currentHealth > this.maxHealth) {
 			this.currentHealth = this.maxHealth;
 		}
-	}
-	
-	public void setAttackPower(int attackPower)
-	{
-		this.attackPower = attackPower;
 	}
 
 }

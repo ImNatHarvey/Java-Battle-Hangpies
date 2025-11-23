@@ -25,6 +25,7 @@ public class PurchaseManager
 		}
 		catch (IOException e)
 		{
+			// Use System.err.println for critical save failure
 			System.err.println("CRITICAL ERROR: Could not save purchase history: " + e.getMessage());
 		}
 	}
@@ -61,6 +62,7 @@ public class PurchaseManager
 		}
 		catch (IOException e)
 		{
+			// Inform user of error loading
 			System.err.println("Error loading purchase history: " + e.getMessage());
 		}
 
@@ -104,6 +106,7 @@ public class PurchaseManager
 
 		catch (IOException e)
 		{
+			// Inform user of error loading
 			System.err.println("Error loading full purchase history: " + e.getMessage());
 		}
 
