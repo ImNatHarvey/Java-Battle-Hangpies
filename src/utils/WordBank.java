@@ -59,7 +59,7 @@ public class WordBank {
 		world2Words.add(new WordData("ADVENTURE", "An exciting or unusual experience"));
 		world2Words.add(new WordData("FLAMINGO", "A pink wading bird"));
 		world2Words.add(new WordData("ASTRONAUT", "A person trained to travel in space"));
-		world2Words.add(new WordData("CALENDAR", "System for fixing the beginning, length, and divisions of the year"));
+		world2Words.add(new WordData("CALENDAR", "System for beginning, length, and divisions of the year"));
 		world2Words.add(new WordData("TREASURE", "A quantity of valuable things"));
 		world2Words.add(new WordData("DISCOVER", "To find or find out something"));
 
