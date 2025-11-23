@@ -187,21 +187,16 @@ public class WordBank {
 		List<WordData> source;
 
 		if (progressLevel == 5) {
-			// Boss stages always use the hard, phrase-based word list
 			source = bossWords;
 		} else if (worldLevel == 1) {
 			source = world1Words;
 		} else if (worldLevel == 2) {
 			source = world2Words;
 		} else {
-			// World 3 and above use the long word list
 			source = world3Words;
 		}
 
-		// Check if the source list is empty (shouldn't happen with the current setup,
-		// but safe check)
 		if (source.isEmpty()) {
-			// Fallback to the shortest list if the target list is empty
 			System.err.println(
 					"Warning: Word list for World Level " + worldLevel + " is empty. Falling back to World 1 list.");
 			source = world1Words.isEmpty() ? bossWords : world1Words;

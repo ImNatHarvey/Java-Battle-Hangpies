@@ -14,11 +14,9 @@ public class AssetLoader {
     private static final MediaTracker tracker = new MediaTracker(component);
     private static int trackerId = 0;
     
-    // Global Cache to prevent reloading images from disk repeatedly
     private static final Map<String, Image> imageCache = new HashMap<>();
 
     public static Image loadImage(String path, int width, int height) {
-        // Create a unique key for caching that includes dimensions
         String cacheKey = path + "_" + width + "_" + height;
         
         if (imageCache.containsKey(cacheKey)) {
@@ -28,16 +26,12 @@ public class AssetLoader {
         Image image = null;
 
         try {
-            // Special handling for GIFs to preserve animation (Toolkit images are not pre-scaled by us)
-            // We use the raw path as key for GIFs since we don't scale them here
             if (path.toLowerCase().endsWith(".gif")) {
                 if (imageCache.containsKey(path)) {
                     return imageCache.get(path);
                 }
                 image = Toolkit.getDefaultToolkit().createImage(path);
-                // For GIFs, we cache by path only since we return the original Toolkit image
                 imageCache.put(path, image);
-                // We also put it under the sized key to avoid cache misses logic below
                 imageCache.put(cacheKey, image); 
             } else {
                 File file = new File(path);
@@ -55,7 +49,6 @@ public class AssetLoader {
                 return generatePlaceholder(width, height, Color.GRAY, "Missing");
             }
 
-            // Wait for the image to fully load
             synchronized (tracker) {
                 tracker.addImage(image, trackerId);
                 try {

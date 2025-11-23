@@ -37,12 +37,12 @@ public class GameWindow extends Frame implements Runnable {
 	// Game Data
 	private Hangpie equippedHangpie = null;
 
-	// NEW: Inventory Confirmation State
+	// Inventory Confirmation State
 	private boolean isInventoryConfirmationOpen = false;
 	private Hangpie confirmPetCandidate = null;
 	private Rectangle modalConfirmYesBounds;
 	private Rectangle modalConfirmNoBounds;
-	private int selectedConfirmOption = -1; // 0 for NO, 1 for YES
+	private int selectedConfirmOption = -1; 
 
 	// Assets
 	private Image background;
@@ -89,8 +89,7 @@ public class GameWindow extends Frame implements Runnable {
 
 		this.inventoryView = new InventoryView(user);
 
-		// If the user has pets, try to equip the first one by default if none is set
-		// (initial launch logic)
+		// If the user has pets, equip the first one by default if none is set
 		if (user.getInventory() != null && !user.getInventory().isEmpty()) {
 			this.equippedHangpie = user.getInventory().get(0);
 			this.equippedHangpie.setCurrentHealth(this.equippedHangpie.getMaxHealth());
@@ -100,7 +99,7 @@ public class GameWindow extends Frame implements Runnable {
 		setupWindow();
 		loadAssets();
 
-		// Setup Menu UI Bounds
+		// Menu UI boundary
 		instructionBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, 20, MENU_UI_BUTTON_SIZE,
 				MENU_UI_BUTTON_SIZE);
 
@@ -133,8 +132,6 @@ public class GameWindow extends Frame implements Runnable {
 		gameCanvas.setBackground(Color.BLACK);
 		gameCanvas.setIgnoreRepaint(true);
 
-		// --- Input Listeners ---
-
 		MouseAdapter mouseHandler = new MouseAdapter() {
 			@Override
 			public void mouseMoved(MouseEvent e) {
@@ -147,7 +144,6 @@ public class GameWindow extends Frame implements Runnable {
 					}
 					inventoryView.handleMouseMove(e.getX(), e.getY());
 				} else if (currentState == GameState.PLAYING && battleView != null) {
-					// Update: handle hover effects in battle view
 					battleView.handleMouseMove(e.getX(), e.getY());
 				}
 			}
@@ -156,7 +152,7 @@ public class GameWindow extends Frame implements Runnable {
 			public void mousePressed(MouseEvent e) {
 				if (currentState == GameState.MENU) {
 					if (isInstructionOpen) {
-						isInstructionOpen = false; // Close instruction modal on click
+						isInstructionOpen = false; 
 						return;
 					}
 
@@ -170,7 +166,7 @@ public class GameWindow extends Frame implements Runnable {
 					}
 				} else if (currentState == GameState.INVENTORY) {
 
-					if (isInventoryConfirmationOpen) { // Handle modal click first
+					if (isInventoryConfirmationOpen) { 
 						handleInventoryConfirmationClick(e.getX(), e.getY());
 						return;
 					}
@@ -178,40 +174,29 @@ public class GameWindow extends Frame implements Runnable {
 					String action = inventoryView.handleMouseClick(e.getX(), e.getY());
 					if (action.equals("BACK")) {
 						currentState = GameState.MENU;
-						// On back, clear selection only if it was a candidate pet and not the equipped
-						// one.
-						// However, since handleMenuClick sets the correct equipped pet on re-entry, we
-						// don't need to manually clear it here.
 					} else if (action.equals("SELECT")) {
 						Hangpie selectedPet = inventoryView.getSelectedPet();
 
-						// If the pet selected is already equipped, don't show modal, just close
-						// inventory
 						if (selectedPet == equippedHangpie) {
-							// inventoryView.selectedPet is already set by the click, so we can exit.
 							currentState = GameState.MENU;
 							return;
 						}
 
-						// Check if a save exists for the current user (using Main.saveManager)
 						if (Main.saveManager.hasSave(currentUser.getUsername())) {
 							confirmPetCandidate = selectedPet;
 							isInventoryConfirmationOpen = true;
-							selectedConfirmOption = -1; // Reset hover state
+							selectedConfirmOption = -1; 
 						} else {
-							// No save, just equip and set max HP (HP RESET FIX)
 							equippedHangpie = selectedPet;
-							equippedHangpie.setCurrentHealth(equippedHangpie.getMaxHealth()); // HP RESET FIX
-							// NEW: Sync InventoryView for drawing after immediate equip
+							equippedHangpie.setCurrentHealth(equippedHangpie.getMaxHealth()); 
 							inventoryView.setSelection(equippedHangpie);
-							currentState = GameState.MENU; // Added to fully complete the equip action
+							currentState = GameState.MENU;
 						}
 					}
 				} else if (currentState == GameState.PLAYING && battleView != null) {
-					// Pass click to BattleView to handle Settings/Modal interaction
 					String action = battleView.handleMouseClick(e.getX(), e.getY());
 					if (action.equals("EXIT")) {
-						stop(); // Close game entirely
+						stop(); 
 					} else if (action.equals("MENU")) {
 						currentState = GameState.MENU;
 						battleView = null;
@@ -231,14 +216,13 @@ public class GameWindow extends Frame implements Runnable {
 			@Override
 			public void keyPressed(KeyEvent e) {
 				if (currentState == GameState.MENU && e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-					isInstructionOpen = false; // Close instruction modal on ESC
+					isInstructionOpen = false; 
 				} else if (currentState == GameState.INVENTORY && isInventoryConfirmationOpen
 						&& e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 					isInventoryConfirmationOpen = false;
 					confirmPetCandidate = null;
-					inventoryView.setSelection(equippedHangpie); // Restore selection to equipped pet
+					inventoryView.setSelection(equippedHangpie); 
 				} else if (currentState == GameState.PLAYING && battleView != null) {
-					// Pass Key Press to Battle View
 					battleView.handleKeyPress(e.getKeyCode(), e.getKeyChar());
 
 					if (battleView.isExitRequested()) {
@@ -267,7 +251,6 @@ public class GameWindow extends Frame implements Runnable {
 	private void checkInventoryConfirmationHover(int mx, int my) {
 		selectedConfirmOption = -1;
 
-		// Note: The order here must match the drawing order (YES then NO)
 		if (modalConfirmYesBounds != null && modalConfirmYesBounds.contains(mx, my)) {
 			selectedConfirmOption = 1; // YES
 		} else if (modalConfirmNoBounds != null && modalConfirmNoBounds.contains(mx, my)) {
@@ -276,23 +259,18 @@ public class GameWindow extends Frame implements Runnable {
 	}
 
 	private void handleInventoryConfirmationClick(int mx, int my) {
-		// Note: The order here must match the drawing order (YES then NO)
 		if (modalConfirmYesBounds != null && modalConfirmYesBounds.contains(mx, my)) {
-			// YES: Equip the new pet, delete the save, and close the modal
 			equippedHangpie = confirmPetCandidate;
-			equippedHangpie.setCurrentHealth(equippedHangpie.getMaxHealth()); // HP RESET FIX
+			equippedHangpie.setCurrentHealth(equippedHangpie.getMaxHealth()); 
 			Main.saveManager.deleteSave(currentUser.getUsername());
-			inventoryView.setSelection(equippedHangpie); // ** NEW: Sync InventoryView for drawing **
+			inventoryView.setSelection(equippedHangpie); 
 			isInventoryConfirmationOpen = false;
 			confirmPetCandidate = null;
-			currentState = GameState.MENU; // Added to fully complete the equip action
+			currentState = GameState.MENU; 
 			System.out.println("[Game] Equipped new Hangpie and deleted active save.");
 		} else if (modalConfirmNoBounds != null && modalConfirmNoBounds.contains(mx, my)) {
-			// NO: Cancel and close the modal
 			isInventoryConfirmationOpen = false;
 			confirmPetCandidate = null;
-			// ** NEW: If cancelled, reset the temporary visual selection back to the actual
-			// equipped pet **
 			inventoryView.setSelection(equippedHangpie);
 		}
 	}
@@ -316,7 +294,6 @@ public class GameWindow extends Frame implements Runnable {
 			// PLAY GAME
 			if (equippedHangpie == null) {
 				System.out.println("[Game] Cannot start: No Hangpie equipped.");
-				// NEW: Set error state and shake
 				errorFlashStartTime = System.currentTimeMillis();
 			} else {
 				startBattle();
@@ -325,7 +302,6 @@ public class GameWindow extends Frame implements Runnable {
 		} else if (option == 1) {
 			// INVENTORY
 			currentState = GameState.INVENTORY;
-			// ** NEW: Ensure the green outline starts on the CURRENTLY equipped pet **
 			inventoryView.setSelection(equippedHangpie);
 			isInventoryConfirmationOpen = false; // Reset just in case
 			confirmPetCandidate = null;
@@ -397,7 +373,6 @@ public class GameWindow extends Frame implements Runnable {
 				if (currentState == GameState.PLAYING && battleView != null) {
 					battleView.update();
 				}
-				// NEW: Update shake effect if error is active
 				updateMenuShake();
 				delta--;
 			}
@@ -436,7 +411,7 @@ public class GameWindow extends Frame implements Runnable {
 			break;
 		case INVENTORY:
 			inventoryView.render(g, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
-			if (isInventoryConfirmationOpen) { // Render confirmation modal
+			if (isInventoryConfirmationOpen) { 
 				renderInventoryConfirmation(g, gameCanvas.getWidth(), gameCanvas.getHeight());
 			}
 			break;
@@ -473,16 +448,14 @@ public class GameWindow extends Frame implements Runnable {
 			g.fillRect(mX, mY, mW, mH);
 		}
 
-		// --- TITLE (REDUCED FONT SIZE) ---
+		// Title
 		g.setColor(Color.BLACK);
-		Font titleFont = new Font("Monospaced", Font.BOLD, 30); // Reduced from 40pt (HEADER_FONT) to 30pt
+		Font titleFont = new Font("Monospaced", Font.BOLD, 30); 
 		g.setFont(titleFont);
 		String title = "WARNING: Active Save Detected";
 		FontMetrics fmTitle = g.getFontMetrics();
 		g.drawString(title, mX + (mW - fmTitle.stringWidth(title)) / 2, mY + 50);
-
-		// --- MESSAGES (REDUCED TO 16PT) ---
-		g.setFont(GameConstants.INSTRUCTION_FONT); // 16pt font
+		g.setFont(GameConstants.INSTRUCTION_FONT); 
 		FontMetrics fmMessage = g.getFontMetrics();
 
 		// Message 1 (Red)
@@ -494,17 +467,14 @@ public class GameWindow extends Frame implements Runnable {
 		g.setColor(Color.BLACK);
 		String petName = (confirmPetCandidate != null) ? confirmPetCandidate.getName() : "this pet";
 		String question = "Are you sure you want to equip " + petName + " and proceed?";
-		g.drawString(question, mX + (mW - fmMessage.stringWidth(question)) / 2, mY + 125); // Adjusted Y up
+		g.drawString(question, mX + (mW - fmMessage.stringWidth(question)) / 2, mY + 125);
 
-		// --- BUTTONS (YES | NO, Centered & Stable) ---
 		g.setFont(GameConstants.BUTTON_FONT);
 		FontMetrics fmButton = g.getFontMetrics();
 		int btnH = 40;
 
-		// --- PARAMETERS FOR BUTTON STYLING AND POSITIONING ---
-		// Adjust these parameters if the buttons look off-center or too close/far apart
 		int buttonSpacing = 30;
-		int btnAreaY = mY + 175; // Baseline Y for button text
+		int btnAreaY = mY + 175; 
 
 		String yesTxtContent = "YES";
 		String noTxtContent = "NO";
@@ -512,77 +482,60 @@ public class GameWindow extends Frame implements Runnable {
 		String yesTxtHover = "> " + yesTxtContent + " <";
 		String noTxtHover = "> " + noTxtContent + " <";
 
-		// Calculate Max Widths for Stability
 		int yesTxtWMax = fmButton.stringWidth(yesTxtHover);
 		int noTxtWMax = fmButton.stringWidth(noTxtHover);
 
-		// Calculate Horizontal Position
 		int totalBtnWidth = yesTxtWMax + noTxtWMax + buttonSpacing;
-		int startX = mX + (mW - totalBtnWidth) / 2; // Starting X to center the block
+		int startX = mX + (mW - totalBtnWidth) / 2; 
 
 		int currentX = startX;
 
-		// 1. YES Button (Draws first)
+		// YES Button 
 		String yesTxt = (selectedConfirmOption == 1) ? yesTxtHover : yesTxtContent;
-		int yesTxtWidthNormal = fmButton.stringWidth(yesTxtContent); // Width without arrows
+		int yesTxtWidthNormal = fmButton.stringWidth(yesTxtContent);
 
-		// Calculate necessary offset to center the normal text within the hover text
-		// width
 		int yesDrawOffsetX = (yesTxtWMax - yesTxtWidthNormal) / 2;
 
-		// Bounds for click detection (using max width)
 		modalConfirmYesBounds = new Rectangle(currentX, btnAreaY, yesTxtWMax, btnH);
 
 		g.setColor((selectedConfirmOption == 1) ? GameConstants.SELECTION_COLOR : Color.BLACK);
 
 		if (selectedConfirmOption == 1) {
-			// Draw hovered text (full width, starts at currentX)
 			g.drawString(yesTxt, currentX, btnAreaY + fmButton.getAscent());
 		} else {
-			// Draw normal text (starts at currentX + offset for visual stability)
 			g.drawString(yesTxt, currentX + yesDrawOffsetX, btnAreaY + fmButton.getAscent());
 		}
 
-		currentX += yesTxtWMax + buttonSpacing; // Advance X using the max width
+		currentX += yesTxtWMax + buttonSpacing; 
 
-		// 2. NO Button (Draws second)
+		// 2. NO Button 
 		String noTxt = (selectedConfirmOption == 0) ? noTxtHover : noTxtContent;
-		int noTxtWidthNormal = fmButton.stringWidth(noTxtContent); // Width without arrows
-
-		// Calculate necessary offset to center the normal text within the hover text
-		// width
+		int noTxtWidthNormal = fmButton.stringWidth(noTxtContent); 
 		int noDrawOffsetX = (noTxtWMax - noTxtWidthNormal) / 2;
 
-		// Bounds for click detection (using max width)
 		modalConfirmNoBounds = new Rectangle(currentX, btnAreaY, noTxtWMax, btnH);
 
 		g.setColor((selectedConfirmOption == 0) ? GameConstants.SELECTION_COLOR : Color.BLACK);
 
 		if (selectedConfirmOption == 0) {
-			// Draw hovered text (full width, starts at currentX)
 			g.drawString(noTxt, currentX, btnAreaY + fmButton.getAscent());
 		} else {
-			// Draw normal text (starts at currentX + offset for visual stability)
 			g.drawString(noTxt, currentX + noDrawOffsetX, btnAreaY + fmButton.getAscent());
 		}
 	}
 
 	private void renderMenu(Graphics2D g) {
-		// Base Shake Offset only applies to the Equipped Status box
 		int equippedOffsetX = (equippedHangpie == null && errorFlashStartTime > 0) ? shakeX : 0;
 		int equippedOffsetY = (equippedHangpie == null && errorFlashStartTime > 0) ? shakeY : 0;
 
-		// Menu Options offset is always 0, 0 unless a generic global shake is
-		// implemented (not requested here)
 		int menuOptionsOffsetX = 0;
 		int menuOptionsOffsetY = 0;
 
-		// 1. Draw Background
+		// Background
 		if (background != null) {
 			g.drawImage(background, 0, 0, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
 		}
 
-		// NEW: Draw Instruction Button in the upper right
 		if (instructionBtnBounds != null && nameFrameImg != null) {
 			int btnX = instructionBtnBounds.x;
 			int btnY = instructionBtnBounds.y;
@@ -591,20 +544,16 @@ public class GameWindow extends Frame implements Runnable {
 
 			g.drawImage(nameFrameImg, btnX, btnY, btnW, btnH, null);
 
-			// Draw "?" text - Adjusted for centering
 			g.setFont(GameConstants.HEADER_FONT);
 			g.setColor(Color.BLACK);
 			FontMetrics fm = g.getFontMetrics();
 			String qText = "?";
 			int textX = btnX + (btnW - fm.stringWidth(qText)) / 2;
-			// Adjusted textY calculation to vertically center the large HEADER_FONT (40pt)
-			// in the 50px nameframe
-			// Reduced baseline adjustment from -6 to -10 to push the text up slightly
 			int textY = btnY + (btnH - fm.getAscent()) / 2 + fm.getAscent() - 10;
 			g.drawString(qText, textX, textY);
 		}
 
-		// 2. Draw Title Banner
+		// Title Banner
 		int bannerY = 100;
 		if (titleCoverImage != null) {
 			int coverX = (gameCanvas.getWidth() - COVER_WIDTH) / 2;
@@ -617,7 +566,7 @@ public class GameWindow extends Frame implements Runnable {
 			g.drawImage(titleImage, textX, textY, TITLE_WIDTH, TITLE_HEIGHT, null);
 		}
 
-		// 3. Draw World Level/Stage Level with Frame
+		// World Level/Stage Level
 		int levelFrameCenterY = 260;
 		int levelFrameW = 350;
 		int levelFrameH = 50;
@@ -626,7 +575,6 @@ public class GameWindow extends Frame implements Runnable {
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, levelFrameX, levelFrameCenterY, levelFrameW, levelFrameH, null);
 
-			// Draw World Level Text Centered in Frame
 			g.setFont(GameConstants.SUBTITLE_FONT);
 			g.setColor(GameConstants.TEXT_COLOR);
 			FontMetrics fm = g.getFontMetrics();
@@ -639,18 +587,16 @@ public class GameWindow extends Frame implements Runnable {
 			g.drawString(levelText, levelTextX, levelTextY);
 		}
 
-		// 4. Draw Equipped Status (Name Frame)
+		// Equipped Status
 		int equipY = levelFrameCenterY + 70;
 		int nfW = 350;
 		int nfH = 50;
 		int nfX = (gameCanvas.getWidth() - nfW) / 2;
 		int nfY = equipY;
 
-		// The shake is applied to the DRAWN coordinates of the frame and the text
 		int drawNFX = nfX + equippedOffsetX;
 		int drawNFY = nfY + equippedOffsetY;
 
-		// NEW: Red flash for error state
 		if (equippedHangpie == null && errorFlashStartTime > 0) {
 			long timeElapsed = System.currentTimeMillis() - errorFlashStartTime;
 			int flicker = (int) (timeElapsed / 100) % 2;
@@ -664,7 +610,6 @@ public class GameWindow extends Frame implements Runnable {
 			g.drawImage(nameFrameImg, drawNFX, drawNFY, nfW, nfH, null);
 		}
 
-		// Text: Use SMALLER_BUTTON_FONT for equipped status
 		g.setFont(GameConstants.SMALLER_BUTTON_FONT);
 		FontMetrics fmEquip = g.getFontMetrics();
 		String nameText = (equippedHangpie != null) ? equippedHangpie.getName() : "No Hangpie Equipped";
@@ -683,7 +628,7 @@ public class GameWindow extends Frame implements Runnable {
 		int nameY = drawNFY + ((nfH - fmEquip.getHeight()) / 2) + fmEquip.getAscent();
 		g.drawString(nameText, nameX, nameY);
 
-		// 5. Draw Menu Options (Original position)
+		// Menu Options
 		drawMenuOptions(g, menuOptionsOffsetX, menuOptionsOffsetY);
 	}
 
@@ -710,7 +655,7 @@ public class GameWindow extends Frame implements Runnable {
 		FontMetrics fm = g.getFontMetrics();
 		g.drawString(title, mX + (mW - fm.stringWidth(title)) / 2, mY + 50);
 
-		// Instructions Content: Using the new, smaller INSTRUCTION_FONT (16pt)
+		// Instructions Content
 		g.setFont(GameConstants.INSTRUCTION_FONT);
 		g.setColor(Color.BLACK);
 
@@ -718,9 +663,9 @@ public class GameWindow extends Frame implements Runnable {
 		String[] lines = content.split("\n");
 
 		// Word Wrapping parameters
-		int wrapWidth = mW - 60; // Modal width (400) - 30px left padding - 30px right padding
-		int startX = mX + 30; // 30px from left edge of modal
-		int startY = mY + 95; // Y position after the title
+		int wrapWidth = mW - 60; 
+		int startX = mX + 30; 
+		int startY = mY + 95; 
 		FontMetrics fmSmall = g.getFontMetrics();
 		int lineHeight = fmSmall.getHeight();
 		int indent = 20;
@@ -733,81 +678,62 @@ public class GameWindow extends Frame implements Runnable {
 				continue;
 			}
 
-			// Special Handling for Headers/Non-wrapping lines
 			if (trimmedLine.endsWith(":") || trimmedLine.startsWith("Objectives")) {
-				// Print as-is, centered or left-aligned
 				int lineW = fmSmall.stringWidth(line);
 				int textX = startX;
 				int textY = startY + fmSmall.getAscent();
 				g.drawString(line, textX, textY);
 				startY += lineHeight;
 			}
-			// UPDATED: Added logic to treat the "Type the letters..." line as a normal
-			// wrapping line
 			else if (trimmedLine.startsWith("Type")) {
-				// Handle "Type the letters on your keyboard to guess the word."
 				String[] words = trimmedLine.split(" ");
 				StringBuilder currentLine = new StringBuilder();
-				int currentX = mX + (mW - wrapWidth) / 2; // Center alignment for the introductory line
+				int currentX = mX + (mW - wrapWidth) / 2;
 
 				for (String word : words) {
-					// Check if adding the next word (plus a space) exceeds the wrap width
 					if (fmSmall.stringWidth(currentLine.toString() + " " + word) > wrapWidth) {
-						// Draw the current line
 						int textY = startY + fmSmall.getAscent();
 						g.drawString(currentLine.toString().trim(), currentX, textY);
 
-						// Start a new line
 						startY += lineHeight;
 						currentLine = new StringBuilder();
 					}
 
-					// Append the word (with a space if not the very first word on a line)
 					if (currentLine.length() > 0) {
 						currentLine.append(" ");
 					}
 					currentLine.append(word);
 				}
 
-				// Draw the remaining part of the line
 				if (currentLine.length() > 0) {
 					int textY = startY + fmSmall.getAscent();
 					g.drawString(currentLine.toString().trim(), currentX, textY);
 					startY += lineHeight;
 				}
 			}
-			// Handle all other wrapping/bullet lines
 			else {
-				// Apply word wrap to instruction/list items
 				String[] words = trimmedLine.split(" ");
 				StringBuilder currentLine = new StringBuilder();
 				int currentX = startX + (trimmedLine.startsWith("Your") || trimmedLine.startsWith("Defeat")
 						|| trimmedLine.startsWith("Win") ? indent : 0);
 
 				for (String word : words) {
-					// Check if adding the next word (plus a space) exceeds the wrap width
 					if (fmSmall.stringWidth(currentLine.toString() + " " + word) > wrapWidth) {
-						// Draw the current line
 						int textY = startY + fmSmall.getAscent();
 						g.drawString(currentLine.toString().trim(), currentX, textY);
 
-						// Start a new line
 						startY += lineHeight;
 						currentLine = new StringBuilder();
 						currentX = startX + (trimmedLine.startsWith("Your") || trimmedLine.startsWith("Defeat")
-								|| trimmedLine.startsWith("Win") ? indent * 2 : indent); // Increase indent for wrapped
-																							// lines to preserve
-																							// bullet-style
+								|| trimmedLine.startsWith("Win") ? indent * 2 : indent); 
 					}
 
-					// Append the word (with a space if not the very first word on a line)
 					if (currentLine.length() > 0) {
 						currentLine.append(" ");
 					}
 					currentLine.append(word);
 				}
 
-				// Draw the remaining part of the line
 				if (currentLine.length() > 0) {
 					int textY = startY + fmSmall.getAscent();
 					g.drawString(currentLine.toString().trim(), currentX, textY);

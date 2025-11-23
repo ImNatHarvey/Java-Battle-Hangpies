@@ -55,14 +55,14 @@ public class BattleView {
 	private int expReward = 0;
 	private boolean rewardsClaimed = false;
 
-	// NEW: EXP/Level Up Animation State
+	// EXP/Level Up Animation State
 	private boolean isRewardAnimating = false;
 	private long rewardAnimStartTime = 0;
-	private final int REWARD_ANIM_DURATION = 3000; // 3 seconds for EXP gain + potential level up
+	private final int REWARD_ANIM_DURATION = 3000; 
 	private boolean levelUpOccurred = false;
 	private float levelUpFlashAlpha = 0.0f;
 	private final int LEVEL_UP_FLASH_DURATION = 500;
-	private final int LEVEL_UP_FLASH_PEAK = 200; // Max alpha for flash
+	private final int LEVEL_UP_FLASH_PEAK = 200; 
 
 	private String message = "";
 	private Color messageColor = Color.YELLOW;
@@ -70,11 +70,9 @@ public class BattleView {
 	// Animation Timers & States
 	private long actionStartTime = 0;
 	private boolean isAnimatingAction = false;
-
-	// NEW: Flag to signal an impact is pending in the animation loop
 	private boolean impactTriggered = false;
 
-	// Attack Animation
+	// Attack Animation Time
 	private final int ACTION_DURATION = 1700;
 	private final int FADE_DURATION = 300;
 	private final int TELEPORT_TO_TARGET_TIME = 300;
@@ -95,7 +93,7 @@ public class BattleView {
 	private final int ATTACK_PLAYER_X = ENEMY_HOME_X - 100;
 	private final int ATTACK_ENEMY_X = PLAYER_HOME_X + 100;
 
-	// Death Animation
+	// Death Animation Time
 	private boolean isDeathAnimating = false;
 	private long deathStartTime = 0;
 	private final int DEATH_DURATION = 3000;
@@ -118,13 +116,12 @@ public class BattleView {
 	// Damage Visual
 	private long damageStartTime = 0;
 	private final int DAMAGE_VISUAL_DURATION = 500;
-	// Renamed for clarity: spriteShakeX/Y controls damaged sprite movement
 	private int spriteShakeX = 0;
 	private int spriteShakeY = 0;
 	private boolean isPlayerDamaged = false;
 	private boolean isEnemyDamaged = false;
 
-	// NEW: Global Screen Shake
+	// Global Screen Shake
 	private int screenShakeX = 0;
 	private int screenShakeY = 0;
 	private final int SCREEN_SHAKE_MAGNITUDE = 5;
@@ -137,7 +134,7 @@ public class BattleView {
 	private final int DAMAGE_INDICATOR_DURATION = 1500;
 	private final int DAMAGE_INDICATOR_VERTICAL_TRAVEL = 50;
 
-	// Rabbit Flash
+	// Rabbit Flash (Meme)
 	private Image rabbitImg;
 	private long rabbitFlashStartTime = 0;
 	private final int RABBIT_FLASH_DURATION = 500;
@@ -159,18 +156,18 @@ public class BattleView {
 	// Icon Assets
 	private Image coinImg;
 	private Image attackImg;
-
+	
 	private Random random = new Random();
 
 	// Settings Modal State
 	private boolean isSettingsOpen = false;
 	private boolean isExitConfirmation = false;
 	private boolean isMenuConfirmation = false;
-	private boolean isInstructionOpen = false; // NEW
+	private boolean isInstructionOpen = false;
 
 	// UI Buttons
 	private Rectangle settingsBtnBounds;
-	private Rectangle instructionBtnBounds; // NEW
+	private Rectangle instructionBtnBounds; 
 
 	// Modal Buttons
 	private Rectangle modalContinueBounds;
@@ -195,7 +192,7 @@ public class BattleView {
 		this.guessedLetters = new HashSet<>();
 		this.lastGuessTime = System.currentTimeMillis();
 
-		// Reset animations
+		// Reset Animations
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
 
 		loadAssets();
@@ -234,7 +231,7 @@ public class BattleView {
 		this.playerAlpha = 1.0f;
 		this.enemyAlpha = 1.0f;
 		this.currentAnimTime = 0;
-		this.impactTriggered = false; // Reset impact flag
+		this.impactTriggered = false; 
 
 		// NEW: Reset Reward Animation State
 		this.isRewardAnimating = false;
@@ -299,10 +296,7 @@ public class BattleView {
 
 		// UI Button Bounds
 		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE);
-		instructionBtnBounds = new Rectangle(settingsBtnBounds.x - 60, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE); // NEW:
-																													// Left
-																													// of
-																													// settings
+		instructionBtnBounds = new Rectangle(settingsBtnBounds.x - 60, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE);
 
 		// Set Timer UI position
 		timerW = 250;
@@ -332,17 +326,14 @@ public class BattleView {
 
 		// Load Background (Random standard BG)
 		boolean isBoss = (playerUser.getProgressLevel() == 5);
-		generateBackground(isBoss); // Re-generate background as it's not saved
+		generateBackground(isBoss); 
 
 		this.playerPet.preloadAssets();
 		this.currentEnemy.preloadAssets();
 
 		// UI Button Bounds
 		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE);
-		instructionBtnBounds = new Rectangle(settingsBtnBounds.x - 60, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE); // NEW:
-																													// Left
-																													// of
-																													// settings
+		instructionBtnBounds = new Rectangle(settingsBtnBounds.x - 60, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE); 
 
 		// Set Timer UI position
 		timerW = 250;
@@ -375,7 +366,7 @@ public class BattleView {
 		this.currentAnimTime = 0;
 		this.isInstructionOpen = false;
 
-		// NEW: Reset Reward Animation State
+		// Reward Animation State
 		this.isRewardAnimating = false;
 		this.rewardAnimStartTime = 0;
 		this.levelUpOccurred = false;
@@ -393,7 +384,8 @@ public class BattleView {
 		message = "Game Loaded!";
 		messageColor = Color.GREEN;
 	}
-
+	
+	// Save Function
 	private void saveGame() {
 		StringBuilder sb = new StringBuilder();
 		for (java.lang.Character c : guessedLetters) {
@@ -419,7 +411,6 @@ public class BattleView {
 
 		// Base Stats for World 1: 10 HP, 1 ATK
 		// Increase per World: +5 HP, +1 ATK
-
 		int baseHp = 10 + ((currentWorld - 1) * 5);
 		int baseAtk = 1 + ((currentWorld - 1) * 1);
 
@@ -470,7 +461,8 @@ public class BattleView {
 
 		this.currentEnemy = new Enemy(enemyName, enemyHp, currentWorld, enemyAtk, enemyPath);
 	}
-
+	
+	// Background Randomizer
 	private void generateBackground(boolean isBoss) {
 		if (isBoss) {
 			int bossBgNum = random.nextInt(2) + 1;
@@ -502,16 +494,13 @@ public class BattleView {
 	}
 
 	public void update() {
-		// UPDATED: Check for instruction open as well
 		if (isSettingsOpen || isInstructionOpen || battleOver)
 			return;
 
-		// --- UNCONDITIONAL UPDATES (MUST RUN EVEN DURING ATTACKS/DEATH/REWARDS) ---
-
-		// 1. Damage Visuals (Sprite & Screen Shake)
+		// Damage Visuals (Sprite & Screen Shake)
 		updateDamageVisuals();
 
-		// 2. Damage Indicator Fade
+		// Damage Indicator Fade
 		if (damageIndicatorStartTime > 0) {
 			long timeElapsed = System.currentTimeMillis() - damageIndicatorStartTime;
 			if (timeElapsed > DAMAGE_INDICATOR_DURATION) {
@@ -521,29 +510,26 @@ public class BattleView {
 			}
 		}
 
-		// --- ANIMATION STATE MACHINE ---
 		if (isAnimatingAction) {
 			long timeElapsed = System.currentTimeMillis() - actionStartTime;
 			currentAnimTime = timeElapsed;
 
-			// *** NEW: Check for impact time (1100ms) ***
+			// Check for impact time animation
 			if (impactTriggered && timeElapsed >= ATTACK_HOLD_TIME) {
-				// This is the moment of impact. Trigger screen shake and damage indicators.
-
-				// Only set damageStartTime/damageIndicatorStartTime if we haven't already
+				
+				// Trigger screen shake and damage indicators
 				if (damageStartTime == 0) {
 					damageStartTime = System.currentTimeMillis();
 					damageIndicatorStartTime = System.currentTimeMillis();
 				}
 
-				// Set the flags to indicate the shake is now active for updateDamageVisuals
 				if (isPlayerAttacking) {
 					isEnemyDamaged = true;
 				} else {
 					isPlayerDamaged = true;
 				}
 
-				impactTriggered = false; // Impact has occurred. Don't run this block again.
+				impactTriggered = false;
 			}
 
 			// Attack Animation State
@@ -595,18 +581,17 @@ public class BattleView {
 			if (System.currentTimeMillis() - deathStartTime > DEATH_DURATION) {
 				isDeathAnimating = false;
 				if (!currentEnemy.isAlive()) {
-					// START REWARD ANIMATION INSTEAD OF handleWin()
 					if (rewardsClaimed) {
-						handleWin(); // Should only happen if a game was loaded and enemy died immediately.
+						handleWin(); 
 					} else {
-						// This is the correct moment to calculate and start the EXP animation
+						// Calculate rewards and start the EXP animation
 						calculateRewardsAndStartAnimation();
 					}
 				} else if (!playerPet.isAlive()) {
 					handleLoss();
 				}
 			}
-		} else if (isRewardAnimating) { // NEW: Handle Reward Animation
+		} else if (isRewardAnimating) { // Handle Reward Animation
 			long timeElapsed = System.currentTimeMillis() - rewardAnimStartTime;
 			if (timeElapsed >= REWARD_ANIM_DURATION) {
 				isRewardAnimating = false;
@@ -615,22 +600,20 @@ public class BattleView {
 
 			// Handle Level Up Flash
 			if (levelUpOccurred) {
-				// Flash effect loops for the entire duration
+				// Flash effect when leveling up
 				long duration = (long) LEVEL_UP_FLASH_DURATION;
-				long timeIntoCycle = timeElapsed % duration; // Loop the flash
+				long timeIntoCycle = timeElapsed % duration;
 
 				if (timeIntoCycle < duration / 2) {
-					// Fade in (0 to LEVEL_UP_FLASH_PEAK)
 					levelUpFlashAlpha = ((float) timeIntoCycle / (duration / 2)) * LEVEL_UP_FLASH_PEAK;
 				} else {
-					// Fade out (LEVEL_UP_FLASH_PEAK to 0)
 					levelUpFlashAlpha = LEVEL_UP_FLASH_PEAK
 							- ((float) (timeIntoCycle - (duration / 2)) / (duration / 2)) * LEVEL_UP_FLASH_PEAK;
 				}
 				levelUpFlashAlpha = Math.max(0.0f, Math.min((float) LEVEL_UP_FLASH_PEAK, levelUpFlashAlpha));
 			}
 
-		} else { // When no major animation is running, handle the timer and panic logic
+		} else { // When no animation is running, handle the timer and panic logic
 
 			// Timer Logic
 			long elapsedTime = System.currentTimeMillis() - lastGuessTime;
@@ -670,7 +653,7 @@ public class BattleView {
 				}
 				redPulseAlpha = Math.max(0, redPulseAlpha);
 
-				// --- Panic Alpha for Timer Box (Flicker) ---
+				// Panic Alpha for Timer Box (Flicker)
 				long pulseTime = System.currentTimeMillis() % 1000;
 				if (pulseTime < 500) {
 					panicAlpha = 80;
@@ -688,7 +671,7 @@ public class BattleView {
 			}
 
 			if (currentTimeRemaining <= 0) {
-				currentTimeRemaining = 0; // Clamp
+				currentTimeRemaining = 0; 
 				handleTimeOutAttack();
 			}
 		}
@@ -698,18 +681,17 @@ public class BattleView {
 		// Only run if a damage sequence is active
 		if (isPlayerDamaged || isEnemyDamaged) {
 
-			// If damageStartTime is 0, we are in the DELAY period, so we do nothing to the
-			// shake variables.
+
 			if (damageStartTime == 0) {
 				return;
 			}
 
-			// --- SHAKE IS ACTIVE ---
+			// Shake Effect Active
 			long timeElapsed = System.currentTimeMillis() - damageStartTime;
 
 			if (timeElapsed < DAMAGE_VISUAL_DURATION) {
 
-				// Sprite Shake Logic (old damage shake)
+				// Sprite Shake Logic 
 				if (timeElapsed % 50 < 25) {
 					spriteShakeX = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
 					spriteShakeY = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
@@ -718,7 +700,7 @@ public class BattleView {
 					spriteShakeY = 0;
 				}
 
-				// NEW: Global Screen Shake Logic
+				// Global Screen Shake Logic
 				if (System.currentTimeMillis() - lastScreenShakeTime > 20) { // Shake updates more often
 					screenShakeX = random.nextInt(SCREEN_SHAKE_MAGNITUDE * 2 + 1) - SCREEN_SHAKE_MAGNITUDE;
 					screenShakeY = random.nextInt(SCREEN_SHAKE_MAGNITUDE * 2 + 1) - SCREEN_SHAKE_MAGNITUDE;
@@ -727,7 +709,7 @@ public class BattleView {
 
 			} else {
 
-				// Shake duration is over, reset all flags
+				// Shake duration is over
 				isPlayerDamaged = false;
 				isEnemyDamaged = false;
 				spriteShakeX = 0;
@@ -755,13 +737,12 @@ public class BattleView {
 
 		damageIndicatorPlayer = -dmg;
 		damageIndicatorEnemy = 0;
-		// damageStartTime and damageIndicatorStartTime are set at impact time in
-		// update()
+
 
 		message = "Time Out! Ouch! " + damageIndicatorPlayer + " HP";
 		messageColor = Color.RED;
 
-		impactTriggered = true; // Set flag to activate impact logic on delay
+		impactTriggered = true; 
 	}
 
 	private void checkRoundResult() {
@@ -804,7 +785,7 @@ public class BattleView {
 			expReward = 1;
 		}
 
-		// Handle Progression (Must happen before EXP gain is applied)
+		// Handle Progression 
 		if (isBoss) {
 			playerUser.setProgressLevel(1);
 			playerUser.setWorldLevel(playerUser.getWorldLevel() + 1);
@@ -812,7 +793,7 @@ public class BattleView {
 			playerUser.setProgressLevel(playerUser.getProgressLevel() + 1);
 		}
 
-		// Apply Rewards (This is where the pet gains EXP and potentially levels up)
+		// Apply Rewards 
 		levelUpOccurred = playerPet.gainExp(expReward, playerUser.getWorldLevel());
 
 		playerUser.addGold(goldReward);
@@ -960,7 +941,7 @@ public class BattleView {
 			return;
 		}
 
-		if (isRewardAnimating) { // Block input during reward animation
+		if (isRewardAnimating) { 
 			return;
 		}
 
@@ -1007,7 +988,7 @@ public class BattleView {
 		// Clear active shake flags before attack starts
 		isPlayerDamaged = false;
 		isEnemyDamaged = false;
-		damageStartTime = 0; // Ensure damage timer is reset for the delayed impact
+		damageStartTime = 0;
 
 		if (isCorrect) {
 			isPlayerAttacking = true;
@@ -1016,7 +997,7 @@ public class BattleView {
 			currentEnemy.setAnimationState(Enemy.AnimState.DAMAGE);
 
 			int baseDmg = playerPet.getAttackPower();
-			int finalDmg = baseDmg * letterCount; // Apply multiplier
+			int finalDmg = baseDmg * letterCount; // Apply damage multiplier
 
 			currentEnemy.takeDamage(finalDmg);
 
@@ -1028,7 +1009,7 @@ public class BattleView {
 			message = "Correct! Hit! +" + finalDmg + " DMG";
 			messageColor = Color.GREEN;
 
-			impactTriggered = true; // Set flag to activate impact logic on delay
+			impactTriggered = true; 
 
 			if (isWordCompleted()) {
 				if (currentEnemy.isAlive()) {
@@ -1054,7 +1035,7 @@ public class BattleView {
 			message = "Wrong! Ouch! " + damageIndicatorPlayer + " HP";
 			messageColor = Color.RED;
 
-			impactTriggered = true; // Set flag to activate impact logic on delay
+			impactTriggered = true;
 		}
 	}
 
@@ -1078,8 +1059,7 @@ public class BattleView {
 
 	public void render(Graphics2D g, int width, int height, ImageObserver observer) {
 
-		// Screen shake applies to the entire scene (background, sprites, scene
-		// overlays)
+		// Screen shake applies to the entire scene
 		int globalShakeX = screenShakeX;
 		int globalShakeY = screenShakeY;
 
@@ -1087,7 +1067,7 @@ public class BattleView {
 		int spriteTargetShakeX = isPlayerDamaged ? spriteShakeX : isEnemyDamaged ? spriteShakeX : 0;
 		int spriteTargetShakeY = isPlayerDamaged ? spriteShakeY : isEnemyDamaged ? spriteShakeY : 0;
 
-		// UI shake only applies to the timer (time panic)
+		// UI shake only applies to the timer
 		int uiOffsetX = timeShakeX;
 		int uiOffsetY = timeShakeY;
 
@@ -1102,7 +1082,7 @@ public class BattleView {
 		int groundY = height - 20;
 		int scaleFactor = 4;
 
-		// Character Positions (offset by global shake)
+		// Character Positions
 		int pDrawX = PLAYER_HOME_X + globalShakeX;
 		int eDrawX = ENEMY_HOME_X + globalShakeX;
 		float currentPAlpha = playerAlpha;
@@ -1125,9 +1105,7 @@ public class BattleView {
 			}
 		}
 
-		// --- SCENE DRAWING (SHAKEN) ---
-
-		// Draw Background
+		// Background
 		if (bgImage != null) {
 			g.drawImage(bgImage, globalShakeX, globalShakeY, width, height, observer);
 		}
@@ -1157,14 +1135,13 @@ public class BattleView {
 				int rX = 0;
 				int rY = 0;
 
-				// Apply time shake to rabbit image if panic mode is active
+				// Time shake to rabbit image if panic mode is active
 				if (currentTimeRemaining <= GameConstants.PANIC_THRESHOLD_SECONDS * 1000) {
 					rX += timeShakeX;
 					rY += timeShakeY;
 				}
 
-				// The rabbit image is a screen overlay, so only apply time shake, not global
-				// shake
+				// The rabbit image screen overlay
 				g.drawImage(rabbitImg, rX, rY, width, height, observer);
 				g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); // Reset alpha
 			} else {
@@ -1173,16 +1150,14 @@ public class BattleView {
 		}
 
 		int backdropH = 130;
-		// Top backdrop is drawn fixed (no globalShakeX/Y) so it acts as an anchor for
-		// fixed UI
+		// Top backdrop
 		g.setColor(new Color(0, 0, 0, 180));
 		g.fillRect(0, 0, width, backdropH);
 
-		// Apply global shake to UI elements that appear to be floating over the scene,
-		// inside the backdrop
+		// Global shake to UI elements
 		drawLevelIndicator(g, 30 + globalShakeX, TOP_BAR_Y + globalShakeY, observer);
 
-		// NEW: Draw Instruction Button
+		// Instruction Button
 		if (instructionBtnBounds != null && nameFrameImg != null) {
 			int btnX = instructionBtnBounds.x + globalShakeX;
 			int btnY = instructionBtnBounds.y + globalShakeY;
@@ -1191,7 +1166,7 @@ public class BattleView {
 
 			g.drawImage(nameFrameImg, btnX, btnY, btnW, btnH, observer);
 
-			// Draw "?" text - Adjusted for centering
+			// "?" text
 			g.setFont(GameConstants.HEADER_FONT);
 			g.setColor(Color.BLACK);
 			FontMetrics fm = g.getFontMetrics();
@@ -1208,8 +1183,7 @@ public class BattleView {
 
 		drawWordPuzzle(g, width, height, observer, globalShakeX, globalShakeY);
 
-		// Timer gets the time-panic shake (uiOffsetX/Y) but is fixed relative to the
-		// screen.
+		// Timer gets the time-panic shake
 		drawTimer(g, observer, uiOffsetX, uiOffsetY);
 
 		int framesTopY = backdropH + 10;
@@ -1220,7 +1194,6 @@ public class BattleView {
 
 			int bgW = msgW + 60;
 			int bgH = 50;
-			// Message box is fixed relative to the scene, so apply global shake
 			int bgX = (width - bgW) / 2 + globalShakeX;
 			int bgY = framesTopY + globalShakeY;
 
@@ -1234,14 +1207,14 @@ public class BattleView {
 			g.drawString(message, textX, textY);
 		}
 
-		// Character UI Frames (Fixed relative to the scene, so apply global shake)
+		// Character UI Frames 
 		drawCharacterUIFrames1(g, width, statsUiY + globalShakeY, PLAYER_HOME_X + globalShakeX,
 				ENEMY_HOME_X + globalShakeX, observer);
 
 		Image playerImg = playerPet.getCurrentImage();
 		Image enemyImg = currentEnemy.getCurrentImage();
 
-		// Draw Sprites
+		// Character Sprites
 		if (isPlayerAttacking) {
 			drawEnemySprite1(g, enemyImg, eDrawX, groundY + globalShakeY, scaleFactor, currentEAlpha,
 					spriteTargetShakeX, spriteTargetShakeY, isEnemyDamaged, observer);
@@ -1256,38 +1229,37 @@ public class BattleView {
 					observer);
 		}
 
-		// Damage Indicators (Fixed relative to the scene, so apply global shake)
+		// Damage Indicators 
 		drawDamageIndicators(g, width, height, globalShakeX, globalShakeY);
 
 		if (isSettingsOpen) {
 			drawSettingsModal(g, width, height);
 		} else if (isInstructionOpen) {
 			drawInstructionModal(g, width, height);
-		} else if (isRewardAnimating) { // NEW: Draw Reward Animation Overlay
+		} else if (isRewardAnimating) { 
 			drawExpAnimation(g, width, height, observer, globalShakeX);
 		} else if (battleOver) {
 			drawEndScreen(g, width, height);
 		}
 	}
 
-	// NEW: Logic for drawing the EXP/Level Up animation
+	// Logic for the EXP/Level Up animation
 	private void drawExpAnimation(Graphics2D g, int width, int height, ImageObserver observer, int offsetX) {
 		long timeElapsed = System.currentTimeMillis() - rewardAnimStartTime;
 		float progress = (float) timeElapsed / REWARD_ANIM_DURATION;
 
-		// 1. Level Up Screen Flash Effect (Fixed relative to the screen)
+		// Level Up Screen Flash Effect
 		if (levelUpOccurred) {
-			// Level Up Flash is already calculated in update()
 			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, levelUpFlashAlpha / 255.0f));
 			g.setColor(Color.WHITE);
 			g.fillRect(0, 0, width, height);
 			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
 		}
 
-		// 2. EXP Gained Indicator Animation (Fading up from player's position)
+		// EXP Gained Indicator Animation
 		int expIndicatorTravel = 80;
 		int playerGroundY = height - 20;
-		int startY = playerGroundY - 150; // Starting above the player's head
+		int startY = playerGroundY - 150;
 		int endY = startY - expIndicatorTravel;
 
 		int indicatorY = (int) (startY - (expIndicatorTravel * progress));
@@ -1310,7 +1282,7 @@ public class BattleView {
 			expColor = Color.YELLOW;
 		}
 
-		// Draw the EXP amount (Fixed relative to the scene, so apply global shake)
+		// EXP amount
 		g.setColor(expColor);
 		FontMetrics fm = g.getFontMetrics();
 		int textX = PLAYER_HOME_X - (fm.stringWidth(expText) / 2) + offsetX;
@@ -1319,7 +1291,7 @@ public class BattleView {
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); // Reset alpha
 	}
 
-	// NEW: Instruction Modal (With Word Wrap and smaller font)
+	// Instruction Modal
 	private void drawInstructionModal(Graphics2D g, int width, int height) {
 		g.setColor(new Color(0, 0, 0, 150));
 		g.fillRect(0, 0, width, height);
@@ -1343,7 +1315,7 @@ public class BattleView {
 		FontMetrics fm = g.getFontMetrics();
 		g.drawString(title, mX + (mW - fm.stringWidth(title)) / 2, mY + 50);
 
-		// Instructions Content: Using the new, smaller INSTRUCTION_FONT (16pt)
+		// Instructions Content
 		g.setFont(GameConstants.INSTRUCTION_FONT);
 		g.setColor(Color.BLACK);
 
@@ -1351,9 +1323,9 @@ public class BattleView {
 		String[] lines = content.split("\n");
 
 		// Word Wrapping parameters
-		int wrapWidth = mW - 60; // Modal width (400) - 30px left padding - 30px right padding
-		int startX = mX + 30; // 30px from left edge of modal
-		int startY = mY + 95; // Y position after the title
+		int wrapWidth = mW - 60; 
+		int startX = mX + 30; 
+		int startY = mY + 95; 
 		FontMetrics fmSmall = g.getFontMetrics();
 		int lineHeight = fmSmall.getHeight();
 		int indent = 20;
@@ -1366,81 +1338,62 @@ public class BattleView {
 				continue;
 			}
 
-			// Special Handling for Headers/Non-wrapping lines
 			if (trimmedLine.endsWith(":") || trimmedLine.startsWith("Objectives")) {
-				// Print as-is, aligned to the left side
 				int lineW = fmSmall.stringWidth(line);
 				int textX = startX;
 				int textY = startY + fmSmall.getAscent();
 				g.drawString(line, textX, textY);
 				startY += lineHeight;
 			}
-			// UPDATED: Logic to treat the "Type the letters..." line as a normal wrapping
-			// line
 			else if (trimmedLine.startsWith("Type")) {
-				// Handle "Type the letters on your keyboard to guess the word."
 				String[] words = trimmedLine.split(" ");
 				StringBuilder currentLine = new StringBuilder();
-				int currentX = mX + (mW - wrapWidth) / 2; // Center alignment for the introductory line
+				int currentX = mX + (mW - wrapWidth) / 2; 
 
 				for (String word : words) {
-					// Check if adding the next word (plus a space) exceeds the wrap width
 					if (fmSmall.stringWidth(currentLine.toString() + " " + word) > wrapWidth) {
-						// Draw the current line
 						int textY = startY + fmSmall.getAscent();
 						g.drawString(currentLine.toString().trim(), currentX, textY);
 
-						// Start a new line
 						startY += lineHeight;
 						currentLine = new StringBuilder();
 					}
 
-					// Append the word (with a space if not the very first word on a line)
 					if (currentLine.length() > 0) {
 						currentLine.append(" ");
 					}
 					currentLine.append(word);
 				}
 
-				// Draw the remaining part of the line
 				if (currentLine.length() > 0) {
 					int textY = startY + fmSmall.getAscent();
 					g.drawString(currentLine.toString().trim(), currentX, textY);
 					startY += lineHeight;
 				}
 			}
-			// Handle all other wrapping/bullet lines
 			else {
-				// Apply word wrap to instruction/list items
 				String[] words = trimmedLine.split(" ");
 				StringBuilder currentLine = new StringBuilder();
 				int currentX = startX + (trimmedLine.startsWith("Your") || trimmedLine.startsWith("Defeat")
 						|| trimmedLine.startsWith("Win") ? indent : 0);
 
 				for (String word : words) {
-					// Check if adding the next word (plus a space) exceeds the wrap width
 					if (fmSmall.stringWidth(currentLine.toString() + " " + word) > wrapWidth) {
-						// Draw the current line
 						int textY = startY + fmSmall.getAscent();
 						g.drawString(currentLine.toString().trim(), currentX, textY);
 
-						// Start a new line
 						startY += lineHeight;
 						currentLine = new StringBuilder();
 						currentX = startX + (trimmedLine.startsWith("Your") || trimmedLine.startsWith("Defeat")
-								|| trimmedLine.startsWith("Win") ? indent * 2 : indent); // Increase indent for wrapped
-																							// lines to preserve
-																							// bullet-style
+								|| trimmedLine.startsWith("Win") ? indent * 2 : indent);
 					}
 
-					// Append the word (with a space if not the very first word on a line)
 					if (currentLine.length() > 0) {
 						currentLine.append(" ");
 					}
 					currentLine.append(word);
 				}
 
-				// Draw the remaining part of the line
 				if (currentLine.length() > 0) {
 					int textY = startY + fmSmall.getAscent();
 					g.drawString(currentLine.toString().trim(), currentX, textY);
@@ -1477,7 +1430,7 @@ public class BattleView {
 
 		int groundY = height - 20;
 
-		// Player Damage (Fixed relative to scene, so apply shake)
+		// Player Damaged
 		if (damageIndicatorPlayer != 0) {
 			String dmgText = String.valueOf(damageIndicatorPlayer);
 			g.setColor(Color.RED);
@@ -1486,7 +1439,7 @@ public class BattleView {
 			g.drawString(dmgText, x, y);
 		}
 
-		// Enemy Damage (Fixed relative to scene, so apply shake)
+		// Enemy Damaged
 		if (damageIndicatorEnemy != 0) {
 			String dmgText = String.valueOf(damageIndicatorEnemy);
 			g.setColor(Color.YELLOW);
@@ -1613,8 +1566,6 @@ public class BattleView {
 		g.setColor(new Color(100, 100, 100));
 		g.drawRect(expBarX, expBarY, expBarW, expBarH);
 
-		// --- ENEMY UI ---
-
 		// Stats Frame
 		if (frameImg != null) {
 			g.drawImage(frameImg, eStatsX, statsFrameY, statsW, statsFrameH, null);
@@ -1633,7 +1584,7 @@ public class BattleView {
 		String eName = currentEnemy.getName();
 		g.drawString(eName, eFrameX + (frameW - g.getFontMetrics().stringWidth(eName)) / 2, topY + 46);
 
-		// 4. New Stats Display
+		// Stats Display
 		drawModernStats(g, currentEnemy, eStatsX, statsFrameY, statsW, statsFrameH, statsFont, observer);
 	}
 
@@ -1844,7 +1795,6 @@ public class BattleView {
 
 			g.setFont(GameConstants.UI_FONT);
 			g.setColor(Color.YELLOW);
-			// REWARDS ARE NOW CALCULATED BEFORE THIS SCREEN
 			String rewardMsg = "REWARD: " + goldReward + "G | " + expReward + " EXP";
 			if (playerUser.getProgressLevel() == 1 && playerUser.getWorldLevel() > 1) {
 				rewardMsg += " (BOSS DEFEATED!)";
@@ -1894,12 +1844,11 @@ public class BattleView {
 		int drawX = timerX + offsetX;
 		int drawY = timerY + offsetY;
 
-		// Timer box does not shake with the scene, but does shake on time panic
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, drawX, drawY, timerW, timerH, observer);
 		}
 
-		// Draw Panic Flash Effect (Timer Box Flicker)
+		// Draw Panic Flash Effect 
 		if (panicAlpha > 0) {
 			Color panicColor = new Color(GameConstants.TIMER_PANIC_COLOR.getRed(),
 					GameConstants.TIMER_PANIC_COLOR.getGreen(), GameConstants.TIMER_PANIC_COLOR.getBlue(), panicAlpha);

@@ -115,38 +115,26 @@ public class UserManager {
 
 				try {
 					String uniqueId = parts[0];
-					// parts[1] is username
 					String productId = parts[2];
 					String customName = parts[3];
 					int level = Integer.parseInt(parts[4]);
 
-					// Parse EXP (Index 5), default to 0 for legacy saves
 					int currentExp = 0;
 					if (parts.length > 5) {
 						currentExp = Integer.parseInt(parts[5]);
 					}
 
-					// Find the base product from the product manager
 					Hangpie product = productManager.getProductById(productId);
 					if (product != null) {
-						// Create a new copy for the inventory
 						Hangpie pet = new Hangpie(product);
-
-						// Apply the saved customizations
 						pet.setUniqueId(uniqueId);
 						pet.setName(customName);
 						pet.setLevel(level);
 						pet.setCurrentExp(currentExp);
-
-						// Recalculate Stats based on loaded level (Since product base is Lvl 1)
-						// Formula: Base + (Level - 1)
 						int levelDiff = level - 1;
 						pet.setMaxHealth(pet.getMaxHealth() + levelDiff);
 						pet.setAttackPower(pet.getAttackPower() + levelDiff);
-						pet.setCurrentHealth(pet.getMaxHealth()); // Full heal on load? Or maybe save/load current HP in
-																	// future.
-
-						// Add the loaded pet to the user's inventory list
+						pet.setCurrentHealth(pet.getMaxHealth()); 
 						user.addToInventory(pet);
 					}
 				} catch (NumberFormatException e) {
@@ -164,9 +152,7 @@ public class UserManager {
 			writer.write("// uniqueId|ownerUsername|productId|customName|level|currentExp");
 			writer.newLine();
 
-			// Loop through every user in our map
 			for (User user : userMap.values()) {
-				// Loop through every pet in THAT user's inventory
 				for (Hangpie pet : user.getInventory()) {
 					// Create the save string
 					String line = String.join("|", pet.getUniqueId(), // UUID
