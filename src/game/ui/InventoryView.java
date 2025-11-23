@@ -31,6 +31,8 @@ public class InventoryView {
 
 	// Scrolling & Selection
 	private int scrollY = 0;
+	// selectedPet is now explicitly managed by GameWindow to track the pet with the
+	// green outline
 	private Hangpie selectedPet = null;
 	private boolean isBackHovered = false;
 
@@ -71,6 +73,21 @@ public class InventoryView {
 		return selectedPet;
 	}
 
+	/**
+	 * Sets which pet should be highlighted with the green outline. This should be
+	 * synchronized with GameWindow's equippedHangpie.
+	 */
+	public void setSelection(Hangpie pet) {
+		this.selectedPet = pet;
+	}
+
+	/**
+	 * Clears the temporary selection after a cancellation.
+	 */
+	public void clearSelectedPet() {
+		this.selectedPet = null;
+	}
+
 	public void render(Graphics2D g, int width, int height, ImageObserver observer) {
 		if (background != null) {
 			g.drawImage(background, 0, 0, width, height, observer);
@@ -98,6 +115,7 @@ public class InventoryView {
 			for (Hangpie pet : inventory) {
 				// Draw if within visible bounds (using GAP_Y for vertical spacing check)
 				if (y + CARD_HEIGHT + GAP_Y > 0 && y - 100 < height) {
+					// selectedPet is now the source of truth for the outline
 					drawPetCard(g, pet, x, y, CARD_WIDTH, CARD_HEIGHT, observer);
 				}
 
@@ -243,7 +261,7 @@ public class InventoryView {
 
 		// PADDING_X defines the desired space from the edge of the inner frame (the
 		// beige box)
-		int PADDING_X =40;
+		int PADDING_X = 40;
 
 		// Vertical alignment calculation
 		// Target Y is now adjusted to visually center the text with the
@@ -311,6 +329,7 @@ public class InventoryView {
 
 	public String handleMouseClick(int mx, int my) {
 		if (backButtonBounds != null && backButtonBounds.contains(mx, my)) {
+			// Do not clear the selection here; GameWindow manages state on back.
 			return "BACK";
 		}
 
@@ -323,8 +342,10 @@ public class InventoryView {
 			boolean isVisible = (y + CARD_HEIGHT > 100) && (y < GameConstants.WINDOW_HEIGHT - 100);
 
 			if (isVisible && cardBounds.contains(mx, my)) {
+				// Set selectedPet immediately so the green outline appears on click.
+				// GameWindow will then check for save file and handle the final equipped state.
 				this.selectedPet = pet;
-				System.out.println("[Inventory] Equipped: " + pet.getName());
+				System.out.println("[Inventory] Equipped candidate: " + pet.getName());
 				return "SELECT";
 			}
 

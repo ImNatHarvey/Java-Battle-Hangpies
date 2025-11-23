@@ -12,6 +12,7 @@ import java.awt.image.BufferStrategy;
 import java.util.Random;
 
 import game.GameConstants;
+import main.Main;
 import models.Hangpie;
 import models.User;
 import utils.AssetLoader;
@@ -35,6 +36,13 @@ public class GameWindow extends Frame implements Runnable {
 
 	// Game Data
 	private Hangpie equippedHangpie = null;
+
+	// NEW: Inventory Confirmation State
+	private boolean isInventoryConfirmationOpen = false;
+	private Hangpie confirmPetCandidate = null;
+	private Rectangle modalConfirmYesBounds;
+	private Rectangle modalConfirmNoBounds;
+	private int selectedConfirmOption = -1; // 0 for NO, 1 for YES
 
 	// Assets
 	private Image background;
@@ -81,6 +89,14 @@ public class GameWindow extends Frame implements Runnable {
 
 		this.inventoryView = new InventoryView(user);
 
+		// If the user has pets, try to equip the first one by default if none is set
+		// (initial launch logic)
+		if (user.getInventory() != null && !user.getInventory().isEmpty()) {
+			this.equippedHangpie = user.getInventory().get(0);
+			this.equippedHangpie.setCurrentHealth(this.equippedHangpie.getMaxHealth());
+			this.inventoryView.setSelection(this.equippedHangpie);
+		}
+
 		setupWindow();
 		loadAssets();
 
@@ -125,6 +141,10 @@ public class GameWindow extends Frame implements Runnable {
 				if (currentState == GameState.MENU) {
 					checkMenuHover(e.getX(), e.getY());
 				} else if (currentState == GameState.INVENTORY) {
+					if (isInventoryConfirmationOpen) {
+						checkInventoryConfirmationHover(e.getX(), e.getY());
+						return;
+					}
 					inventoryView.handleMouseMove(e.getX(), e.getY());
 				} else if (currentState == GameState.PLAYING && battleView != null) {
 					// Update: handle hover effects in battle view
@@ -149,11 +169,43 @@ public class GameWindow extends Frame implements Runnable {
 						handleMenuClick(selectedOption);
 					}
 				} else if (currentState == GameState.INVENTORY) {
+
+					if (isInventoryConfirmationOpen) { // Handle modal click first
+						handleInventoryConfirmationClick(e.getX(), e.getY());
+						return;
+					}
+
 					String action = inventoryView.handleMouseClick(e.getX(), e.getY());
 					if (action.equals("BACK")) {
 						currentState = GameState.MENU;
+						// On back, clear selection only if it was a candidate pet and not the equipped
+						// one.
+						// However, since handleMenuClick sets the correct equipped pet on re-entry, we
+						// don't need to manually clear it here.
 					} else if (action.equals("SELECT")) {
-						equippedHangpie = inventoryView.getSelectedPet();
+						Hangpie selectedPet = inventoryView.getSelectedPet();
+
+						// If the pet selected is already equipped, don't show modal, just close
+						// inventory
+						if (selectedPet == equippedHangpie) {
+							// inventoryView.selectedPet is already set by the click, so we can exit.
+							currentState = GameState.MENU;
+							return;
+						}
+
+						// Check if a save exists for the current user (using Main.saveManager)
+						if (Main.saveManager.hasSave(currentUser.getUsername())) {
+							confirmPetCandidate = selectedPet;
+							isInventoryConfirmationOpen = true;
+							selectedConfirmOption = -1; // Reset hover state
+						} else {
+							// No save, just equip and set max HP (HP RESET FIX)
+							equippedHangpie = selectedPet;
+							equippedHangpie.setCurrentHealth(equippedHangpie.getMaxHealth()); // HP RESET FIX
+							// NEW: Sync InventoryView for drawing after immediate equip
+							inventoryView.setSelection(equippedHangpie);
+							currentState = GameState.MENU; // Added to fully complete the equip action
+						}
 					}
 				} else if (currentState == GameState.PLAYING && battleView != null) {
 					// Pass click to BattleView to handle Settings/Modal interaction
@@ -169,7 +221,7 @@ public class GameWindow extends Frame implements Runnable {
 
 			@Override
 			public void mouseWheelMoved(MouseWheelEvent e) {
-				if (currentState == GameState.INVENTORY) {
+				if (currentState == GameState.INVENTORY && !isInventoryConfirmationOpen) {
 					inventoryView.handleMouseScroll(e.getWheelRotation());
 				}
 			}
@@ -180,6 +232,11 @@ public class GameWindow extends Frame implements Runnable {
 			public void keyPressed(KeyEvent e) {
 				if (currentState == GameState.MENU && e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 					isInstructionOpen = false; // Close instruction modal on ESC
+				} else if (currentState == GameState.INVENTORY && isInventoryConfirmationOpen
+						&& e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+					isInventoryConfirmationOpen = false;
+					confirmPetCandidate = null;
+					inventoryView.setSelection(equippedHangpie); // Restore selection to equipped pet
 				} else if (currentState == GameState.PLAYING && battleView != null) {
 					// Pass Key Press to Battle View
 					battleView.handleKeyPress(e.getKeyCode(), e.getKeyChar());
@@ -204,6 +261,40 @@ public class GameWindow extends Frame implements Runnable {
 				stop();
 			}
 		});
+	}
+
+	// Logic for handling the confirmation modal on equip
+	private void checkInventoryConfirmationHover(int mx, int my) {
+		selectedConfirmOption = -1;
+
+		// Note: The order here must match the drawing order (YES then NO)
+		if (modalConfirmYesBounds != null && modalConfirmYesBounds.contains(mx, my)) {
+			selectedConfirmOption = 1; // YES
+		} else if (modalConfirmNoBounds != null && modalConfirmNoBounds.contains(mx, my)) {
+			selectedConfirmOption = 0; // NO
+		}
+	}
+
+	private void handleInventoryConfirmationClick(int mx, int my) {
+		// Note: The order here must match the drawing order (YES then NO)
+		if (modalConfirmYesBounds != null && modalConfirmYesBounds.contains(mx, my)) {
+			// YES: Equip the new pet, delete the save, and close the modal
+			equippedHangpie = confirmPetCandidate;
+			equippedHangpie.setCurrentHealth(equippedHangpie.getMaxHealth()); // HP RESET FIX
+			Main.saveManager.deleteSave(currentUser.getUsername());
+			inventoryView.setSelection(equippedHangpie); // ** NEW: Sync InventoryView for drawing **
+			isInventoryConfirmationOpen = false;
+			confirmPetCandidate = null;
+			currentState = GameState.MENU; // Added to fully complete the equip action
+			System.out.println("[Game] Equipped new Hangpie and deleted active save.");
+		} else if (modalConfirmNoBounds != null && modalConfirmNoBounds.contains(mx, my)) {
+			// NO: Cancel and close the modal
+			isInventoryConfirmationOpen = false;
+			confirmPetCandidate = null;
+			// ** NEW: If cancelled, reset the temporary visual selection back to the actual
+			// equipped pet **
+			inventoryView.setSelection(equippedHangpie);
+		}
 	}
 
 	private void checkMenuHover(int mx, int my) {
@@ -234,6 +325,11 @@ public class GameWindow extends Frame implements Runnable {
 		} else if (option == 1) {
 			// INVENTORY
 			currentState = GameState.INVENTORY;
+			// ** NEW: Ensure the green outline starts on the CURRENTLY equipped pet **
+			inventoryView.setSelection(equippedHangpie);
+			isInventoryConfirmationOpen = false; // Reset just in case
+			confirmPetCandidate = null;
+			selectedConfirmOption = -1;
 
 		} else if (option == 2) {
 			// EXIT
@@ -340,6 +436,9 @@ public class GameWindow extends Frame implements Runnable {
 			break;
 		case INVENTORY:
 			inventoryView.render(g, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
+			if (isInventoryConfirmationOpen) { // Render confirmation modal
+				renderInventoryConfirmation(g, gameCanvas.getWidth(), gameCanvas.getHeight());
+			}
 			break;
 		case PLAYING:
 			if (battleView != null) {
@@ -351,6 +450,121 @@ public class GameWindow extends Frame implements Runnable {
 		g.dispose();
 		bs.show();
 		Toolkit.getDefaultToolkit().sync();
+	}
+
+	// Method to draw the inventory confirmation modal with new styling
+	private void renderInventoryConfirmation(Graphics2D g, int width, int height) {
+		if (!isInventoryConfirmationOpen)
+			return;
+
+		g.setColor(new Color(0, 0, 0, 180));
+		g.fillRect(0, 0, width, height);
+
+		int mW = 600;
+		int mH = 250;
+		int mX = (width - mW) / 2;
+		int mY = (height - mH) / 2;
+
+		// Draw Modal Background
+		if (modalImg != null) {
+			g.drawImage(modalImg, mX, mY, mW, mH, null);
+		} else {
+			g.setColor(Color.LIGHT_GRAY);
+			g.fillRect(mX, mY, mW, mH);
+		}
+
+		// --- TITLE (REDUCED FONT SIZE) ---
+		g.setColor(Color.BLACK);
+		Font titleFont = new Font("Monospaced", Font.BOLD, 30); // Reduced from 40pt (HEADER_FONT) to 30pt
+		g.setFont(titleFont);
+		String title = "WARNING: Active Save Detected";
+		FontMetrics fmTitle = g.getFontMetrics();
+		g.drawString(title, mX + (mW - fmTitle.stringWidth(title)) / 2, mY + 50);
+
+		// --- MESSAGES (REDUCED TO 16PT) ---
+		g.setFont(GameConstants.INSTRUCTION_FONT); // 16pt font
+		FontMetrics fmMessage = g.getFontMetrics();
+
+		// Message 1 (Red)
+		g.setColor(Color.RED);
+		String msg = "Switching pets will DELETE your current battle save.";
+		g.drawString(msg, mX + (mW - fmMessage.stringWidth(msg)) / 2, mY + 100);
+
+		// Message 2 (Black)
+		g.setColor(Color.BLACK);
+		String petName = (confirmPetCandidate != null) ? confirmPetCandidate.getName() : "this pet";
+		String question = "Are you sure you want to equip " + petName + " and proceed?";
+		g.drawString(question, mX + (mW - fmMessage.stringWidth(question)) / 2, mY + 125); // Adjusted Y up
+
+		// --- BUTTONS (YES | NO, Centered & Stable) ---
+		g.setFont(GameConstants.BUTTON_FONT);
+		FontMetrics fmButton = g.getFontMetrics();
+		int btnH = 40;
+
+		// --- PARAMETERS FOR BUTTON STYLING AND POSITIONING ---
+		// Adjust these parameters if the buttons look off-center or too close/far apart
+		int buttonSpacing = 30;
+		int btnAreaY = mY + 175; // Baseline Y for button text
+
+		String yesTxtContent = "YES";
+		String noTxtContent = "NO";
+
+		String yesTxtHover = "> " + yesTxtContent + " <";
+		String noTxtHover = "> " + noTxtContent + " <";
+
+		// Calculate Max Widths for Stability
+		int yesTxtWMax = fmButton.stringWidth(yesTxtHover);
+		int noTxtWMax = fmButton.stringWidth(noTxtHover);
+
+		// Calculate Horizontal Position
+		int totalBtnWidth = yesTxtWMax + noTxtWMax + buttonSpacing;
+		int startX = mX + (mW - totalBtnWidth) / 2; // Starting X to center the block
+
+		int currentX = startX;
+
+		// 1. YES Button (Draws first)
+		String yesTxt = (selectedConfirmOption == 1) ? yesTxtHover : yesTxtContent;
+		int yesTxtWidthNormal = fmButton.stringWidth(yesTxtContent); // Width without arrows
+
+		// Calculate necessary offset to center the normal text within the hover text
+		// width
+		int yesDrawOffsetX = (yesTxtWMax - yesTxtWidthNormal) / 2;
+
+		// Bounds for click detection (using max width)
+		modalConfirmYesBounds = new Rectangle(currentX, btnAreaY, yesTxtWMax, btnH);
+
+		g.setColor((selectedConfirmOption == 1) ? GameConstants.SELECTION_COLOR : Color.BLACK);
+
+		if (selectedConfirmOption == 1) {
+			// Draw hovered text (full width, starts at currentX)
+			g.drawString(yesTxt, currentX, btnAreaY + fmButton.getAscent());
+		} else {
+			// Draw normal text (starts at currentX + offset for visual stability)
+			g.drawString(yesTxt, currentX + yesDrawOffsetX, btnAreaY + fmButton.getAscent());
+		}
+
+		currentX += yesTxtWMax + buttonSpacing; // Advance X using the max width
+
+		// 2. NO Button (Draws second)
+		String noTxt = (selectedConfirmOption == 0) ? noTxtHover : noTxtContent;
+		int noTxtWidthNormal = fmButton.stringWidth(noTxtContent); // Width without arrows
+
+		// Calculate necessary offset to center the normal text within the hover text
+		// width
+		int noDrawOffsetX = (noTxtWMax - noTxtWidthNormal) / 2;
+
+		// Bounds for click detection (using max width)
+		modalConfirmNoBounds = new Rectangle(currentX, btnAreaY, noTxtWMax, btnH);
+
+		g.setColor((selectedConfirmOption == 0) ? GameConstants.SELECTION_COLOR : Color.BLACK);
+
+		if (selectedConfirmOption == 0) {
+			// Draw hovered text (full width, starts at currentX)
+			g.drawString(noTxt, currentX, btnAreaY + fmButton.getAscent());
+		} else {
+			// Draw normal text (starts at currentX + offset for visual stability)
+			g.drawString(noTxt, currentX + noDrawOffsetX, btnAreaY + fmButton.getAscent());
+		}
 	}
 
 	private void renderMenu(Graphics2D g) {

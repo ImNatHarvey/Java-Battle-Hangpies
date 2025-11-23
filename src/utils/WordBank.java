@@ -5,17 +5,17 @@ import java.util.List;
 import java.util.Random;
 
 public class WordBank {
-	
+
 	public static class WordData {
 		public String word;
 		public String clue;
-		
+
 		public WordData(String w, String c) {
 			this.word = w;
 			this.clue = c;
 		}
 	}
-	
+
 	// Separate word lists by difficulty/length
 	// World 1 (Short, Easy, 5-7 letters) - Stages 1-4
 	private static List<WordData> world1Words = new ArrayList<>();
@@ -25,58 +25,83 @@ public class WordBank {
 	private static List<WordData> world3Words = new ArrayList<>();
 	// Boss Words (Phrases/Sentences) - Stage 5 of any World
 	private static List<WordData> bossWords = new ArrayList<>();
-	
+
 	static {
 		// --- World 1 Words (Short, Easy: 5-7 letters) ---
 		world1Words.add(new WordData("BANANA", "A long curved yellow fruit"));
-		world1Words.add(new WordData("OCEAN", "A large body of salt water"));
-		world1Words.add(new WordData("SOCCER", "Most popular sport in the world"));
-		world1Words.add(new WordData("SUMMER", "The hottest season of the year"));
+		world1Words.add(new WordData("OCEAN", "Large body of salt water"));
+		world1Words.add(new WordData("SOCCER", "World's most popular sport"));
+		world1Words.add(new WordData("SUMMER", "The hottest season"));
 		world1Words.add(new WordData("PLANET", "Earth is one of these"));
-		world1Words.add(new WordData("DOCTOR", "Someone who treats sick people"));
-		world1Words.add(new WordData("EAGLE", "A large bird of prey"));
+		world1Words.add(new WordData("DOCTOR", "Treats sick people"));
+		world1Words.add(new WordData("EAGLE", "Large bird of prey"));
 		world1Words.add(new WordData("FROZEN", "Turned into ice"));
 		world1Words.add(new WordData("GLOW", "To shine brightly"));
 		world1Words.add(new WordData("TIGER", "Large striped cat"));
-		world1Words.add(new WordData("HEAVEN", "The abode of God and angels"));
-		world1Words.add(new WordData("LIGHT", "The opposite of darkness"));
-		world1Words.add(new WordData("MUSIC", "Rhythm, harmony, and melody"));
+		world1Words.add(new WordData("HEAVEN", "Home of God and angels"));
+		world1Words.add(new WordData("LIGHT", "Opposite of darkness"));
+		world1Words.add(new WordData("MUSIC", "Rhythm, harmony, melody"));
 		world1Words.add(new WordData("SMART", "Intelligent or clever"));
 		world1Words.add(new WordData("PHONE", "Used to make calls"));
 		world1Words.add(new WordData("CHAIR", "Furniture to sit on"));
 		world1Words.add(new WordData("TABLE", "Furniture to eat on"));
-		
+		world1Words.add(new WordData("HAPPY", "Feeling or showing pleasure"));
+		world1Words.add(new WordData("COOKIE", "A sweet baked snack"));
+		world1Words.add(new WordData("FLOWER", "The colorful part of a plant"));
+		world1Words.add(new WordData("CASTLE", "A large fortified building"));
+		world1Words.add(new WordData("BRIGHT", "Full of light"));
+		world1Words.add(new WordData("VIBES", "A person's emotional state or aura"));
+		world1Words.add(new WordData("AWESOME", "Extremely impressive or daunting"));
+		world1Words.add(new WordData("MEMES", "Funny internet images or videos"));
+
 		// --- World 2 Words (Medium, 8-10 letters) ---
 		world2Words.add(new WordData("GIRAFFE", "The tallest land animal"));
-		world2Words.add(new WordData("GUITAR", "A musical instrument with strings"));
-		world2Words.add(new WordData("PENGUIN", "A flightless bird living in ice"));
+		world2Words.add(new WordData("GUITAR", "Stringed musical instrument"));
+		world2Words.add(new WordData("PENGUIN", "Flightless bird living in ice"));
 		world2Words.add(new WordData("LIBRARY", "A place full of books"));
-		world2Words.add(new WordData("MOUNTAIN", "A large natural elevation of the earth's surface"));
-		world2Words.add(new WordData("ELEPHANT", "The world's largest land animal"));
-		world2Words.add(new WordData("KEYBOARD", "Input device for a computer"));
-		world2Words.add(new WordData("DIAMOND", "A precious stone, pure carbon"));
-		world2Words.add(new WordData("ABSTRACT", "Existing in thought or as an idea"));
-		world2Words.add(new WordData("ADVENTURE", "An exciting or unusual experience"));
+		world2Words.add(new WordData("MOUNTAIN", "Large natural earth elevation"));
+		world2Words.add(new WordData("ELEPHANT", "World's largest land animal"));
+		world2Words.add(new WordData("KEYBOARD", "Computer input device"));
+		world2Words.add(new WordData("DIAMOND", "Precious stone, pure carbon"));
+		world2Words.add(new WordData("ABSTRACT", "Existing as an idea"));
+		world2Words.add(new WordData("ADVENTURE", "An exciting experience"));
 		world2Words.add(new WordData("FLAMINGO", "A pink wading bird"));
-		world2Words.add(new WordData("ASTRONAUT", "A person trained to travel in space"));
-		world2Words.add(new WordData("CALENDAR", "System for beginning, length, and divisions of the year"));
+		world2Words.add(new WordData("ASTRONAUT", "Space traveler"));
+		world2Words.add(new WordData("CALENDAR", "System for organizing the year"));
 		world2Words.add(new WordData("TREASURE", "A quantity of valuable things"));
-		world2Words.add(new WordData("DISCOVER", "To find or find out something"));
+		world2Words.add(new WordData("DISCOVER", "To find or find out"));
+		world2Words.add(new WordData("VOLCANO", "A mountain that erupts lava"));
+		world2Words.add(new WordData("LOLLIPOP", "A hard candy on a stick"));
+		world2Words.add(new WordData("FANTASY", "Genre of magic and myths"));
+		world2Words.add(new WordData("JOURNEY", "An act of traveling"));
+		world2Words.add(new WordData("HARVEST", "Gathering of a ripened crop"));
+		world2Words.add(new WordData("BOP", "A term for a really great song"));
+		world2Words.add(new WordData("FLOP", "To fail badly; opposite of a hit"));
+		world2Words.add(new WordData("STREAK", "Daily activity record on social media"));
+		world2Words.add(new WordData("CHALLENGE", "A viral dare on platforms like TikTok"));
 
 		// --- World 3+ Words (Long, 10+ letters) ---
 		world3Words.add(new WordData("BUTTERFLY", "Insect with colorful wings"));
 		world3Words.add(new WordData("RAINBOW", "Colorful arc in the sky"));
-		world3Words.add(new WordData("COMMUNITY", "A group of people living together in one place"));
-		world3Words.add(new WordData("TEMPERATURE", "Degree or intensity of heat present in a substance or object"));
-		world3Words.add(new WordData("TECHNOLOGY", "The application of scientific knowledge for practical purposes"));
-		world3Words.add(new WordData("UNIVERSAL", "Relating to all people or things in the world"));
-		world3Words.add(new WordData("PHOTOGRAPH", "A picture made using a camera"));
-		world3Words.add(new WordData("GOVERNMENT", "The political body that governs a country"));
-		world3Words.add(new WordData("CHAMPIONSHIP", "A competition for a title or trophy"));
-		world3Words.add(new WordData("ACCOMPLISH", "Achieve or complete successfully"));
-		world3Words.add(new WordData("EXPERIENCE", "Practical contact with and observation of facts or events"));
-		world3Words.add(new WordData("INTERNATIONAL", "Existing or occurring between two or more nations"));
-		
+		world3Words.add(new WordData("COMMUNITY", "Group of people living together"));
+		world3Words.add(new WordData("TEMPERATURE", "Intensity of heat"));
+		world3Words.add(new WordData("TECHNOLOGY", "Application of scientific knowledge"));
+		world3Words.add(new WordData("UNIVERSAL", "Relating to all people or things"));
+		world3Words.add(new WordData("PHOTOGRAPH", "Picture made with a camera"));
+		world3Words.add(new WordData("GOVERNMENT", "Political body that governs"));
+		world3Words.add(new WordData("CHAMPIONSHIP", "Competition for a title"));
+		world3Words.add(new WordData("ACCOMPLISH", "Achieve or complete"));
+		world3Words.add(new WordData("EXPERIENCE", "Practical contact with facts"));
+		world3Words.add(new WordData("INTERNATIONAL", "Occurring between two or more nations"));
+		world3Words.add(new WordData("IMAGINATION", "The ability to form new ideas"));
+		world3Words.add(new WordData("CELEBRATION", "A social gathering for a happy event"));
+		world3Words.add(new WordData("ENVIRONMENT", "Surroundings or conditions"));
+		world3Words.add(new WordData("STATISTICS", "Numerical data analysis"));
+		world3Words.add(new WordData("RESPONSIBLE", "Having a duty to deal with something"));
+		world3Words.add(new WordData("STREAMING", "Watching media over the internet"));
+		world3Words.add(new WordData("INFLUENCER", "Social media personality"));
+		world3Words.add(new WordData("ALGORITHM", "A process used by computers and apps"));
+
 		// --- Boss Words (Phrases/Sentences) ---
 		bossWords.add(new WordData("PIECE OF CAKE", "Idiom: Something very easy"));
 		bossWords.add(new WordData("BREAK A LEG", "Idiom: Good luck performance"));
@@ -90,15 +115,28 @@ public class WordBank {
 		bossWords.add(new WordData("UNDER THE WEATHER", "Idiom: Feeling sick"));
 		bossWords.add(new WordData("SPIDER MAN", "Hero bitten by an arachnid"));
 		bossWords.add(new WordData("THE MATRIX", "Blue pill or red pill?"));
-		bossWords.add(new WordData("FORBIDDEN FOREST", "A dark and mysterious woods"));
-		bossWords.add(new WordData("GLOBAL WARMING", "The rise in Earth's average temperature"));
+		bossWords.add(new WordData("GLOBAL WARMING", "Earth's rising average temperature"));
 		bossWords.add(new WordData("THE SILENT HILL", "Horror game with fog"));
+		bossWords.add(new WordData("GAME OF THRONES", "A series about the Iron Throne"));
+		bossWords.add(new WordData("APPLE OF MY EYE", "Idiom: Cherished person"));
+		bossWords.add(new WordData("SIX FLAGS", "A popular amusement park chain"));
+		bossWords.add(new WordData("WATER UNDER THE BRIDGE", "Idiom: Past trouble that's no longer important"));
+		bossWords.add(new WordData("PULP FICTION", "Tarantino movie with a briefcase"));
+		bossWords.add(new WordData("AVENGERS ENDGAME", "The ultimate Marvel movie"));
+		bossWords.add(new WordData("NO CAP", "Slang: To tell the truth or be serious"));
+		bossWords.add(new WordData("CATCH THESE HANDS", "Slang: To start a fight"));
+		bossWords.add(new WordData("SQUID GAME", "Korean survival drama series"));
+		bossWords.add(new WordData("THE NOTEBOOK", "Classic tear-jerker romance film"));
+		bossWords.add(new WordData("TAYLOR SWIFT", "The 'Eras Tour' artist"));
+		bossWords.add(new WordData("GOOD VIBES ONLY", "A popular positive phrase"));
+		bossWords.add(new WordData("THE MANDALORIAN", "This is the way"));
+		bossWords.add(new WordData("IT IS WHAT IT IS", "Idiom: Acceptance of a situation"));
 	}
-	
+
 	public static WordData getRandomWord(int worldLevel, int progressLevel) {
 		Random rand = new Random();
 		List<WordData> source;
-		
+
 		if (progressLevel == 5) {
 			// Boss stages always use the hard, phrase-based word list
 			source = bossWords;
@@ -110,11 +148,13 @@ public class WordBank {
 			// World 3 and above use the long word list
 			source = world3Words;
 		}
-		
-		// Check if the source list is empty (shouldn't happen with the current setup, but safe check)
+
+		// Check if the source list is empty (shouldn't happen with the current setup,
+		// but safe check)
 		if (source.isEmpty()) {
 			// Fallback to the shortest list if the target list is empty
-			System.err.println("Warning: Word list for World Level " + worldLevel + " is empty. Falling back to World 1 list.");
+			System.err.println(
+					"Warning: Word list for World Level " + worldLevel + " is empty. Falling back to World 1 list.");
 			source = world1Words.isEmpty() ? bossWords : world1Words;
 		}
 

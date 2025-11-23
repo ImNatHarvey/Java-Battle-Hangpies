@@ -1,2 +1,1 @@
 // FORMAT: username|secretWord|clue|guessedLetters|enemyName|enemyHp|enemyMaxHp|enemyAtk|enemyImageFolder|enemyLevel|playerPetId|playerPetHp
-player123|RAINBOW|Colorful arc in the sky|Q|Draugr|20|20|3|enemies/enemies/skeleton|3|ff3d6f22-fa84-41ba-a381-bd32e4da87fa|2
