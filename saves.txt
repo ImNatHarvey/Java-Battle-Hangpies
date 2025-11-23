@@ -1,1 +1,2 @@
 // FORMAT: username|secretWord|clue|guessedLetters|enemyName|enemyHp|enemyMaxHp|enemyAtk|enemyImageFolder|enemyLevel|playerPetId|playerPetHp
+player123|ALGORITHM|A process used by computers and apps||Umbra|20|20|3|enemies/enemies/black|3|54089e5d-3e56-47e5-8ffd-0ce0b7c26a2e|5

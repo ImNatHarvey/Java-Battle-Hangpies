@@ -17,32 +17,33 @@ import models.Hangpie;
 import models.User;
 import utils.AssetLoader;
 
-public class GameWindow extends Frame implements Runnable {
+// This is the main window and controls the entire game flow
+public class GameWindow extends Frame implements Runnable { // This creates the window and runs the game code in a loop
 	private User currentUser;
 	private boolean isRunning;
 	private Canvas gameCanvas;
 	private Thread gameThread;
 
 	// State Management
-	public enum GameState {
+	public enum GameState { // This tells the program what screen to show now
 		MENU, INVENTORY, PLAYING
 	}
 
 	private GameState currentState;
 
 	// Views
-	private InventoryView inventoryView;
-	private BattleView battleView;
+	private InventoryView inventoryView; // The inventory screen object
+	private BattleView battleView; // The battle screen object
 
 	// Game Data
-	private Hangpie equippedHangpie = null;
+	private Hangpie equippedHangpie = null; // The pet the player is using for battle
 
 	// Inventory Confirmation State
 	private boolean isInventoryConfirmationOpen = false;
 	private Hangpie confirmPetCandidate = null;
 	private Rectangle modalConfirmYesBounds;
 	private Rectangle modalConfirmNoBounds;
-	private int selectedConfirmOption = -1; 
+	private int selectedConfirmOption = -1;
 
 	// Assets
 	private Image background;
@@ -67,7 +68,7 @@ public class GameWindow extends Frame implements Runnable {
 	// Menu State
 	private String[] options = { "Play Game", "Inventory", "Exit Game" };
 	private volatile int selectedOption = -1;
-	private Rectangle[] menuBounds;
+	private Rectangle[] menuBounds; // This array holds the clickable areas for the menu buttons
 
 	// Menu Controls & State
 	private Rectangle instructionBtnBounds;
@@ -80,8 +81,9 @@ public class GameWindow extends Frame implements Runnable {
 	private int shakeX = 0;
 	private int shakeY = 0;
 	private long lastShakeTime = 0;
-	private Random random = new Random();
+	private Random random = new Random(); // This helps create random effects like shaking
 
+	// This is where the game window starts
 	public GameWindow(User user) {
 		this.currentUser = user;
 		this.menuBounds = new Rectangle[options.length];
@@ -92,21 +94,22 @@ public class GameWindow extends Frame implements Runnable {
 		// If the user has pets, equip the first one by default if none is set
 		if (user.getInventory() != null && !user.getInventory().isEmpty()) {
 			this.equippedHangpie = user.getInventory().get(0);
-			this.equippedHangpie.setCurrentHealth(this.equippedHangpie.getMaxHealth());
+			this.equippedHangpie.setCurrentHealth(this.equippedHangpie.getMaxHealth()); // Sets pet health to max
 			this.inventoryView.setSelection(this.equippedHangpie);
 		}
 
-		setupWindow();
-		loadAssets();
+		setupWindow(); // Sets up the frame size and settings
+		loadAssets(); // Loads pictures
 
 		// Menu UI boundary
 		instructionBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, 20, MENU_UI_BUTTON_SIZE,
 				MENU_UI_BUTTON_SIZE);
 
 		setVisible(true);
-		start();
+		start(); // Starts the main game loop thread
 	}
 
+	// This sets up the visual part of the window
 	private void setupWindow() {
 		setTitle(GameConstants.GAME_TITLE);
 		setSize(GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
@@ -115,7 +118,7 @@ public class GameWindow extends Frame implements Runnable {
 		setLocationRelativeTo(null);
 		setBackground(Color.BLACK);
 
-		gameCanvas = new Canvas() {
+		gameCanvas = new Canvas() { // This is the area where the game draws its graphics
 			private static final long serialVersionUID = 1L;
 
 			@Override
@@ -132,11 +135,12 @@ public class GameWindow extends Frame implements Runnable {
 		gameCanvas.setBackground(Color.BLACK);
 		gameCanvas.setIgnoreRepaint(true);
 
+		// This handles all the mouse moving and clicking events
 		MouseAdapter mouseHandler = new MouseAdapter() {
 			@Override
 			public void mouseMoved(MouseEvent e) {
 				if (currentState == GameState.MENU) {
-					checkMenuHover(e.getX(), e.getY());
+					checkMenuHover(e.getX(), e.getY()); // Checks if the mouse is over a menu option
 				} else if (currentState == GameState.INVENTORY) {
 					if (isInventoryConfirmationOpen) {
 						checkInventoryConfirmationHover(e.getX(), e.getY());
@@ -152,7 +156,7 @@ public class GameWindow extends Frame implements Runnable {
 			public void mousePressed(MouseEvent e) {
 				if (currentState == GameState.MENU) {
 					if (isInstructionOpen) {
-						isInstructionOpen = false; 
+						isInstructionOpen = false;
 						return;
 					}
 
@@ -162,18 +166,18 @@ public class GameWindow extends Frame implements Runnable {
 					}
 
 					if (selectedOption != -1) {
-						handleMenuClick(selectedOption);
+						handleMenuClick(selectedOption); // Runs the action for the clicked menu item
 					}
 				} else if (currentState == GameState.INVENTORY) {
 
-					if (isInventoryConfirmationOpen) { 
+					if (isInventoryConfirmationOpen) {
 						handleInventoryConfirmationClick(e.getX(), e.getY());
 						return;
 					}
 
 					String action = inventoryView.handleMouseClick(e.getX(), e.getY());
 					if (action.equals("BACK")) {
-						currentState = GameState.MENU;
+						currentState = GameState.MENU; // Go back to the main menu
 					} else if (action.equals("SELECT")) {
 						Hangpie selectedPet = inventoryView.getSelectedPet();
 
@@ -182,13 +186,15 @@ public class GameWindow extends Frame implements Runnable {
 							return;
 						}
 
+						// Check if a battle save exists before changing the pet
 						if (Main.saveManager.hasSave(currentUser.getUsername())) {
 							confirmPetCandidate = selectedPet;
-							isInventoryConfirmationOpen = true;
-							selectedConfirmOption = -1; 
+							isInventoryConfirmationOpen = true; // Show the warning modal
+							selectedConfirmOption = -1;
 						} else {
+							// No save found, so equip the pet right away
 							equippedHangpie = selectedPet;
-							equippedHangpie.setCurrentHealth(equippedHangpie.getMaxHealth()); 
+							equippedHangpie.setCurrentHealth(equippedHangpie.getMaxHealth());
 							inventoryView.setSelection(equippedHangpie);
 							currentState = GameState.MENU;
 						}
@@ -196,9 +202,9 @@ public class GameWindow extends Frame implements Runnable {
 				} else if (currentState == GameState.PLAYING && battleView != null) {
 					String action = battleView.handleMouseClick(e.getX(), e.getY());
 					if (action.equals("EXIT")) {
-						stop(); 
+						stop(); // Close the game program
 					} else if (action.equals("MENU")) {
-						currentState = GameState.MENU;
+						currentState = GameState.MENU; // Go back to the main menu
 						battleView = null;
 					}
 				}
@@ -207,23 +213,24 @@ public class GameWindow extends Frame implements Runnable {
 			@Override
 			public void mouseWheelMoved(MouseWheelEvent e) {
 				if (currentState == GameState.INVENTORY && !isInventoryConfirmationOpen) {
-					inventoryView.handleMouseScroll(e.getWheelRotation());
+					inventoryView.handleMouseScroll(e.getWheelRotation()); // Scrolls the inventory screen
 				}
 			}
 		};
 
+		// This handles all the keyboard input events
 		gameCanvas.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent e) {
 				if (currentState == GameState.MENU && e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-					isInstructionOpen = false; 
+					isInstructionOpen = false;
 				} else if (currentState == GameState.INVENTORY && isInventoryConfirmationOpen
 						&& e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 					isInventoryConfirmationOpen = false;
 					confirmPetCandidate = null;
-					inventoryView.setSelection(equippedHangpie); 
+					inventoryView.setSelection(equippedHangpie);
 				} else if (currentState == GameState.PLAYING && battleView != null) {
-					battleView.handleKeyPress(e.getKeyCode(), e.getKeyChar());
+					battleView.handleKeyPress(e.getKeyCode(), e.getKeyChar()); // Sends key press to the battle screen
 
 					if (battleView.isExitRequested()) {
 						currentState = GameState.MENU;
@@ -239,6 +246,7 @@ public class GameWindow extends Frame implements Runnable {
 
 		add(gameCanvas, BorderLayout.CENTER);
 
+		// Closes the game cleanly when the window close button is pressed
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
@@ -252,26 +260,26 @@ public class GameWindow extends Frame implements Runnable {
 		selectedConfirmOption = -1;
 
 		if (modalConfirmYesBounds != null && modalConfirmYesBounds.contains(mx, my)) {
-			selectedConfirmOption = 1; // YES
+			selectedConfirmOption = 1; // YES button hovered
 		} else if (modalConfirmNoBounds != null && modalConfirmNoBounds.contains(mx, my)) {
-			selectedConfirmOption = 0; // NO
+			selectedConfirmOption = 0; // NO button hovered
 		}
 	}
 
 	private void handleInventoryConfirmationClick(int mx, int my) {
 		if (modalConfirmYesBounds != null && modalConfirmYesBounds.contains(mx, my)) {
 			equippedHangpie = confirmPetCandidate;
-			equippedHangpie.setCurrentHealth(equippedHangpie.getMaxHealth()); 
-			Main.saveManager.deleteSave(currentUser.getUsername());
-			inventoryView.setSelection(equippedHangpie); 
+			equippedHangpie.setCurrentHealth(equippedHangpie.getMaxHealth());
+			Main.saveManager.deleteSave(currentUser.getUsername()); // Deletes the save file
+			inventoryView.setSelection(equippedHangpie);
 			isInventoryConfirmationOpen = false;
 			confirmPetCandidate = null;
-			currentState = GameState.MENU; 
+			currentState = GameState.MENU;
 			System.out.println("[Game] Equipped new Hangpie and deleted active save.");
 		} else if (modalConfirmNoBounds != null && modalConfirmNoBounds.contains(mx, my)) {
 			isInventoryConfirmationOpen = false;
 			confirmPetCandidate = null;
-			inventoryView.setSelection(equippedHangpie);
+			inventoryView.setSelection(equippedHangpie); // Cancels and keeps the old pet selected
 		}
 	}
 
@@ -294,30 +302,32 @@ public class GameWindow extends Frame implements Runnable {
 			// PLAY GAME
 			if (equippedHangpie == null) {
 				System.out.println("[Game] Cannot start: No Hangpie equipped.");
-				errorFlashStartTime = System.currentTimeMillis();
+				errorFlashStartTime = System.currentTimeMillis(); // Starts the shaking animation
 			} else {
-				startBattle();
+				startBattle(); // Starts the game fight
 			}
 
 		} else if (option == 1) {
 			// INVENTORY
-			currentState = GameState.INVENTORY;
+			currentState = GameState.INVENTORY; // Changes to the inventory screen
 			inventoryView.setSelection(equippedHangpie);
-			isInventoryConfirmationOpen = false; // Reset just in case
+			isInventoryConfirmationOpen = false;
 			confirmPetCandidate = null;
 			selectedConfirmOption = -1;
 
 		} else if (option == 2) {
 			// EXIT
-			stop();
+			stop(); // Closes the program
 		}
 	}
 
+	// Creates the battle screen object and starts the game
 	private void startBattle() {
 		battleView = new BattleView(currentUser, equippedHangpie);
-		currentState = GameState.PLAYING;
+		currentState = GameState.PLAYING; // Changes to the playing screen
 	}
 
+	// Loads all the main images
 	private void loadAssets() {
 		String bgPath = GameConstants.BG_DIR + GameConstants.MAIN_BG;
 		background = AssetLoader.loadImage(bgPath, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
@@ -334,6 +344,7 @@ public class GameWindow extends Frame implements Runnable {
 		nameFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 250, 50);
 	}
 
+	// Starts the separate game thread
 	private synchronized void start() {
 		if (isRunning)
 			return;
@@ -342,6 +353,7 @@ public class GameWindow extends Frame implements Runnable {
 		gameThread.start();
 	}
 
+	// Stops the game thread and closes the program
 	private synchronized void stop() {
 		if (!isRunning)
 			return;
@@ -356,11 +368,11 @@ public class GameWindow extends Frame implements Runnable {
 
 	@Override
 	public void run() {
-		gameCanvas.createBufferStrategy(3);
+		gameCanvas.createBufferStrategy(3); // Uses triple buffering to stop screen flicker
 		BufferStrategy bs = gameCanvas.getBufferStrategy();
 
 		final double FPS = 60.0;
-		final double TIME_PER_TICK = 1000000000 / FPS;
+		final double TIME_PER_TICK = 1000000000 / FPS; // Time needed for 60 updates per second
 		long lastTime = System.nanoTime();
 		double delta = 0;
 
@@ -371,15 +383,16 @@ public class GameWindow extends Frame implements Runnable {
 
 			if (delta >= 1) {
 				if (currentState == GameState.PLAYING && battleView != null) {
-					battleView.update();
+					battleView.update(); // Updates the battle logic
 				}
-				updateMenuShake();
+				updateMenuShake(); // Updates the error shake animation
 				delta--;
 			}
-			render(bs);
+			render(bs); // Draws the screen
 		}
 	}
 
+	// Logic for the menu shake effect when there is no pet equipped
 	private void updateMenuShake() {
 		if (errorFlashStartTime > 0) {
 			long timeElapsed = System.currentTimeMillis() - errorFlashStartTime;
@@ -397,6 +410,7 @@ public class GameWindow extends Frame implements Runnable {
 		}
 	}
 
+	// This tells the correct screen object to draw itself
 	private void render(BufferStrategy bs) {
 		Graphics2D g = (Graphics2D) bs.getDrawGraphics();
 		g.setColor(Color.BLACK);
@@ -411,7 +425,7 @@ public class GameWindow extends Frame implements Runnable {
 			break;
 		case INVENTORY:
 			inventoryView.render(g, gameCanvas.getWidth(), gameCanvas.getHeight(), gameCanvas);
-			if (isInventoryConfirmationOpen) { 
+			if (isInventoryConfirmationOpen) {
 				renderInventoryConfirmation(g, gameCanvas.getWidth(), gameCanvas.getHeight());
 			}
 			break;
@@ -427,12 +441,12 @@ public class GameWindow extends Frame implements Runnable {
 		Toolkit.getDefaultToolkit().sync();
 	}
 
-	// Method to draw the inventory confirmation modal with new styling
+	// Draws the warning modal for pet switching
 	private void renderInventoryConfirmation(Graphics2D g, int width, int height) {
 		if (!isInventoryConfirmationOpen)
 			return;
 
-		g.setColor(new Color(0, 0, 0, 180));
+		g.setColor(new Color(0, 0, 0, 180)); // Fills the background with a dark, transparent color
 		g.fillRect(0, 0, width, height);
 
 		int mW = 600;
@@ -450,12 +464,12 @@ public class GameWindow extends Frame implements Runnable {
 
 		// Title
 		g.setColor(Color.BLACK);
-		Font titleFont = new Font("Monospaced", Font.BOLD, 30); 
+		Font titleFont = new Font("Monospaced", Font.BOLD, 30);
 		g.setFont(titleFont);
 		String title = "WARNING: Active Save Detected";
 		FontMetrics fmTitle = g.getFontMetrics();
 		g.drawString(title, mX + (mW - fmTitle.stringWidth(title)) / 2, mY + 50);
-		g.setFont(GameConstants.INSTRUCTION_FONT); 
+		g.setFont(GameConstants.INSTRUCTION_FONT);
 		FontMetrics fmMessage = g.getFontMetrics();
 
 		// Message 1 (Red)
@@ -474,7 +488,7 @@ public class GameWindow extends Frame implements Runnable {
 		int btnH = 40;
 
 		int buttonSpacing = 30;
-		int btnAreaY = mY + 175; 
+		int btnAreaY = mY + 175;
 
 		String yesTxtContent = "YES";
 		String noTxtContent = "NO";
@@ -486,17 +500,17 @@ public class GameWindow extends Frame implements Runnable {
 		int noTxtWMax = fmButton.stringWidth(noTxtHover);
 
 		int totalBtnWidth = yesTxtWMax + noTxtWMax + buttonSpacing;
-		int startX = mX + (mW - totalBtnWidth) / 2; 
+		int startX = mX + (mW - totalBtnWidth) / 2;
 
 		int currentX = startX;
 
-		// YES Button 
+		// YES Button
 		String yesTxt = (selectedConfirmOption == 1) ? yesTxtHover : yesTxtContent;
 		int yesTxtWidthNormal = fmButton.stringWidth(yesTxtContent);
 
 		int yesDrawOffsetX = (yesTxtWMax - yesTxtWidthNormal) / 2;
 
-		modalConfirmYesBounds = new Rectangle(currentX, btnAreaY, yesTxtWMax, btnH);
+		modalConfirmYesBounds = new Rectangle(currentX, btnAreaY, yesTxtWMax, btnH); // Sets the YES button clickable area
 
 		g.setColor((selectedConfirmOption == 1) ? GameConstants.SELECTION_COLOR : Color.BLACK);
 
@@ -506,14 +520,14 @@ public class GameWindow extends Frame implements Runnable {
 			g.drawString(yesTxt, currentX + yesDrawOffsetX, btnAreaY + fmButton.getAscent());
 		}
 
-		currentX += yesTxtWMax + buttonSpacing; 
+		currentX += yesTxtWMax + buttonSpacing;
 
-		// 2. NO Button 
+		// NO Button
 		String noTxt = (selectedConfirmOption == 0) ? noTxtHover : noTxtContent;
-		int noTxtWidthNormal = fmButton.stringWidth(noTxtContent); 
+		int noTxtWidthNormal = fmButton.stringWidth(noTxtContent);
 		int noDrawOffsetX = (noTxtWMax - noTxtWidthNormal) / 2;
 
-		modalConfirmNoBounds = new Rectangle(currentX, btnAreaY, noTxtWMax, btnH);
+		modalConfirmNoBounds = new Rectangle(currentX, btnAreaY, noTxtWMax, btnH); // Sets the NO button clickable area
 
 		g.setColor((selectedConfirmOption == 0) ? GameConstants.SELECTION_COLOR : Color.BLACK);
 
@@ -524,7 +538,9 @@ public class GameWindow extends Frame implements Runnable {
 		}
 	}
 
+	// Renders the main menu screen elements
 	private void renderMenu(Graphics2D g) {
+		// Applies shake only if there's no equipped pet and an error flash is active
 		int equippedOffsetX = (equippedHangpie == null && errorFlashStartTime > 0) ? shakeX : 0;
 		int equippedOffsetY = (equippedHangpie == null && errorFlashStartTime > 0) ? shakeY : 0;
 
@@ -663,9 +679,9 @@ public class GameWindow extends Frame implements Runnable {
 		String[] lines = content.split("\n");
 
 		// Word Wrapping parameters
-		int wrapWidth = mW - 60; 
-		int startX = mX + 30; 
-		int startY = mY + 95; 
+		int wrapWidth = mW - 60;
+		int startX = mX + 30;
+		int startY = mY + 95;
 		FontMetrics fmSmall = g.getFontMetrics();
 		int lineHeight = fmSmall.getHeight();
 		int indent = 20;
@@ -684,8 +700,7 @@ public class GameWindow extends Frame implements Runnable {
 				int textY = startY + fmSmall.getAscent();
 				g.drawString(line, textX, textY);
 				startY += lineHeight;
-			}
-			else if (trimmedLine.startsWith("Type")) {
+			} else if (trimmedLine.startsWith("Type")) {
 				String[] words = trimmedLine.split(" ");
 				StringBuilder currentLine = new StringBuilder();
 				int currentX = mX + (mW - wrapWidth) / 2;
@@ -710,8 +725,7 @@ public class GameWindow extends Frame implements Runnable {
 					g.drawString(currentLine.toString().trim(), currentX, textY);
 					startY += lineHeight;
 				}
-			}
-			else {
+			} else {
 				String[] words = trimmedLine.split(" ");
 				StringBuilder currentLine = new StringBuilder();
 				int currentX = startX + (trimmedLine.startsWith("Your") || trimmedLine.startsWith("Defeat")
@@ -725,7 +739,7 @@ public class GameWindow extends Frame implements Runnable {
 						startY += lineHeight;
 						currentLine = new StringBuilder();
 						currentX = startX + (trimmedLine.startsWith("Your") || trimmedLine.startsWith("Defeat")
-								|| trimmedLine.startsWith("Win") ? indent * 2 : indent); 
+								|| trimmedLine.startsWith("Win") ? indent * 2 : indent);
 					}
 
 					if (currentLine.length() > 0) {

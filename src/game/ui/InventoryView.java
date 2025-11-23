@@ -16,8 +16,9 @@ import models.Hangpie;
 import models.User;
 import utils.AssetLoader;
 
+// This class shows the player's pet inventory screen
 public class InventoryView {
-	private User user;
+	private User user; // This is the player whose pets we are showing
 	private Image background;
 	private Rectangle backButtonBounds;
 
@@ -30,7 +31,7 @@ public class InventoryView {
 	private Image attackImg;
 
 	// Scrolling & Selection
-	private int scrollY = 0;
+	private int scrollY = 0; // This controls how far down the list the player has scrolled
 	private Hangpie selectedPet = null;
 	private boolean isBackHovered = false;
 
@@ -42,11 +43,13 @@ public class InventoryView {
 	private final int START_X = 85;
 	private final int START_Y = 160;
 
+	// This function sets up the inventory screen
 	public InventoryView(User user) {
 		this.user = user;
 		loadAssets();
 	}
 
+	// This function loads all the necessary pictures
 	private void loadAssets() {
 		String path = GameConstants.BG_DIR + GameConstants.INVENTORY_BG;
 		background = AssetLoader.loadImage(path, GameConstants.WINDOW_WIDTH, GameConstants.WINDOW_HEIGHT);
@@ -60,10 +63,12 @@ public class InventoryView {
 		attackImg = AssetLoader.loadImage(GameConstants.ATTACK_IMG, 15, 15);
 	}
 
+	// Gets the pet that is currently selected
 	public Hangpie getSelectedPet() {
 		return selectedPet;
 	}
 
+	// Sets which pet is currently selected
 	public void setSelection(Hangpie pet) {
 		this.selectedPet = pet;
 	}
@@ -72,6 +77,7 @@ public class InventoryView {
 		this.selectedPet = null;
 	}
 
+	// This function draws the entire inventory screen
 	public void render(Graphics2D g, int width, int height, ImageObserver observer) {
 		if (background != null) {
 			g.drawImage(background, 0, 0, width, height, observer);
@@ -80,7 +86,9 @@ public class InventoryView {
 			g.fillRect(0, 0, width, height);
 		}
 
+		// Gets the list of pets from the user model
 		Shape originalClip = g.getClip();
+		// This sets the boundary so that pets outside this box are cut off when scrolling
 		g.setClip(0, 90, width, height - 190);
 
 		List<Hangpie> inventory = user.getInventory();
@@ -92,15 +100,18 @@ public class InventoryView {
 		} else {
 
 			int x = START_X;
-			int y = START_Y - scrollY;
+			int y = START_Y - scrollY; // Applies the current scroll position
 
+			// This loop goes through every pet and draws its card
 			for (Hangpie pet : inventory) {
+				// Only draws the card if it is visible on the screen
 				if (y + CARD_HEIGHT + GAP_Y > 0 && y - 100 < height) {
 					drawPetCard(g, pet, x, y, CARD_WIDTH, CARD_HEIGHT, observer);
 				}
 
 				x += CARD_WIDTH + GAP_X;
 
+				// Moves to the next row when the current row is full
 				if (x + CARD_WIDTH > width - 20) {
 					x = START_X;
 					y += CARD_HEIGHT + GAP_Y;
@@ -108,8 +119,9 @@ public class InventoryView {
 			}
 		}
 
-		g.setClip(originalClip);
+		g.setClip(originalClip); // Stops the clipping
 
+		// Draws the top bar
 		g.setColor(new Color(0, 0, 0, 150));
 		g.fillRect(0, 0, width, 90);
 
@@ -120,9 +132,11 @@ public class InventoryView {
 		int titleX = (width - fm.stringWidth(title)) / 2;
 		g.drawString(title, titleX, 70);
 
+		// Draws the bottom bar
 		g.setColor(new Color(0, 0, 0, 150));
 		g.fillRect(0, height - 100, width, 100);
 
+		// Draws the Back button
 		String backText = isBackHovered ? "> Back <" : "Back";
 		g.setFont(GameConstants.BUTTON_FONT);
 		fm = g.getFontMetrics();
@@ -136,6 +150,7 @@ public class InventoryView {
 		int backX = buttonCenterX - (backW / 2);
 		int backY = height - 50;
 
+		// This sets the clickable area for the Back button
 		backButtonBounds = new Rectangle(backX - 10, backY - fm.getAscent() - 10, backW + 20, backH + 20);
 
 		if (isBackHovered) {
@@ -147,7 +162,9 @@ public class InventoryView {
 		g.drawString(backText, backX, backY);
 	}
 
+	// This draws the picture and info for one pet
 	private void drawPetCard(Graphics2D g, Hangpie pet, int x, int y, int w, int h, ImageObserver observer) {
+		// Loads the big tarot card image for the pet
 		String tarotPath = GameConstants.HANGPIE_DIR + pet.getImageName() + "/tarot.png";
 		Image tarotCard = AssetLoader.loadImage(tarotPath, w, h);
 
@@ -160,6 +177,7 @@ public class InventoryView {
 			g.drawString("No Tarot", x + 80, y + 150);
 		}
 
+		// Draws a green border if the pet is currently selected
 		if (pet == selectedPet) {
 			g.setColor(Color.GREEN);
 			g.setStroke(new BasicStroke(4));
@@ -209,7 +227,7 @@ public class InventoryView {
 
 		g.drawString(lvlTxt, x + (w - lvlWidth) / 2, statsY + 28);
 
-		drawModernStats(g, pet, x + 10, statsY, w - 20, statsH, statFont, observer);
+		drawModernStats(g, pet, x + 10, statsY, w - 20, statsH, statFont, observer); // Draws the HP and ATK numbers
 	}
 
 	// Helper method to draw the specific [Heart] HP | [Sword] ATK
@@ -259,15 +277,17 @@ public class InventoryView {
 		g.drawString(atkTxt, atkTextX, targetY);
 	}
 
+	// Handles when the player clicks on a pet card
 	public String handleMouseClick(int mx, int my) {
 		if (backButtonBounds != null && backButtonBounds.contains(mx, my)) {
-			return "BACK";
+			return "BACK"; // Return a signal to go back
 		}
 
 		int x = START_X;
 		int y = START_Y - scrollY;
 		int width = GameConstants.WINDOW_WIDTH;
 
+		// Checks every pet card to see if it was clicked
 		for (Hangpie pet : user.getInventory()) {
 			Rectangle cardBounds = new Rectangle(x, y, CARD_WIDTH, CARD_HEIGHT);
 			boolean isVisible = (y + CARD_HEIGHT > 100) && (y < GameConstants.WINDOW_HEIGHT - 100);
@@ -275,7 +295,7 @@ public class InventoryView {
 			if (isVisible && cardBounds.contains(mx, my)) {
 				this.selectedPet = pet;
 				System.out.println("[Inventory] Equipped candidate: " + pet.getName());
-				return "SELECT";
+				return "SELECT"; // Return a signal that a pet was chosen
 			}
 
 			x += CARD_WIDTH + GAP_X;
@@ -288,16 +308,19 @@ public class InventoryView {
 		return "NONE";
 	}
 
+	// Checks if the mouse is over the back button
 	public void handleMouseMove(int mx, int my) {
 		if (backButtonBounds != null) {
 			isBackHovered = backButtonBounds.contains(mx, my);
 		}
 	}
 
+	// Changes the scroll position when the mouse wheel is moved
 	public void handleMouseScroll(int units) {
 		int scrollSpeed = 30;
 		scrollY += units * scrollSpeed;
 
+		// Stops the scroll position from going too high or too low
 		int totalRows = (int) Math.ceil((double) user.getInventory().size() / 4.0);
 		int totalContentHeight = (totalRows * (CARD_HEIGHT + GAP_Y));
 		int maxScroll = Math.max(0, totalContentHeight - (GameConstants.WINDOW_HEIGHT - 200));
