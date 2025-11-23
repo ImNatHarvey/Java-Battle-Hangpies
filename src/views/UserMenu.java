@@ -29,7 +29,7 @@ public class UserMenu
 			System.out.println("   ___________________________________________________________________________________    __________________________________________________________________________ \n"
 							 + "  |                                                                                   |  |                                                                          |\n"
 							 + "  |  ABOUT BATTLE HANGPIES:                                                           |  |  " + Colorable.YELLOW + "[EXCLUSIVE] BATTLE HANGPIES IS LIVE NOW!" + Colorable.RESET + "                                |\n"
-							 + "  |  The wait is over! Battle Hangpies has finally arrived!                  |\n"
+							 + "  |                                                                                   |  |  The wait is over! Battle Hangpies has finally arrived!                  |\n"
 							 + "  |  A word-guessing game where your Hangpie character battles opponents!             |  |__________________________________________________________________________|\n"
 							 + "  |  ► Guess letters correctly to damage the enemy.                                   |   __________________________________________________________________________ \n"
 							 + "  |  ► Guess wrong, and your Hangpie takes damage!                                    |  |                                                                          |\n"
