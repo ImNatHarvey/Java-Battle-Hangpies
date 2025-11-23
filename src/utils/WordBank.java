@@ -17,17 +17,17 @@ public class WordBank {
 	}
 
 	// Separate word lists by difficulty/length
-	// World 1 (Short, Easy, 5-7 letters) - Stages 1-4
+	// World 1 - Stages 1-4
 	private static List<WordData> world1Words = new ArrayList<>();
-	// World 2 (Medium, 8-10 letters) - Stages 1-4
+	// World 2 - Stages 1-4
 	private static List<WordData> world2Words = new ArrayList<>();
-	// World 3+ (Long, 10+ letters) - Stages 1-4
+	// World 3+ - Stages 1-4
 	private static List<WordData> world3Words = new ArrayList<>();
-	// Boss Words (Phrases/Sentences) - Stage 5 of any World
+	// Boss Words - Stage 5 of any World
 	private static List<WordData> bossWords = new ArrayList<>();
 
 	static {
-		// --- World 1 Words (Short, Easy: 5-7 letters) ---
+		// World 1
 		world1Words.add(new WordData("BANANA", "A long curved yellow fruit"));
 		world1Words.add(new WordData("OCEAN", "Large body of salt water"));
 		world1Words.add(new WordData("SOCCER", "World's most popular sport"));
@@ -54,7 +54,7 @@ public class WordBank {
 		world1Words.add(new WordData("AWESOME", "Extremely impressive or daunting"));
 		world1Words.add(new WordData("MEMES", "Funny internet images or videos"));
 
-		// --- World 2 Words (Medium, 8-10 letters) ---
+		// World 2
 		world2Words.add(new WordData("GIRAFFE", "The tallest land animal"));
 		world2Words.add(new WordData("GUITAR", "Stringed musical instrument"));
 		world2Words.add(new WordData("PENGUIN", "Flightless bird living in ice"));
@@ -80,7 +80,7 @@ public class WordBank {
 		world2Words.add(new WordData("STREAK", "Daily activity record on social media"));
 		world2Words.add(new WordData("CHALLENGE", "A viral dare on platforms like TikTok"));
 
-		// --- World 3+ Words (Long, 10+ letters) ---
+		// --- World 3+
 		world3Words.add(new WordData("BUTTERFLY", "Insect with colorful wings"));
 		world3Words.add(new WordData("RAINBOW", "Colorful arc in the sky"));
 		world3Words.add(new WordData("COMMUNITY", "Group of people living together"));
@@ -101,6 +101,55 @@ public class WordBank {
 		world3Words.add(new WordData("STREAMING", "Watching media over the internet"));
 		world3Words.add(new WordData("INFLUENCER", "Social media personality"));
 		world3Words.add(new WordData("ALGORITHM", "A process used by computers and apps"));
+		world3Words.add(new WordData("BANANA", "A long curved yellow fruit"));
+		world3Words.add(new WordData("OCEAN", "Large body of salt water"));
+		world3Words.add(new WordData("SOCCER", "World's most popular sport"));
+		world3Words.add(new WordData("SUMMER", "The hottest season"));
+		world3Words.add(new WordData("PLANET", "Earth is one of these"));
+		world3Words.add(new WordData("DOCTOR", "Treats sick people"));
+		world3Words.add(new WordData("EAGLE", "Large bird of prey"));
+		world3Words.add(new WordData("FROZEN", "Turned into ice"));
+		world3Words.add(new WordData("GLOW", "To shine brightly"));
+		world3Words.add(new WordData("TIGER", "Large striped cat"));
+		world3Words.add(new WordData("HEAVEN", "Home of God and angels"));
+		world3Words.add(new WordData("LIGHT", "Opposite of darkness"));
+		world3Words.add(new WordData("MUSIC", "Rhythm, harmony, melody"));
+		world3Words.add(new WordData("SMART", "Intelligent or clever"));
+		world3Words.add(new WordData("PHONE", "Used to make calls"));
+		world3Words.add(new WordData("CHAIR", "Furniture to sit on"));
+		world3Words.add(new WordData("TABLE", "Furniture to eat on"));
+		world3Words.add(new WordData("HAPPY", "Feeling or showing pleasure"));
+		world3Words.add(new WordData("COOKIE", "A sweet baked snack"));
+		world3Words.add(new WordData("FLOWER", "The colorful part of a plant"));
+		world3Words.add(new WordData("CASTLE", "A large fortified building"));
+		world3Words.add(new WordData("BRIGHT", "Full of light"));
+		world3Words.add(new WordData("VIBES", "A person's emotional state or aura"));
+		world3Words.add(new WordData("AWESOME", "Extremely impressive or daunting"));
+		world3Words.add(new WordData("MEMES", "Funny internet images or videos"));
+		world3Words.add(new WordData("GIRAFFE", "The tallest land animal"));
+		world3Words.add(new WordData("GUITAR", "Stringed musical instrument"));
+		world3Words.add(new WordData("PENGUIN", "Flightless bird living in ice"));
+		world3Words.add(new WordData("LIBRARY", "A place full of books"));
+		world3Words.add(new WordData("MOUNTAIN", "Large natural earth elevation"));
+		world3Words.add(new WordData("ELEPHANT", "World's largest land animal"));
+		world3Words.add(new WordData("KEYBOARD", "Computer input device"));
+		world3Words.add(new WordData("DIAMOND", "Precious stone, pure carbon"));
+		world3Words.add(new WordData("ABSTRACT", "Existing as an idea"));
+		world3Words.add(new WordData("ADVENTURE", "An exciting experience"));
+		world3Words.add(new WordData("FLAMINGO", "A pink wading bird"));
+		world3Words.add(new WordData("ASTRONAUT", "Space traveler"));
+		world3Words.add(new WordData("CALENDAR", "System for organizing the year"));
+		world3Words.add(new WordData("TREASURE", "A quantity of valuable things"));
+		world3Words.add(new WordData("DISCOVER", "To find or find out"));
+		world3Words.add(new WordData("VOLCANO", "A mountain that erupts lava"));
+		world3Words.add(new WordData("LOLLIPOP", "A hard candy on a stick"));
+		world3Words.add(new WordData("FANTASY", "Genre of magic and myths"));
+		world3Words.add(new WordData("JOURNEY", "An act of traveling"));
+		world3Words.add(new WordData("HARVEST", "Gathering of a ripened crop"));
+		world3Words.add(new WordData("BOP", "A term for a really great song"));
+		world3Words.add(new WordData("FLOP", "To fail badly; opposite of a hit"));
+		world3Words.add(new WordData("STREAK", "Daily activity record on social media"));
+		world3Words.add(new WordData("CHALLENGE", "A viral dare on platforms like TikTok"));
 
 		// --- Boss Words (Phrases/Sentences) ---
 		bossWords.add(new WordData("PIECE OF CAKE", "Idiom: Something very easy"));
