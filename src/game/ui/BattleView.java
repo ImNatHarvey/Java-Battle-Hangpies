@@ -1365,6 +1365,7 @@ public class BattleView {
 	public void render(Graphics2D g, int width, int height, ImageObserver observer) {
 
 		// Screen shake applies to the entire scene
+		// This is the shake for the background and sprites (from damage/all-in mode)
 		int globalShakeX = screenShakeX;
 		int globalShakeY = screenShakeY;
 		
@@ -1379,13 +1380,21 @@ public class BattleView {
 		    globalShakeY = 0;
 		}
 
+		// *** NEW: Calculate combined UI shake offset (global shake + time panic shake) ***
+		// timeShakeX/Y is non-zero only during time panic in normal mode.
+		// In All-In mode, we rely on globalShakeX/Y (screenShakeX/Y) for the shake, and timeShakeX/Y is 0.
+		int uiShakeX = globalShakeX + timeShakeX; 
+		int uiShakeY = globalShakeY + timeShakeY;
+		// END NEW CALCULATION
+
 		// Sprite shake only applies to the damaged character sprite
 		int spriteTargetShakeX = isPlayerDamaged ? spriteShakeX : isEnemyDamaged ? spriteShakeX : 0;
 		int spriteTargetShakeY = isPlayerDamaged ? spriteShakeY : isEnemyDamaged ? spriteShakeY : 0;
 
 		// UI shake only applies to the timer
-		int uiOffsetX = timeShakeX;
-		int uiOffsetY = timeShakeY;
+		// The old uiOffsetX/Y is now obsolete as we use uiShakeX/Y everywhere.
+		// int uiOffsetX = timeShakeX;
+		// int uiOffsetY = timeShakeY;
 
 		long timeElapsedDamage = System.currentTimeMillis() - damageStartTime;
 		int currentDamagePulseAlpha = 0;
@@ -1473,12 +1482,13 @@ public class BattleView {
 		g.fillRect(0, 0, width, backdropH);
 
 		// Global shake to UI elements
-		drawLevelIndicator(g, 30 + globalShakeX, TOP_BAR_Y + globalShakeY, observer);
+		// Apply combined UI shake for all non-sprite UI
+		drawLevelIndicator(g, 30 + uiShakeX, TOP_BAR_Y + uiShakeY, observer);
 		
 		// Instruction Button
 		if (instructionBtnBounds != null && nameFrameImg != null) {
-			int btnX = instructionBtnBounds.x + globalShakeX;
-			int btnY = instructionBtnBounds.y + globalShakeY;
+			int btnX = instructionBtnBounds.x + uiShakeX; // Use uiShakeX
+			int btnY = instructionBtnBounds.y + uiShakeY; // Use uiShakeY
 			int btnW = instructionBtnBounds.width;
 			int btnH = instructionBtnBounds.height;
 
@@ -1494,10 +1504,10 @@ public class BattleView {
 			g.drawString(qText, textX, textY);
 		}
 		
-		// NEW: All-In Guess Button (Apply globalShakeX/Y)
+		// NEW: All-In Guess Button (Apply uiShakeX/Y)
 		if (allInButtonBounds != null && nameFrameImg != null) {
-			int btnX = allInButtonBounds.x + globalShakeX;
-			int btnY = allInButtonBounds.y + globalShakeY;
+			int btnX = allInButtonBounds.x + uiShakeX; // Use uiShakeX
+			int btnY = allInButtonBounds.y + uiShakeY; // Use uiShakeY
 			int btnW = allInButtonBounds.width;
 			int btnH = allInButtonBounds.height;
 			
@@ -1525,14 +1535,14 @@ public class BattleView {
 
 
 		if (settingsImg != null && settingsBtnBounds != null) {
-			g.drawImage(settingsImg, settingsBtnBounds.x + globalShakeX, settingsBtnBounds.y + globalShakeY,
+			g.drawImage(settingsImg, settingsBtnBounds.x + uiShakeX, settingsBtnBounds.y + uiShakeY, // Use uiShakeX/Y
 					settingsBtnBounds.width, settingsBtnBounds.height, observer);
 		}
 
-		drawWordPuzzle(g, width, height, observer, globalShakeX, globalShakeY);
+		drawWordPuzzle(g, width, height, observer, uiShakeX, uiShakeY); // Use uiShakeX/Y
 
 		// Timer gets the time-panic shake internally on top of external shake
-		drawTimer(g, observer, globalShakeX, globalShakeY);
+		drawTimer(g, observer, uiShakeX, uiShakeY); // Use uiShakeX/Y
 
 		int framesTopY = backdropH + 10;
 		if (!message.isEmpty()) {
@@ -1542,22 +1552,22 @@ public class BattleView {
 
 			int bgW = msgW + 60;
 			int bgH = 50;
-			int bgX = (width - bgW) / 2 + globalShakeX;
-			int bgY = framesTopY + globalShakeY;
+			int bgX = (width - bgW) / 2 + uiShakeX; // Use uiShakeX
+			int bgY = framesTopY + uiShakeY; // Use uiShakeY
 
 			if (nameFrameImg != null) {
 				g.drawImage(nameFrameImg, bgX, bgY, bgW, bgH, observer);
 			}
 
 			g.setColor(messageColor);
-			int textX = (width - msgW) / 2 + globalShakeX;
+			int textX = (width - msgW) / 2 + uiShakeX; // Use uiShakeX
 			int textY = bgY + (bgH - fm.getAscent()) / 2 + fm.getAscent() - 7;
 			g.drawString(message, textX, textY);
 		}
 
 		// Character UI Frames
-		drawCharacterUIFrames1(g, width, statsUiY + globalShakeY, PLAYER_HOME_X + globalShakeX,
-				ENEMY_HOME_X + globalShakeX, observer);
+		drawCharacterUIFrames1(g, width, statsUiY + uiShakeY, PLAYER_HOME_X + uiShakeX, // Use uiShakeX/Y
+				ENEMY_HOME_X + uiShakeX, observer);
 
 		Image playerImg = playerPet.getCurrentImage();
 		Image enemyImg = currentEnemy.getCurrentImage();
@@ -2351,9 +2361,9 @@ public class BattleView {
 	// Draws the time limit display
 	private void drawTimer(Graphics2D g, ImageObserver observer, int externalOffsetX, int externalOffsetY) {
 
-		// Timer gets the time-panic shake internally on top of external shake
-		int finalOffsetX = timerX + externalOffsetX + timeShakeX; // Add panic shake
-		int finalOffsetY = timerY + externalOffsetY + timeShakeY; // Add panic shake
+		// Timer gets the combined UI shake from render()
+		int finalOffsetX = timerX + externalOffsetX; // <-- REMOVED + timeShakeX
+		int finalOffsetY = timerY + externalOffsetY; // <-- REMOVED + timeShakeY
 
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, finalOffsetX, finalOffsetY, timerW, timerH, observer);
