@@ -1,5 +1,5 @@
 // uniqueId|ownerUsername|productId|customName|level|currentExp
-89b7f392-6ac9-4dc1-92a0-81a7bb4ae799|player123|HP-001|Miraak|2|2
+89b7f392-6ac9-4dc1-92a0-81a7bb4ae799|player123|HP-001|Miraak|2|4
 54089e5d-3e56-47e5-8ffd-0ce0b7c26a2e|player123|HP-002|J'zargo|1|9
 faa51b77-8d49-4b24-b107-fac3cb50e660|player123|HP-003|Dovahkiin|1|9
 f7f31f41-9c37-4266-80d9-2e4b5b7fae38|player123|HP-004|Jenassa|1|9
