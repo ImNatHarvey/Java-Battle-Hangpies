@@ -30,6 +30,7 @@ public class GameConstants {
 	// Game Logic Timer
 	public static final int GUESS_TIME_LIMIT_SECONDS = 30; // How long the player has to guess a letter
 	public static final int PANIC_THRESHOLD_SECONDS = 5; // When the timer starts flashing red
+	public static final int ALL_IN_GUESS_TIME_SECONDS = 10; // Time limit for the all-in guess
 
 	// Fonts
 	public static final Font HEADER_FONT = new Font("Monospaced", Font.BOLD, 40);

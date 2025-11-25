@@ -169,12 +169,26 @@ public class BattleView {
 	private boolean isExitConfirmation = false;
 	private boolean isMenuConfirmation = false;
 	private boolean isInstructionOpen = false;
+	
+	// NEW ALL-IN GUESS FIELDS
+	private boolean isAllInGuessOpen = false;
+	private long allInGuessStartTime = 0;
+	private Rectangle allInButtonBounds;
+	private boolean isAllInHovered = false;
+	private String currentAllInWordInput = ""; // What the player has typed so far
+	private int currentAllInWordIndex = 0; // The index of the correct letter in secretWord
+	
+	// NEW: Screen shake control for All-In
+	private boolean isAllInShaking = false;
+	private final int ALL_IN_SHAKE_MAGNITUDE = 5;
+	private long lastAllInShakeTime = 0;
+	// END NEW FIELDS
 
 	// UI Buttons
 	// These define the clickable areas for the buttons
 	private Rectangle settingsBtnBounds;
 	private Rectangle instructionBtnBounds;
-
+	
 	// Modal Buttons
 	private Rectangle modalContinueBounds;
 	private Rectangle modalSaveBounds;
@@ -201,12 +215,15 @@ public class BattleView {
 
 		// Reset Animations
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
+		
+		// NEW: Reset All-In State
+		this.isAllInGuessOpen = false;
 
 		loadAssets();
 		initBattle(); // This sets up the game data
 	}
 
-	// This function loads all the pictures and graphics needed
+	// This function loads all the necessary pictures
 	private void loadAssets() {
 		nameFrameImg = AssetLoader.loadImage(GameConstants.NAME_FRAME_IMG, 200, 50);
 		frameImg = AssetLoader.loadImage(GameConstants.FRAME_IMG, 200, 80);
@@ -247,6 +264,15 @@ public class BattleView {
 		this.rewardAnimStartTime = 0;
 		this.levelUpOccurred = false;
 		this.levelUpFlashAlpha = 0.0f;
+		
+		// NEW: Reset All-In State/Shake
+		this.isAllInGuessOpen = false;
+		this.allInGuessStartTime = 0;
+		this.currentAllInWordInput = "";
+		this.currentAllInWordIndex = 0;
+		this.isAllInHovered = false;
+		this.isAllInShaking = false;
+
 
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
 
@@ -306,12 +332,15 @@ public class BattleView {
 		// UI Button Bounds
 		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE);
 		instructionBtnBounds = new Rectangle(settingsBtnBounds.x - 60, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE);
-
+		
 		// Set Timer UI position
 		timerW = 250;
 		timerH = 50;
 		timerX = (GameConstants.WINDOW_WIDTH - timerW) / 2;
 		timerY = GameConstants.WINDOW_HEIGHT - 120;
+		
+		// NEW: All-In Button Bounds (positioned above the timer)
+		allInButtonBounds = new Rectangle(timerX, timerY - timerH - 10, timerW, timerH);
 	}
 
 	// This function pulls all saved data from the file
@@ -345,12 +374,15 @@ public class BattleView {
 		// UI Button Bounds
 		settingsBtnBounds = new Rectangle(GameConstants.WINDOW_WIDTH - 80, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE);
 		instructionBtnBounds = new Rectangle(settingsBtnBounds.x - 60, TOP_BAR_Y, UI_BUTTON_SIZE, UI_BUTTON_SIZE);
-
+		
 		// Set Timer UI position
 		timerW = 250;
 		timerH = 50;
 		timerX = (GameConstants.WINDOW_WIDTH - timerW) / 2;
 		timerY = GameConstants.WINDOW_HEIGHT - 120;
+		
+		// NEW: All-In Button Bounds (positioned above the timer)
+		allInButtonBounds = new Rectangle(timerX, timerY - timerH - 10, timerW, timerH);
 
 		// Reset Timer and Panic Visuals
 		this.lastGuessTime = System.currentTimeMillis();
@@ -376,6 +408,15 @@ public class BattleView {
 		this.enemyAlpha = 1.0f;
 		this.currentAnimTime = 0;
 		this.isInstructionOpen = false;
+
+		// NEW: Reset All-In State/Shake
+		this.isAllInGuessOpen = false;
+		this.allInGuessStartTime = 0;
+		this.currentAllInWordInput = "";
+		this.currentAllInWordIndex = 0;
+		this.isAllInHovered = false;
+		this.isAllInShaking = false;
+
 
 		// Reward Animation State
 		this.isRewardAnimating = false;
@@ -518,6 +559,89 @@ public class BattleView {
 	public void update() {
 		if (isSettingsOpen || isInstructionOpen || battleOver)
 			return;
+			
+		// NEW: Check All-In Guess Time Out
+		if (isAllInGuessOpen) {
+			long timeElapsed = System.currentTimeMillis() - allInGuessStartTime;
+			long maxTimeMillis = GameConstants.ALL_IN_GUESS_TIME_SECONDS * 1000;
+			currentTimeRemaining = maxTimeMillis - timeElapsed;
+			
+			// Handle intense screen shake for ALL-IN mode
+			if (isAllInShaking) {
+				if (System.currentTimeMillis() - lastAllInShakeTime > 50) {
+					screenShakeX = random.nextInt(ALL_IN_SHAKE_MAGNITUDE * 2 + 1) - ALL_IN_SHAKE_MAGNITUDE;
+					screenShakeY = random.nextInt(ALL_IN_SHAKE_MAGNITUDE * 2 + 1) - ALL_IN_SHAKE_MAGNITUDE;
+					lastAllInShakeTime = System.currentTimeMillis();
+				}
+			} else {
+				screenShakeX = 0;
+				screenShakeY = 0;
+			}
+
+
+			if (currentTimeRemaining <= 0) {
+				currentTimeRemaining = 0;
+				// Loss Condition: Time Out
+				handleAllInGuessTimeOut(); 
+				return;
+			}
+			
+			// Handle panic visual for the All-In timer
+			int secondsRemaining = (int) (currentTimeRemaining / 1000) + 1;
+			boolean isPanicking = secondsRemaining <= GameConstants.PANIC_THRESHOLD_SECONDS && secondsRemaining > 0;
+			
+			// Handle rabbit flash per second
+			if (secondsRemaining > 0) {
+				long timeIntoSecond = timeElapsed % 1000;
+				
+				// Trigger flash for the first 200ms of every second
+				if (timeIntoSecond < 200 && !hasFlashedThisGuess) {
+					rabbitFlashStartTime = System.currentTimeMillis();
+					hasFlashedThisGuess = true;
+				} else if (timeIntoSecond >= 200) {
+					// Reset the flag for the next second
+					hasFlashedThisGuess = false;
+				}
+			}
+
+			
+			if (isPanicking) {
+				if (System.currentTimeMillis() - lastShakeTime > 100) {
+					timeShakeX = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
+					timeShakeY = random.nextInt(SHAKE_MAGNITUDE * 2 + 1) - SHAKE_MAGNITUDE;
+					lastShakeTime = System.currentTimeMillis();
+				}
+
+				if (secondsRemaining != lastSecondChecked) {
+					redPulseAlpha = MAX_RED_ALPHA;
+					lastSecondChecked = secondsRemaining;
+				}
+
+				long timeSincePulse = System.currentTimeMillis() % 1000;
+				if (timeSincePulse < 500) {
+					redPulseAlpha = (int) (MAX_RED_ALPHA * (1.0 - (timeSincePulse / 500.0)));
+				} else {
+					redPulseAlpha = 0;
+				}
+				redPulseAlpha = Math.max(0, redPulseAlpha);
+
+				long pulseTime = System.currentTimeMillis() % 1000;
+				if (pulseTime < 500) {
+					panicAlpha = 80;
+				} else {
+					panicAlpha = 0;
+				}
+			} else {
+				timeShakeX = 0;
+				timeShakeY = 0;
+				redPulseAlpha = 0;
+				panicAlpha = 0;
+				lastSecondChecked = -1;
+			}
+			
+			return; // Skip normal battle updates if All-In is active
+		}
+
 
 		// Damage Visuals (Sprite & Screen Shake)
 		updateDamageVisuals(); // Updates visual effects - screen shake
@@ -744,6 +868,55 @@ public class BattleView {
 			}
 		}
 	}
+	
+	// NEW: Logic for all-in guess failure (Loss Condition: Time Out / Incorrect Letter)
+	private void handleAllInGuessTimeOut() {
+		System.out.println("[Battle] All-In Guess Failed: Time Out/Incorrect Letter.");
+		// Set Loss Message
+		message = "All-In Failed! Ouch! -999 HP";
+		messageColor = Color.RED;
+		
+		// This uses the same logic as a time out from normal game, but sets up the instant loss.
+		handleTimeOutAttack(); 
+		damageIndicatorPlayer = -999; // Set the large damage indicator
+		playerPet.takeDamage(999); // Overwhelming damage for instant defeat
+		
+		isAllInGuessOpen = false; // Close Modal
+		isAllInShaking = false; // Stop shake
+	}
+	
+	// NEW: Logic for all-in guess success
+	private void triggerAllInWin() {
+		System.out.println("[Battle] All-In Guess Succeeded.");
+		// Set Win Message
+		message = "All-In Success! Instant K.O.!";
+		messageColor = Color.GREEN;
+		
+		// Trigger Player Attack and Enemy Death
+		actionStartTime = System.currentTimeMillis();
+		isAnimatingAction = true;
+		isPlayerAttacking = true;
+
+		playerPet.setAnimationState(Hangpie.AnimState.ATTACK);
+		currentEnemy.setAnimationState(Enemy.AnimState.DAMAGE);
+		
+		currentEnemy.takeDamage(999); // Overwhelming damage for instant defeat
+
+		damageIndicatorEnemy = 999;
+		damageIndicatorPlayer = 0;
+		impactTriggered = true;
+		
+		// Force the game to acknowledge the word is complete so next step is the next enemy/boss fight logic
+		for (char c : secretWord.toCharArray()) {
+            if (c != ' ') {
+                guessedLetters.add(c);
+            }
+        }
+		
+		isAllInGuessOpen = false; // Close Modal
+		isAllInShaking = false; // Stop shake
+	}
+
 
 	// Handles the enemy attacking when time runs out
 	private void handleTimeOutAttack() {
@@ -768,6 +941,7 @@ public class BattleView {
 
 		impactTriggered = true;
 	}
+
 
 	// Checks if a character died and starts the next phase
 	private void checkRoundResult() {
@@ -882,6 +1056,11 @@ public class BattleView {
 
 	// Checks where the mouse is moving for button hovers
 	public void handleMouseMove(int x, int y) {
+		
+		if (isAllInGuessOpen) {
+			return;
+		}
+		
 		if (isSettingsOpen) {
 			selectedModalOption = -1;
 			// Checks mouse position against button areas
@@ -895,10 +1074,20 @@ public class BattleView {
 				selectedModalOption = 3;
 			}
 		}
+		
+		// NEW: Check All-In Button Hover (now above timer)
+		if (allInButtonBounds != null) {
+			isAllInHovered = allInButtonBounds.contains(x, y);
+		}
 	}
 
 	// Handles mouse clicks
 	public String handleMouseClick(int x, int y) {
+		
+		if (isAllInGuessOpen) {
+			return "NONE";
+		}
+		
 		if (isInstructionOpen) {
 			isInstructionOpen = false;
 			return "NONE";
@@ -947,6 +1136,25 @@ public class BattleView {
 			} else if (instructionBtnBounds != null && instructionBtnBounds.contains(x, y)) {
 				isInstructionOpen = true; // Opens the instruction panel
 				return "NONE";
+			} else if (allInButtonBounds != null && allInButtonBounds.contains(x, y)) { // NEW: All-In Button Click
+				if (isAnimatingAction || isDeathAnimating || battleOver) return "NONE"; // Cannot start mid-animation/game over
+				
+				// Pause normal game loop logic
+				isAllInGuessOpen = true; 
+				allInGuessStartTime = System.currentTimeMillis();
+				currentAllInWordInput = ""; // Reset input
+				currentAllInWordIndex = 0; // Reset index
+				currentTimeRemaining = GameConstants.ALL_IN_GUESS_TIME_SECONDS * 1000; // Reset Timer for display
+				
+				message = "ALL-IN GUESS: Type the word!";
+				messageColor = Color.RED;
+				
+				// Trigger initial screen shake
+				isAllInShaking = true;
+				lastAllInShakeTime = System.currentTimeMillis();
+				
+				System.out.println("[Battle] All-In Guess Started. Word: " + secretWord);
+				return "NONE";
 			}
 		}
 		return "NONE";
@@ -954,6 +1162,52 @@ public class BattleView {
 
 	// Handles keyboard input for guessing and menu control
 	public void handleKeyPress(int keyCode, char keyChar) {
+		
+		// NEW: All-In Guess Modal Logic
+		if (isAllInGuessOpen) {
+			if (currentTimeRemaining <= 0) return; // Ignore input if time is up
+			
+			char key = java.lang.Character.toUpperCase(keyChar);
+			if (key < 'A' || key > 'Z') return; // Only process letters
+
+			// Get the target word (skipping spaces)
+			String targetWord = secretWord.replaceAll(" ", "");
+			
+			// Find the target character for the current sequential index
+			if (currentAllInWordIndex >= targetWord.length()) {
+				// Should not happen, but as a safety, if we finish the word, we win.
+				triggerAllInWin();
+				return;
+			}
+			
+			char targetChar = targetWord.charAt(currentAllInWordIndex);
+			
+			if (key == targetChar) {
+				// Correct sequential input
+				currentAllInWordInput += key;
+				currentAllInWordIndex++;
+				
+				if (currentAllInWordIndex == targetWord.length()) {
+					// Word is completely typed correctly
+					triggerAllInWin();
+				} else {
+					message = "Correct: " + currentAllInWordInput;
+					messageColor = Color.YELLOW;
+				}
+			} else {
+				// Incorrect sequential input - INSTANT LOSS
+				System.out.println("[Battle] All-In Guess Failed: Incorrect Letter. Expected " + targetChar + ", got " + key);
+				message = "All-In Failed: Wrong Letter! Expected " + targetChar + "!";
+				messageColor = Color.RED;
+				
+				// Re-use handleTimeOutAttack logic to start loss sequence (it sets the animation and state)
+				handleAllInGuessTimeOut(); // Handles animation/game state setup for loss
+			}
+			
+			return; // Do not process normal guess after all-in attempt
+		}
+		
+		
 		if (isSettingsOpen) {
 			if (keyCode == KeyEvent.VK_ESCAPE) {
 				isSettingsOpen = false;
@@ -1099,6 +1353,17 @@ public class BattleView {
 		// Screen shake applies to the entire scene
 		int globalShakeX = screenShakeX;
 		int globalShakeY = screenShakeY;
+		
+		// Apply All-In Shake if active (this will be used by non-modal elements and background)
+		if (isAllInShaking && !isAllInGuessOpen) {
+		    globalShakeX = screenShakeX;
+		    globalShakeY = screenShakeY;
+		} else if (isAllInGuessOpen && isAllInShaking) {
+		    // If the modal is open, we reset the global shake here so the main content doesn't shake, 
+		    // but we let the shake variables (screenShakeX/Y) hold the value for use in drawAllInModal
+		    globalShakeX = 0; 
+		    globalShakeY = 0;
+		}
 
 		// Sprite shake only applies to the damaged character sprite
 		int spriteTargetShakeX = isPlayerDamaged ? spriteShakeX : isEnemyDamaged ? spriteShakeX : 0;
@@ -1116,6 +1381,7 @@ public class BattleView {
 			currentDamagePulseAlpha = (int) (MAX_RED_ALPHA * pulseRatio * 3.0);
 			currentDamagePulseAlpha = Math.min(255, Math.max(0, currentDamagePulseAlpha));
 		}
+		
 
 		int groundY = height - 20;
 		int scaleFactor = 4;
@@ -1160,8 +1426,8 @@ public class BattleView {
 			g.fillRect(globalShakeX, globalShakeY, width, height);
 		}
 
-		// Draw Rabbit Flash
-		if (rabbitFlashStartTime > 0 && rabbitImg != null) {
+		// Draw Rabbit Flash (Only used for standard panic, NOT all-in mode anymore)
+		if (!isAllInGuessOpen && rabbitFlashStartTime > 0 && rabbitImg != null) {
 			long timeElapsed = System.currentTimeMillis() - rabbitFlashStartTime;
 			if (timeElapsed < RABBIT_FLASH_DURATION) {
 
@@ -1194,7 +1460,7 @@ public class BattleView {
 
 		// Global shake to UI elements
 		drawLevelIndicator(g, 30 + globalShakeX, TOP_BAR_Y + globalShakeY, observer);
-
+		
 		// Instruction Button
 		if (instructionBtnBounds != null && nameFrameImg != null) {
 			int btnX = instructionBtnBounds.x + globalShakeX;
@@ -1213,6 +1479,36 @@ public class BattleView {
 			int textY = btnY + (btnH - fm.getAscent()) / 2 + fm.getAscent() - 10;
 			g.drawString(qText, textX, textY);
 		}
+		
+		// NEW: All-In Guess Button (Now above the timer)
+		if (allInButtonBounds != null && nameFrameImg != null) {
+			int btnX = allInButtonBounds.x + globalShakeX;
+			int btnY = allInButtonBounds.y + globalShakeY;
+			int btnW = allInButtonBounds.width;
+			int btnH = allInButtonBounds.height;
+			
+			// Draw the button frame
+			g.drawImage(nameFrameImg, btnX, btnY, btnW, btnH, observer);
+
+			// Draw the text
+			g.setFont(GameConstants.UI_FONT); // Use UI_FONT for size consistency
+			
+			String allInText = "ALL IN!"; // Updated label
+			
+			if (isAllInHovered) {
+				g.setColor(GameConstants.SELECTION_COLOR);
+				allInText = "> " + allInText + " <";
+			} else {
+				g.setColor(Color.BLACK);
+			}
+
+			FontMetrics fm = g.getFontMetrics();
+			int textW = fm.stringWidth(allInText);
+			int textX = btnX + (btnW - textW) / 2;
+			int textY = btnY + (btnH - fm.getAscent()) / 2 + fm.getAscent() - 7;
+			g.drawString(allInText, textX, textY);
+		}
+
 
 		if (settingsImg != null && settingsBtnBounds != null) {
 			g.drawImage(settingsImg, settingsBtnBounds.x + globalShakeX, settingsBtnBounds.y + globalShakeY,
@@ -1274,10 +1570,13 @@ public class BattleView {
 			drawSettingsModal(g, width, height); // Draw the pause screen
 		} else if (isInstructionOpen) {
 			drawInstructionModal(g, width, height); // Draw the how-to-play screen
-		} else if (isRewardAnimating) {
-			drawExpAnimation(g, width, height, observer, globalShakeX); // Draw the EXP gain animation
+		} else if (isAllInGuessOpen) { // NEW: Draw All-In Modal
+			// Pass screenShakeX/Y to draw modal with shake
+			drawAllInGuessModal(g, width, height, screenShakeX, screenShakeY, observer);
 		} else if (battleOver) {
 			drawEndScreen(g, width, height); // Draw the win or loss screen
+		} else if (isRewardAnimating) {
+			drawExpAnimation(g, width, height, observer, globalShakeX); // Draw the EXP gain animation
 		}
 	}
 
@@ -1328,6 +1627,160 @@ public class BattleView {
 
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); 
 	}
+	
+	// NEW: Draw All-In Guess Modal
+	// shakeX/shakeY parameters are now the global shake offsets (screenShakeX/Y)
+	private void drawAllInGuessModal(Graphics2D g, int width, int height, int shakeX, int shakeY, ImageObserver obs) {
+		
+		// 1. Full Screen Black Overlay (95% opacity)
+		g.setColor(new Color(0, 0, 0, 242)); // 242/255 approx 95% opacity
+		g.fillRect(0, 0, width, height);
+
+		// 1.5. Rabbit Flash (behind modal frames)
+		if (rabbitFlashStartTime > 0 && rabbitImg != null) {
+			long timeElapsed = System.currentTimeMillis() - rabbitFlashStartTime;
+			if (timeElapsed < RABBIT_FLASH_DURATION) {
+
+				float alpha = 1.0f - (float) timeElapsed / RABBIT_FLASH_DURATION;
+				alpha = Math.max(0.0f, Math.min(1.0f, alpha));
+
+				g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+				
+				// Draw rabbit image centered, applying the screen shake offsets
+				g.drawImage(rabbitImg, shakeX, shakeY, width, height, obs);
+				g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+			} else {
+				rabbitFlashStartTime = 0; // End animation
+			}
+		}
+
+		// --- All following elements must apply the screen shake (shakeX, shakeY) ---
+
+		// 2. All-In Guess Mode Title (Top Center)
+		int titleY = 50;
+		g.setColor(Color.WHITE);
+		g.setFont(GameConstants.HEADER_FONT);
+		String title = "ALL-IN GUESS MODE";
+		FontMetrics fm = g.getFontMetrics();
+		g.drawString(title, (width - fm.stringWidth(title)) / 2 + shakeX, titleY + shakeY);
+
+		// 3. Clue (Same position as standard game clue)
+		int clueBarY = TOP_BAR_Y;
+		int clueBarH = TOP_BAR_HEIGHT;
+		int clueBarW = 600;
+		int clueBarX = (width - clueBarW) / 2;
+
+		if (nameFrameImg != null) {
+			g.drawImage(nameFrameImg, clueBarX + shakeX, clueBarY + shakeY, clueBarW, clueBarH, obs);
+		}
+
+		g.setFont(GameConstants.UI_FONT);
+		g.setColor(Color.WHITE);
+		String clueText = "CLUE: " + clue;
+		FontMetrics fmClue = g.getFontMetrics();
+		int clueTextX = clueBarX + (clueBarW - fmClue.stringWidth(clueText)) / 2 + shakeX;
+		int clueTextY = clueBarY + (clueBarH - fmClue.getAscent()) / 2 + fmClue.getAscent() - 5 + shakeY;
+		g.drawString(clueText, clueTextX, clueTextY);
+
+		// 3.5. Message/Alert Frame (Positioned like the standard battle message frame)
+		int framesTopY = 130 + 10; // backdropH + 10
+		if (!message.isEmpty()) {
+		    g.setFont(GameConstants.UI_FONT);
+		    FontMetrics fmMsg = g.getFontMetrics();
+		    int msgW = fmMsg.stringWidth(message);
+
+		    int bgW = msgW + 60;
+		    int bgH = 50;
+		    int bgX = (width - bgW) / 2;
+		    int bgY = framesTopY; 
+
+		    if (nameFrameImg != null) {
+		        g.drawImage(nameFrameImg, bgX + shakeX, bgY + shakeY, bgW, bgH, obs);
+		    }
+
+		    // Use Black text since the background is a light frame image
+		    g.setColor(Color.BLACK); 
+		    int textX = (width - msgW) / 2 + shakeX;
+		    int textY = bgY + (bgH - fmMsg.getAscent()) / 2 + fmMsg.getAscent() - 7 + shakeY;
+		    g.drawString(message, textX, textY);
+		}
+
+
+		// 4. Word Puzzle Display / Input Area (Centered Middle)
+		int spacing = 60;
+		int lettersHeightCenter = height / 2; // Vertical center of the screen
+		
+		int totalWordLength = secretWord.length();
+		int totalWordDisplayWidth = totalWordLength * spacing;
+
+		int startX = (width - totalWordDisplayWidth) / 2;
+		int currentX = startX;
+		
+		int letterImageSize = 40;
+		int letterImageOffset = 10; // offset for centering the 40px image on the 60px grid
+		
+		int inputIndex = 0;
+
+		for (char c : secretWord.toCharArray()) {
+			if (c == ' ') {
+				currentX += spacing;
+				continue;
+			}
+			
+			// Determine which letter to display: already guessed, current input, or blank
+			char charToDisplay = ' ';
+			
+			// 4a. Draw the underlying blank underscore
+			g.setColor(Color.WHITE);
+			g.fillRect(currentX + letterImageOffset + shakeX, lettersHeightCenter + 5 + shakeY, letterImageSize, 4); 
+
+			// 4b. Draw the letter (if already guessed)
+			if (guessedLetters.contains(c)) { 
+				charToDisplay = c; 
+			}
+			
+			// 4c. Draw the typed input (overriding guessed or blank)
+			if (inputIndex < currentAllInWordInput.length()) {
+				charToDisplay = currentAllInWordInput.charAt(inputIndex);
+			}
+
+			if (charToDisplay != ' ') {
+				String letterPath = "images/utilities/letters/" + charToDisplay + ".png";
+				Image letterImg = AssetLoader.loadImage(letterPath, letterImageSize, letterImageSize);
+				
+				if (letterImg != null) {
+					// Draw the letter PNG
+					g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+					g.drawImage(letterImg, currentX + letterImageOffset + shakeX, lettersHeightCenter - letterImageSize + shakeY, letterImageSize, letterImageSize, obs);
+					g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+				} else {
+					// Fallback to text if PNG is missing
+					g.setColor(Color.WHITE);
+					g.setFont(GameConstants.HEADER_FONT);
+					g.drawString(String.valueOf(charToDisplay), currentX + 10 + shakeX, lettersHeightCenter + shakeY);
+				}
+			}
+			
+			if (c != ' ') {
+				inputIndex++;
+			}
+			currentX += spacing;
+		}
+
+
+		// 5. Timer Display (Same position as standard game timer: Bottom Center)
+		// We pass shakeX/shakeY to the drawing logic now.
+		drawTimer(g, obs, shakeX, shakeY); 
+
+		// 6. Instruction Hint (Bottom of screen)
+		g.setFont(GameConstants.INSTRUCTION_FONT);
+		g.setColor(Color.WHITE);
+		String hint = "Type the WHOLE word sequentially to win! Incorrect letter or time-out results in instant loss.";
+		FontMetrics fmHint = g.getFontMetrics();
+		g.drawString(hint, (width - fmHint.stringWidth(hint)) / 2 + shakeX, height - 10 + shakeY);
+		
+	}
+
 
 	// Instruction Modal
 	private void drawInstructionModal(Graphics2D g, int width, int height) {
@@ -1545,7 +1998,6 @@ public class BattleView {
 	// Helper function to draw the UI frames and content for both characters
 	private void drawCharacterUIFrames1(Graphics2D g, int width, int topY, int playerCenterX, int enemyCenterX,
 			ImageObserver observer) {
-
 		int frameW = 200;
 		int statsW = 190;
 		int frameH = 70;
@@ -1732,7 +2184,7 @@ public class BattleView {
 		g.fillRect(0, 0, width, height);
 
 		int mW = MODAL_WIDTH;
-		int mH = 300;
+		int mH = MODAL_HEIGHT;
 		int mX = (width - mW) / 2;
 		int mY = (height - mH) / 2;
 
