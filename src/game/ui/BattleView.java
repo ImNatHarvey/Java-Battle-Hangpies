@@ -243,6 +243,52 @@ public class BattleView {
 		rabbitImg = AssetLoader.loadImage(GameConstants.RABBIT_IMG, GameConstants.WINDOW_WIDTH,
 				GameConstants.WINDOW_HEIGHT);
 	}
+	
+	// Helper method to count non-space letters not yet guessed
+	private int getUnguessedLetterCount() {
+	    if (secretWord == null) return 0;
+	    int unguessedCount = 0;
+	    for (char c : secretWord.toCharArray()) {
+	        if (c != ' ' && !guessedLetters.contains(c)) {
+	            unguessedCount++;
+	        }
+	    }
+	    return unguessedCount;
+	}
+
+	// Helper method to count total non-space letters in the word
+	private int getTotalNonSpaceLetterCount() {
+	    if (secretWord == null) return 0;
+	    int totalCount = 0;
+	    for (char c : secretWord.toCharArray()) {
+	        if (c != ' ') {
+	            totalCount++;
+	        }
+	    }
+	    return totalCount;
+	}
+
+	// Helper method to determine the button text based on game progress
+	private String getAllInButtonText() {
+	    int unguessedCount = getUnguessedLetterCount();
+	    int totalLetters = getTotalNonSpaceLetterCount();
+	    int revealedCount = totalLetters - unguessedCount;
+
+	    if (totalLetters == 0) {
+	        return "ALL IN!"; // Default if no word is loaded
+	    }
+	    
+	    if (unguessedCount <= 2 && unguessedCount > 0) {
+	        return "PLUS ULTRA!";
+	    }
+	    
+	    if (revealedCount > 0) {
+	        return "WORD BURST!";
+	    }
+	    
+	    // Default: no letters guessed (revealedCount == 0)
+	    return "ALL IN!"; 
+	}
 
 	// This function sets up the current battle including enemies and words
 	private void initBattle() {
@@ -299,15 +345,6 @@ public class BattleView {
 		this.lastScreenShakeTime = 0;
 
 		this.isInstructionOpen = false;
-
-		// Reset Damage Indicators
-		this.damageIndicatorPlayer = 0;
-		this.damageIndicatorEnemy = 0;
-		this.damageIndicatorStartTime = 0;
-
-		// Reset Rabbit Flash
-		this.rabbitFlashStartTime = 0;
-		this.hasFlashedThisGuess = false;
 
 		// Load Game Logic
 		if (Main.saveManager.hasSave(playerUser.getUsername()) && !shouldCarryOverWord) {
@@ -550,13 +587,7 @@ public class BattleView {
 
 	// This function checks if the player has guessed all the letters in the word
 	private boolean isWordCompleted() {
-		for (char c : secretWord.toCharArray()) {
-			// Checks if any character is not a space and is missing from the guessed set
-			if (c != ' ' && !guessedLetters.contains(c)) {
-				return false;
-			}
-		}
-		return true;
+		return getUnguessedLetterCount() == 0;
 	}
 
 	// This function is called every frame to update the game status and animations
@@ -568,12 +599,7 @@ public class BattleView {
 		if (isAllInGuessOpen) {
 			
 			// --- Pulse Animation Logic (Sequential Pulse over ALL non-space characters) ---
-			int totalNonSpaceCharacters = 0;
-			for (char c : secretWord.toCharArray()) {
-				if (c != ' ') {
-					totalNonSpaceCharacters++;
-				}
-			}
+			int totalNonSpaceCharacters = getTotalNonSpaceLetterCount();
 			
 			if (totalNonSpaceCharacters > 0) {
 				long timeNow = System.currentTimeMillis();
@@ -1555,11 +1581,11 @@ public class BattleView {
 			// Draw the text
 			g.setFont(GameConstants.UI_FONT); // Use UI_FONT for size consistency
 			
-			String allInText = "ALL IN!"; // Updated label
+			String allInText = getAllInButtonText(); // Use helper method for text
 			
 			if (isAllInHovered) {
-				g.setColor(GameConstants.SELECTION_COLOR);
-				allInText = "> " + allInText + " <";
+				g.setColor(Color.RED); // Change hover color to red
+				// Remove > < around the text
 			} else {
 				g.setColor(Color.BLACK);
 			}
