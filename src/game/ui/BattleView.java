@@ -132,6 +132,13 @@ public class BattleView {
 	private final int SCREEN_SHAKE_MAGNITUDE = 10; // INCREASED MAGNITUDE
 	private long lastScreenShakeTime = 0;
 
+	// NEW: Discrete Pulse Effect (All-In)
+	private final int DISCRETE_PULSE_HEIGHT = 10; // Max vertical movement in pixels
+	private final int PULSE_CYCLE_MS = 300; // Total time for one dash to move up and down
+	private int pulseIndex = 0; // The index of the dash currently moving
+	private long lastPulseTime = 0; // Last time the pulse index advanced
+	private int currentVerticalOffset = 0; // The current vertical offset of the moving dash (negative for up)
+
 	// Damage Indicator
 	private int damageIndicatorPlayer = 0;
 	private int damageIndicatorEnemy = 0;
@@ -176,19 +183,10 @@ public class BattleView {
 	private Rectangle allInButtonBounds;
 	private boolean isAllInHovered = false;
 	
-	// NEW: Screen shake control for All-In
+	// Screen shake control for All-In
 	private boolean isAllInShaking = false;
 	private final int ALL_IN_SHAKE_MAGNITUDE = 5;
 	private long lastAllInShakeTime = 0;
-	
-	// NEW: Shifting Dash Effect (All-In)
-	private int currentDashOffset = 0;
-	private long lastDashShiftTime = 0;
-	private final int DASH_SHIFT_DURATION = 500; // Shift every 0.5 seconds
-	private final int NUM_DASH_STATES = 3; // States: _ _ -, _ - _, - _ _ (0, 1, 2)
-	private final int DASH_SIZE = 3; // Number of characters in the dash group
-	private final int SHIFT_SPACING = 60; // Must match spacing in drawAllInGuessModal
-	// END NEW FIELDS
 
 	// UI Buttons
 	// These define the clickable areas for the buttons
@@ -276,7 +274,8 @@ public class BattleView {
 		this.allInGuessStartTime = 0;
 		this.isAllInHovered = false;
 		this.isAllInShaking = false;
-		this.currentDashOffset = 0;
+		this.pulseIndex = 0; // Reset pulse index
+		this.lastPulseTime = 0; // Reset pulse time
 
 
 		this.playerPet.setAnimationState(Hangpie.AnimState.IDLE);
@@ -419,7 +418,8 @@ public class BattleView {
 		this.allInGuessStartTime = 0;
 		this.isAllInHovered = false;
 		this.isAllInShaking = false;
-		this.currentDashOffset = 0;
+		this.pulseIndex = 0; // Reset pulse index
+		this.lastPulseTime = 0; // Reset pulse time
 
 
 		// Reward Animation State
@@ -566,16 +566,59 @@ public class BattleView {
 			
 		// NEW: Check All-In Guess Time Out
 		if (isAllInGuessOpen) {
+			
+			// --- Pulse Animation Logic (Sequential Pulse over ALL non-space characters) ---
+			int totalNonSpaceCharacters = 0;
+			for (char c : secretWord.toCharArray()) {
+				if (c != ' ') {
+					totalNonSpaceCharacters++;
+				}
+			}
+			
+			if (totalNonSpaceCharacters > 0) {
+				long timeNow = System.currentTimeMillis();
+				
+				// Advance the pulse index if enough time has passed
+				if (timeNow - lastPulseTime > PULSE_CYCLE_MS) {
+					// The pulse cycles through ALL non-space characters
+					pulseIndex = (pulseIndex + 1); 
+					
+					if (pulseIndex >= totalNonSpaceCharacters) {
+						pulseIndex = 0;
+					}
+					lastPulseTime = timeNow; // Reset pulse time
+				}
+			} else {
+				pulseIndex = -1;
+			}
+			
+			// Calculate the vertical offset for the currently active dash regardless of if the index advanced
+			if (pulseIndex != -1) {
+				long pulseTimeElapsed = System.currentTimeMillis() - lastPulseTime;
+				
+				// Normalize time elapsed to a ratio for one up/down cycle (0.0 to 1.0)
+				float verticalProgress = (float)pulseTimeElapsed / PULSE_CYCLE_MS;
+				
+				// We want UP (0 to 0.5) and DOWN (0.5 to 1.0)
+				float verticalOffsetRatio; 
+				if (verticalProgress <= 0.5f) {
+					verticalOffsetRatio = verticalProgress * 2.0f; // Scale 0.0-0.5 to 0.0-1.0 (moving UP)
+				} else {
+					verticalOffsetRatio = 1.0f - ((verticalProgress - 0.5f) * 2.0f); // Scale 0.5-1.0 to 1.0-0.0 (moving DOWN)
+				}
+				
+				// Vertical offset for the currently active dash (negative because up is negative Y)
+				currentVerticalOffset = -(int)(verticalOffsetRatio * DISCRETE_PULSE_HEIGHT);
+			} else {
+				currentVerticalOffset = 0;
+			}
+			
+			// --- End Pulse Animation Logic ---
+			
 			long timeElapsed = System.currentTimeMillis() - allInGuessStartTime;
 			long maxTimeMillis = GameConstants.ALL_IN_GUESS_TIME_SECONDS * 1000;
 			currentTimeRemaining = maxTimeMillis - timeElapsed;
 			
-			// Handle Dash Shift Effect
-			if (System.currentTimeMillis() - lastDashShiftTime > DASH_SHIFT_DURATION) {
-				currentDashOffset = (currentDashOffset + 1) % NUM_DASH_STATES;
-				lastDashShiftTime = System.currentTimeMillis();
-			}
-
 			// Handle intense screen shake for ALL-IN mode
 			if (isAllInShaking) {
 				if (System.currentTimeMillis() - lastAllInShakeTime > 50) {
@@ -642,6 +685,7 @@ public class BattleView {
 					panicAlpha = 0;
 				}
 			} else {
+
 				timeShakeX = 0;
 				timeShakeY = 0;
 				redPulseAlpha = 0;
@@ -758,7 +802,7 @@ public class BattleView {
 			// Handle Level Up Flash
 			if (levelUpOccurred) {
 				// Flash effect when leveling up
-				long duration = (long) LEVEL_UP_FLASH_DURATION;
+				long duration = LEVEL_UP_FLASH_DURATION;
 				long timeIntoCycle = timeElapsed % duration;
 
 				if (timeIntoCycle < duration / 2) {
@@ -811,14 +855,12 @@ public class BattleView {
 				}
 				redPulseAlpha = Math.max(0, redPulseAlpha);
 
-				// Panic Effect for Timer Box (Flicker)
 				long pulseTime = System.currentTimeMillis() % 1000;
 				if (pulseTime < 500) {
 					panicAlpha = 80;
 				} else {
 					panicAlpha = 0;
 				}
-
 			} else {
 
 				timeShakeX = 0;
@@ -1350,8 +1392,10 @@ public class BattleView {
 			} else if (keyCode == KeyEvent.VK_ESCAPE) {
 				exitRequested = true;
 			}
-		} else {
-			if (keyCode == KeyEvent.VK_ENTER || keyCode == KeyEvent.VK_ESCAPE) {
+		} else { // Loss logic now mirrors win logic but starts a new fight at the current progress (stage 1)
+			if (keyCode == KeyEvent.VK_ENTER) {
+				initBattle(); // Start a new fight (try again at stage 1, which is set in handleLoss())
+			} else if (keyCode == KeyEvent.VK_ESCAPE) {
 				exitRequested = true;
 			}
 		}
@@ -1380,9 +1424,8 @@ public class BattleView {
 		    globalShakeY = 0;
 		}
 
-		// *** NEW: Calculate combined UI shake offset (global shake + time panic shake) ***
+		// *** Calculate combined UI shake offset (global shake + time panic shake) ***
 		// timeShakeX/Y is non-zero only during time panic in normal mode.
-		// In All-In mode, we rely on globalShakeX/Y (screenShakeX/Y) for the shake, and timeShakeX/Y is 0.
 		int uiShakeX = globalShakeX + timeShakeX; 
 		int uiShakeY = globalShakeY + timeShakeY;
 		// END NEW CALCULATION
@@ -1390,11 +1433,6 @@ public class BattleView {
 		// Sprite shake only applies to the damaged character sprite
 		int spriteTargetShakeX = isPlayerDamaged ? spriteShakeX : isEnemyDamaged ? spriteShakeX : 0;
 		int spriteTargetShakeY = isPlayerDamaged ? spriteShakeY : isEnemyDamaged ? spriteShakeY : 0;
-
-		// UI shake only applies to the timer
-		// The old uiOffsetX/Y is now obsolete as we use uiShakeX/Y everywhere.
-		// int uiOffsetX = timeShakeX;
-		// int uiOffsetY = timeShakeY;
 
 		long timeElapsedDamage = System.currentTimeMillis() - damageStartTime;
 		int currentDamagePulseAlpha = 0;
@@ -1733,6 +1771,7 @@ public class BattleView {
 		// 4. Word Puzzle Display / Input Area (Centered Middle)
 		int spacing = 60;
 		int lettersHeightCenter = height / 2; // Vertical center of the screen
+		int baseDashY = lettersHeightCenter + 5;
 		
 		int totalWordLength = secretWord.length();
 		int totalWordDisplayWidth = totalWordLength * spacing;
@@ -1743,11 +1782,7 @@ public class BattleView {
 		int letterImageSize = 40;
 		int letterImageOffset = 10; // offset for centering the 40px image on the 60px grid
 		
-		int wordIndex = 0; // Tracks the index of the non-space characters
-
-		// Calculate shifting offset for the dashes
-		int dashShiftPixel = (SHIFT_SPACING / NUM_DASH_STATES) * currentDashOffset;
-		
+		int nonSpaceCharIndex = 0; // Tracks the index of the character in the word (skips spaces)
 		
 		for (char c : secretWord.toCharArray()) {
 			if (c == ' ') {
@@ -1755,41 +1790,45 @@ public class BattleView {
 				continue;
 			}
 			
-			// --- SHIFTING DASH EFFECT ---
-			int baseLetterY = lettersHeightCenter; 
-			int finalLetterX = currentX;         
+			// Check if this character is the one currently pulsing
+			boolean isPulsing = (nonSpaceCharIndex == pulseIndex);
 			
-			// Determine dash color based on the current shifting state
-			boolean isDashActive = (wordIndex % DASH_SIZE) == currentDashOffset; 
+			// Calculate vertical offset for this dash/letter
+			// Apply pulse offset to Y position if pulsing
+			int pulseVerticalOffset = isPulsing ? currentVerticalOffset : 0;
 			
-			// 4a. Draw the underlying blank underscore / wave line
-			g.setColor(isDashActive ? Color.RED : Color.WHITE);
-			
-			// Apply dash shift effect: Draw the underline shifted to the right 
-			g.fillRect(finalLetterX + letterImageOffset + shakeX, baseLetterY + 5 + shakeY, letterImageSize, 4); 
+			int finalDashY = baseDashY + pulseVerticalOffset; // Base Y position of the dash graphic
 
-			// 4b. Draw the letter (if revealed)
+			// 4. Draw the Dash OR the Letter with the pulse offset
 			if (guessedLetters.contains(c)) { 
+				// --- DRAW GUESSED LETTER (WITH PULSE EFFECT) ---
 				char charToDisplay = c; 
 			
 				String letterPath = "images/utilities/letters/" + charToDisplay + ".png";
 				Image letterImg = AssetLoader.loadImage(letterPath, letterImageSize, letterImageSize);
 				
 				if (letterImg != null) {
-					// Draw the letter PNG. Apply wave and shake offset
+					// Apply pulse offset to the image's Y position
 					g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
-					g.drawImage(letterImg, finalLetterX + letterImageOffset + shakeX, baseLetterY - letterImageSize + shakeY, letterImageSize, letterImageSize, obs);
+					// Letters should be drawn relative to lettersHeightCenter, not baseDashY
+					int letterDrawY = lettersHeightCenter - letterImageSize + shakeY + pulseVerticalOffset;
+					g.drawImage(letterImg, currentX + letterImageOffset + shakeX, letterDrawY, letterImageSize, letterImageSize, obs);
 					g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
 				} else {
-					// Fallback to text if PNG is missing. Apply wave and shake offset
+					// Fallback to text 
 					g.setColor(Color.WHITE);
 					g.setFont(GameConstants.HEADER_FONT);
-					g.drawString(String.valueOf(charToDisplay), finalLetterX + 10 + shakeX, baseLetterY + shakeY);
+					g.drawString(String.valueOf(charToDisplay), currentX + 10 + shakeX, lettersHeightCenter + shakeY + pulseVerticalOffset);
 				}
+			} else {
+				// --- DRAW UNGUESSED DASH (WITH PULSE EFFECT) ---
+				// Dash line drawn at finalDashY
+				g.setColor(Color.WHITE);
+				g.fillRect(currentX + letterImageOffset + shakeX, finalDashY + shakeY, letterImageSize, 4);
 			}
 			
-			// Increment word index only for non-space characters
-			wordIndex++;
+			// Increment char index
+			nonSpaceCharIndex++;
 			currentX += spacing;
 		}
 
@@ -2329,7 +2368,7 @@ public class BattleView {
 
 		} else {
 			g.setColor(Color.RED);
-			String title = "YOU DIED";
+			String title = "DEFEAT";
 			g.drawString(title, (width - fm.stringWidth(title)) / 2, height / 2 - 50);
 
 			g.setFont(GameConstants.UI_FONT);
@@ -2338,8 +2377,12 @@ public class BattleView {
 			String subMsg = "Progress Reset to Stage 1";
 			g.drawString(subMsg, (width - g.getFontMetrics().stringWidth(subMsg)) / 2, height / 2);
 
-			String opt = "Press [ENTER] or [ESC] to Return";
-			g.drawString(opt, (width - g.getFontMetrics().stringWidth(opt)) / 2, height / 2 + 50);
+			g.setColor(Color.WHITE);
+			g.setFont(GameConstants.BUTTON_FONT);
+			String opt1 = "[ENTER] Try Again";
+			String opt2 = "[ESC] Main Menu";
+			g.drawString(opt1, (width - g.getFontMetrics().stringWidth(opt1)) / 2, height / 2 + 80);
+			g.drawString(opt2, (width - g.getFontMetrics().stringWidth(opt2)) / 2, height / 2 + 120);
 		}
 	}
 
@@ -2362,8 +2405,8 @@ public class BattleView {
 	private void drawTimer(Graphics2D g, ImageObserver observer, int externalOffsetX, int externalOffsetY) {
 
 		// Timer gets the combined UI shake from render()
-		int finalOffsetX = timerX + externalOffsetX; // <-- REMOVED + timeShakeX
-		int finalOffsetY = timerY + externalOffsetY; // <-- REMOVED + timeShakeY
+		int finalOffsetX = timerX + externalOffsetX; // <-- Only use the external shake
+		int finalOffsetY = timerY + externalOffsetY; // <-- Only use the external shake
 
 		if (nameFrameImg != null) {
 			g.drawImage(nameFrameImg, finalOffsetX, finalOffsetY, timerW, timerH, observer);
