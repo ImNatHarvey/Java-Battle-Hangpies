@@ -1,2 +1,1 @@
 // FORMAT: username|secretWord|clue|guessedLetters|enemyName|enemyHp|enemyMaxHp|enemyAtk|enemyImageFolder|enemyLevel|playerPetId|playerPetHp
-player123|SQUID GAME|Korean survival drama series|QSDUI|Sheogorath|5|15|2|enemies/boss/boss4|1|f8c0b257-dccf-4eb8-83ed-b2e92b29f778|6

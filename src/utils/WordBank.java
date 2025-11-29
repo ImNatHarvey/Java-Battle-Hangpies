@@ -169,7 +169,6 @@ public class WordBank {
 		bossWords.add(new WordData("GAME OF THRONES", "A series about the Iron Throne"));
 		bossWords.add(new WordData("APPLE OF MY EYE", "Idiom: Cherished person"));
 		bossWords.add(new WordData("SIX FLAGS", "A popular amusement park chain"));
-		bossWords.add(new WordData("WATER UNDER THE BRIDGE", "Idiom: Past trouble that's no longer important"));
 		bossWords.add(new WordData("PULP FICTION", "Tarantino movie with a briefcase"));
 		bossWords.add(new WordData("AVENGERS ENDGAME", "The ultimate Marvel movie"));
 		bossWords.add(new WordData("NO CAP", "Slang: To tell the truth or be serious"));
