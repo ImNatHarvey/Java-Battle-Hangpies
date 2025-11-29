@@ -2,22 +2,24 @@ package utils;
 
 import javax.sound.sampled.*;
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 public class SoundManager {
 
 	private static Clip menuMusic;
 	private static Clip battleMusic;
+	private static Clip endGameMusic; // Victory or Defeat music
+
 	private static long menuPausePosition = 0;
+	private static long battlePausePosition = 0;
+	private static boolean currentTrackIsBoss = false;
+
 	private static final Random random = new Random();
 
 	// Root path for sounds (Project Root/sounds/)
 	private static final String SOUND_ROOT = "sounds/";
 
-	// --- MUSIC (LOOPING) ---
+	// --- MENU MUSIC (LOOPING) ---
 
 	public static void playMenuMusic() {
 		if (menuMusic != null && menuMusic.isRunning()) {
@@ -62,9 +64,27 @@ public class SoundManager {
 		}
 	}
 
+	// --- BATTLE MUSIC (LOOPING) ---
+
 	public static void playBattleMusic(boolean isBoss) {
-		// Stop any existing battle music
+		// If music is already loaded and we are resuming the same type (Boss vs
+		// Regular)
+		if (battleMusic != null) {
+			if (currentTrackIsBoss == isBoss) {
+				if (!battleMusic.isRunning()) {
+					// Resume from where it was paused (e.g., after Victory/Defeat screen)
+					battleMusic.setMicrosecondPosition(battlePausePosition);
+					battleMusic.loop(Clip.LOOP_CONTINUOUSLY);
+					battleMusic.start();
+				}
+				return; // Already playing or successfully resumed
+			}
+		}
+
+		// If we are switching modes (Normal <-> Boss) or starting fresh, stop the old
+		// track
 		stopBattleMusic();
+		currentTrackIsBoss = isBoss;
 
 		String folderPath = isBoss ? "battle/boss/" : "battle/battle/";
 		File folder = new File(SOUND_ROOT + folderPath);
@@ -94,12 +114,61 @@ public class SoundManager {
 		}
 	}
 
+	public static void pauseBattleMusic() {
+		if (battleMusic != null && battleMusic.isRunning()) {
+			battlePausePosition = battleMusic.getMicrosecondPosition();
+			battleMusic.stop();
+		}
+	}
+
 	public static void stopBattleMusic() {
 		if (battleMusic != null) {
 			battleMusic.stop();
 			battleMusic.close();
 			battleMusic = null;
+			battlePausePosition = 0;
 		}
+	}
+
+	// --- END GAME MUSIC (Victory/Defeat) ---
+
+	public static void playEndGameMusic(String relativePath) {
+		// Stop menu music if playing, but do NOT stop battle music (we want to resume
+		// it later)
+		stopMenuMusic();
+		stopEndGameMusic(); // Stop any previous end game track
+
+		try {
+			File file = new File(SOUND_ROOT + relativePath);
+			if (!file.exists()) {
+				System.err.println("[SoundManager] Missing: " + file.getAbsolutePath());
+				return;
+			}
+			AudioInputStream audioIn = AudioSystem.getAudioInputStream(file);
+			endGameMusic = AudioSystem.getClip();
+			endGameMusic.open(audioIn);
+			endGameMusic.loop(Clip.LOOP_CONTINUOUSLY);
+			endGameMusic.start();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void stopEndGameMusic() {
+		if (endGameMusic != null) {
+			endGameMusic.stop();
+			endGameMusic.close();
+			endGameMusic = null;
+		}
+	}
+
+	// --- GLOBAL STOP ---
+
+	public static void stopAll() {
+		stopMenuMusic();
+		stopBattleMusic();
+		stopEndGameMusic();
 	}
 
 	// --- SFX (ONESHOT) ---

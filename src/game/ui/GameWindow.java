@@ -16,6 +16,7 @@ import main.Main;
 import models.Hangpie;
 import models.User;
 import utils.AssetLoader;
+import utils.SoundManager;
 
 // This is the main window and controls the entire game flow
 public class GameWindow extends Frame implements Runnable { // This creates the window and runs the game code in a loop
@@ -98,6 +99,9 @@ public class GameWindow extends Frame implements Runnable { // This creates the 
 			this.inventoryView.setSelection(this.equippedHangpie);
 		}
 
+		// Start Menu Music (Loops)
+		SoundManager.playMenuMusic();
+
 		setupWindow(); // Sets up the frame size and settings
 		loadAssets(); // Loads pictures
 
@@ -162,10 +166,12 @@ public class GameWindow extends Frame implements Runnable { // This creates the 
 
 					if (instructionBtnBounds != null && instructionBtnBounds.contains(e.getX(), e.getY())) {
 						isInstructionOpen = true;
+						SoundManager.playSFX("sfx/select.wav");
 						return;
 					}
 
 					if (selectedOption != -1) {
+						SoundManager.playSFX("sfx/select.wav");
 						handleMenuClick(selectedOption); // Runs the action for the clicked menu item
 					}
 				} else if (currentState == GameState.INVENTORY) {
@@ -176,6 +182,12 @@ public class GameWindow extends Frame implements Runnable { // This creates the 
 					}
 
 					String action = inventoryView.handleMouseClick(e.getX(), e.getY());
+
+					// Play SFX if a meaningful action occurred
+					if (!action.equals("NONE")) {
+						SoundManager.playSFX("sfx/select.wav");
+					}
+
 					if (action.equals("BACK")) {
 						currentState = GameState.MENU; // Go back to the main menu
 					} else if (action.equals("SELECT")) {
@@ -200,10 +212,17 @@ public class GameWindow extends Frame implements Runnable { // This creates the 
 						}
 					}
 				} else if (currentState == GameState.PLAYING && battleView != null) {
+					// BattleView handles its own SFX inside its method
 					String action = battleView.handleMouseClick(e.getX(), e.getY());
+
 					if (action.equals("EXIT")) {
 						stop(); // Close the game program
 					} else if (action.equals("MENU")) {
+						// Return to menu logic: Stop battle music, restart menu music
+						SoundManager.stopBattleMusic();
+						SoundManager.stopEndGameMusic(); // Ensure victory music stops if active
+						SoundManager.playMenuMusic();
+
 						currentState = GameState.MENU; // Go back to the main menu
 						battleView = null;
 					}
@@ -233,6 +252,11 @@ public class GameWindow extends Frame implements Runnable { // This creates the 
 					battleView.handleKeyPress(e.getKeyCode(), e.getKeyChar()); // Sends key press to the battle screen
 
 					if (battleView.isExitRequested()) {
+						// Return to menu logic: Stop battle music, restart menu music
+						SoundManager.stopBattleMusic();
+						SoundManager.stopEndGameMusic(); // Ensure victory music stops if active
+						SoundManager.playMenuMusic();
+
 						currentState = GameState.MENU;
 						battleView = null;
 					}
@@ -268,6 +292,7 @@ public class GameWindow extends Frame implements Runnable { // This creates the 
 
 	private void handleInventoryConfirmationClick(int mx, int my) {
 		if (modalConfirmYesBounds != null && modalConfirmYesBounds.contains(mx, my)) {
+			SoundManager.playSFX("sfx/select.wav");
 			equippedHangpie = confirmPetCandidate;
 			equippedHangpie.setCurrentHealth(equippedHangpie.getMaxHealth());
 			Main.saveManager.deleteSave(currentUser.getUsername()); // Deletes the save file
@@ -277,6 +302,7 @@ public class GameWindow extends Frame implements Runnable { // This creates the 
 			currentState = GameState.MENU;
 			System.out.println("[Game] Equipped new Hangpie and deleted active save.");
 		} else if (modalConfirmNoBounds != null && modalConfirmNoBounds.contains(mx, my)) {
+			SoundManager.playSFX("sfx/select.wav");
 			isInventoryConfirmationOpen = false;
 			confirmPetCandidate = null;
 			inventoryView.setSelection(equippedHangpie); // Cancels and keeps the old pet selected
@@ -304,6 +330,7 @@ public class GameWindow extends Frame implements Runnable { // This creates the 
 				System.out.println("[Game] Cannot start: No Hangpie equipped.");
 				errorFlashStartTime = System.currentTimeMillis(); // Starts the shaking animation
 			} else {
+				SoundManager.stopMenuMusic(); // Stop menu music before battle
 				startBattle(); // Starts the game fight
 			}
 
@@ -358,6 +385,10 @@ public class GameWindow extends Frame implements Runnable { // This creates the 
 		if (!isRunning)
 			return;
 		isRunning = false;
+
+		// STOP ALL MUSIC ON EXIT
+		SoundManager.stopAll();
+
 		try {
 			gameThread.join();
 		} catch (InterruptedException e) {
@@ -510,7 +541,8 @@ public class GameWindow extends Frame implements Runnable { // This creates the 
 
 		int yesDrawOffsetX = (yesTxtWMax - yesTxtWidthNormal) / 2;
 
-		modalConfirmYesBounds = new Rectangle(currentX, btnAreaY, yesTxtWMax, btnH); // Sets the YES button clickable area
+		modalConfirmYesBounds = new Rectangle(currentX, btnAreaY, yesTxtWMax, btnH); // Sets the YES button clickable
+																						// area
 
 		g.setColor((selectedConfirmOption == 1) ? GameConstants.SELECTION_COLOR : Color.BLACK);
 
